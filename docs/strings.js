@@ -173,7 +173,35 @@
             'game.dailyShare': 'Share result',
             'game.dailyShareText': 'CIRCArt daily No. {no}: {correct}/{total} · {score} pts',
             'game.copiedResult': 'Result copied',
+            'solo.bonusTitle': 'Bonus (optional)',
+            'solo.bonusHint': 'Answer before you place the card: +1 point each.',
+            'solo.movementRight': 'Movement right: {name} (+1 point)',
+            'solo.movementWrong': 'Wrong movement (was: {name})',
             'game.replayTest': 'Play again (test version only)',
+            'run.eyebrow': '{month} RUN',
+            'run.short': 'Monthly Run',
+            'run.title': '{title}',
+            'run.rules': 'Unlimited runs · 3 lives · your best run counts',
+            'run.play': 'Start a run',
+            'run.continue': 'Continue your run',
+            'run.best': 'Your best: {score} · #{rank} of {players}',
+            'run.bestUnranked': 'Your best: {score}',
+            'run.none': 'No run yet this month. {days} days left.',
+            'run.above': 'Beat {name}: {score} pts',
+            'run.daysLeft': '{days} days left',
+            'run.startText': 'Cards keep coming until your third mistake. 20 seconds each, faster = more points. Try as often as you like: only your best run counts.',
+            'run.go': 'Go',
+            'run.lives': 'Lives',
+            'run.lifeLost': 'One life lost',
+            'run.over': 'Run over',
+            'run.cards': '{n} cards placed',
+            'run.newBest': 'New personal best!',
+            'run.again': 'Again',
+            'run.share': 'CIRCArt {month} Run: {score} pts · {n} cards',
+            'run.board': 'This month',
+            'profile.testPush': 'Send me a test notification',
+            'profile.testPushSent': 'Sent! It should arrive within a minute.',
+            'profile.testPushOff': 'Turn notifications on first.',
             'game.artistBonus': 'Artist bonus',
             'game.artistBonusText': 'After placing, name the artist out of 4 for +200.',
             'game.artistOff': 'No artist question: just the timeline.',
@@ -264,5 +292,13 @@
     const NAMES = { en: 'English', de: 'Deutsch' };
     const languages = () => Object.keys(STRINGS).map(code => ({ code, name: NAMES[code] || code }));
 
-    window.CircI18n = { t, apply, setLanguage, languages, get lang() { return lang; } };
+    // more languages register themselves: strings-de.js calls extend('de', {...}, 'Deutsch')
+    function extend(code, dict, name) {
+        STRINGS[code] = Object.assign(STRINGS[code] || {}, dict);
+        if (name) NAMES[code] = name;
+        lang = current();
+    }
+
+    window.CircI18n = { t, apply, setLanguage, languages, extend, get lang() { return lang; } };
+    (window.CIRC_PENDING_LANGS || []).forEach(a => extend.apply(null, a));
 })();

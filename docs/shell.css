@@ -343,3 +343,8 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .go-switch input:checked + .go-toggle::after { transform: translateX(20px); }
 .go-switch input:focus-visible + .go-toggle { outline: 2px solid var(--accent-color); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .go-verdict { animation: none; } }
+
+
+/* ---------- Monthly Run ---------- */
+.run-hearts { font-size: 14px; letter-spacing: 1px; white-space: nowrap; }
+.run-best { color: var(--success); font-weight: 700; font-size: 17px; animation: goPop 0.6s ease-out; }

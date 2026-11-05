@@ -38,6 +38,7 @@
         not_host: 'Only the host can do that.',
         need_two_players: 'You need at least two players.',
         bad_settings: 'Those game settings don\'t work.',
+        too_many_runs: 'Easy there! Wait a moment before the next run.',
         push_unsupported: 'This browser can\'t show notifications. On iPhone, add CIRCArt to your home screen first.',
         push_denied: 'Notifications are blocked. You can allow them in your browser or phone settings.',
         card_not_open: 'That card isn\'t open.',
@@ -258,6 +259,12 @@
     const monthlyLeaderboard = month => rpc('monthly_leaderboard', { p_month: month || null });
     const alltimeLeaderboard = () => rpc('alltime_leaderboard');
     const myStats            = () => rpc('my_stats');
+    // Monthly Run: unlimited tries, 3 lives, best run counts
+    async function startRun(displayName) {
+        await ensureGuest();
+        return g('start_run', { p_display_name: displayName || null });
+    }
+    const runSummary         = () => g('run_summary');
     const myResults          = id => rpc('my_results', { p_game: id });
     const rematch            = id => rpc('rematch', { p_game: id });
     const rematchInfo        = id => rpc('rematch_info', { p_game: id });
@@ -333,8 +340,9 @@
         serverNow, createGame, joinGame, startGame, leaveGame, getGame, nextCard,
         answer, pickArtist, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
-        myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus,
+        myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
+        previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         pushSupported, pushPermission, pushOn, enablePush, disablePush,
     };
 

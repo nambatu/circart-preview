@@ -23,7 +23,7 @@
     function open(id, extra) {
         close(true);
         G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false,
-              challengeNo: extra && extra.challengeNo, board: null, results: null, rematch: null, sel: {}, bonusRes: null };
+              challengeNo: extra && extra.challengeNo, prevBest: extra ? extra.prevBest : undefined, board: null, results: null, rematch: null, sel: {}, bonusRes: null };
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         $('game-online-screen').classList.add('active');
         $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
@@ -78,8 +78,11 @@
             if ((st.phase === 'finished' || st.phase === 'done') && !G.answer && !G.results) {
                 try { G.results = await O().myResults(G.id); } catch (e) { G.results = []; }
             }
-            if (st.phase === 'finished' && st.kind !== 'daily') {
+            if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') {
                 try { G.rematch = await O().rematchInfo(G.id); } catch (e) { G.rematch = null; }
+            }
+            if (st.kind === 'run' && st.phase === 'finished' && !G.answer && !G.board) {
+                try { G.board = await O().monthlyLeaderboard(); } catch (e) { G.board = { entries: [] }; }
             }
             if (st.kind === 'daily' && st.phase === 'done' && !G.answer && !G.board) {
                 try { G.board = await O().dailyLeaderboard(); G.challengeNo = G.board.challenge_no; } catch (e) { G.board = { entries: [] }; }
@@ -114,7 +117,7 @@
         }
         // realtime is primary; this catches a dropped connection
         if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(refresh, live ? 4000 : 30000);
-        else if (st.phase === 'finished' && st.kind !== 'daily') poll = setInterval(refresh, 10000);   // a rematch may appear
+        else if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') poll = setInterval(refresh, 10000);   // a rematch may appear
     }
 
     // ─── drawing ──────────────────────────────────────────────────────────
@@ -122,13 +125,14 @@
         const st = G.st;
         $('go-title').textContent = st.kind === 'live' ? t('game.live')
             : st.kind === 'daily' ? (G.challengeNo ? t('game.daily', { no: G.challengeNo }) : t('game.dailyShort'))
+            : st.kind === 'run' ? t('run.short')
             : t('game.async');
         $('go-score').textContent = st.phase === 'lobby' ? '' : t('game.points', { n: st.me.score.toLocaleString() });
         const body = $('go-body');
         if (G.answer) return body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult(), wire();
         const view = {
             lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
-            finished: viewPodium, dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
+            finished: () => (st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
         }[st.phase] || (() => '');
         body.innerHTML = view();
         wire();
@@ -214,8 +218,22 @@
         return `<ol class="go-timeline" aria-label="${esc(t('game.timeline'))}">${out}</ol>`;
     }
 
+    const lives = st => Math.max(0, 3 - ((st.me.answered || 0) - (st.me.correct || 0)));
+    const hearts = st => `<span class="run-hearts" aria-label="${esc(t('run.lives'))}: ${lives(st)}">${'❤️'.repeat(lives(st))}${'🤍'.repeat(3 - lives(st))}</span>`;
+
     function viewReady() {
         const st = G.st;
+        if (st.kind === 'run') {
+            const started = st.me.answered > 0;
+            return `<div class="page">
+              <section class="panel strong" style="padding:18px;display:flex;flex-direction:column;gap:10px">
+                <span class="eyebrow">${esc(t('run.short'))}</span>
+                <h2 class="serif" style="font-size:24px">${esc(t('run.rules'))}</h2>
+                <p class="muted" style="font-size:14px">${esc(t('run.startText'))}</p>
+                ${started ? `<p class="note">${hearts(st)} · ${esc(t('run.cards', { n: st.me.answered }))} · ${esc(t('game.points', { n: st.me.score.toLocaleString() }))}</p>` : ''}
+                <button class="btn primary block" data-act="ready">${esc(started ? t('home.daily.continue') : t('run.go'))}</button>
+              </section></div>`;
+        }
         if (st.kind === 'daily') {
             const started = st.me.answered > 0;
             return `<div class="page">
@@ -251,7 +269,7 @@
         const total = G.st.card_count;
         return `<div class="page">
           <div class="row" style="justify-content:space-between">
-            <span><b>${esc(t('game.card', { n: c.position, total }))}</b></span>
+            <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
             <span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>
           </div>
           <div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar"></div></div>
@@ -312,9 +330,10 @@
             <h2 class="serif go-verdict ${r.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
             <b class="serif" style="font-size:26px">+${(r.points || 0) + (rev && rev.mine.artist_correct ? 200 : 0) + (rev && rev.mine.movement_correct ? 100 : 0)}</b></div>
           ${r.streak > 1 ? `<p class="note">${esc(t('game.streak', { n: r.streak }))}</p>` : ''}
+          ${G.st.kind === 'run' ? `<p class="note">${hearts(G.st)} ${!r.correct ? esc(G.st.status === 'finished' ? t('run.over') : t('run.lifeLost')) : ''}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
-          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc(G.st.kind === 'daily' && a.position >= G.st.card_count ? t('game.results') : t('game.next'))}</button>` : ''}
+          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc((G.st.kind === 'daily' && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>` : ''}
         </div>`;
     }
 
@@ -377,6 +396,31 @@
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
           ${st.timeline.length > 1 ? `<h2 class="label">${esc(t('game.timeline'))} · ${st.timeline.length}</h2>${timeline(false)}` : ''}
+        </div>`;
+    }
+
+    function viewRunDone() {
+        const st = G.st, me = st.me, b = G.board || { entries: [] };
+        const newBest = G.prevBest === null || (G.prevBest !== undefined && me.score > G.prevBest);
+        const top = b.entries.slice(0, 10);
+        return `<div class="page">
+          <div style="text-align:center">
+            <div class="label">${esc(t('run.over'))}</div>
+            <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            ${newBest && me.score > 0 ? `<p class="run-best">🏆 ${esc(t('run.newBest'))}</p>` : ''}
+            <p style="font-size:20px;letter-spacing:2px;margin:4px 0;word-break:break-all">${squares()}</p>
+            <p class="muted">${esc(t('run.cards', { n: me.answered }))} · ${esc(t('ranks.bestStreak'))} ${me.best_streak}
+              ${b.me && b.me.rank ? ' · #' + b.me.rank : ''}</p>
+          </div>
+          ${b.me && b.me.ranked === false ? `<p class="note" style="text-align:center">${esc(t('game.dailyUnranked'))}</p>` : ''}
+          <button class="btn primary block" data-act="runAgain">${esc(t('run.again'))}</button>
+          <button class="btn outline block" data-act="shareRun">${esc(t('game.dailyShare'))}</button>
+          ${top.length ? `<h2 class="label">${esc(t('run.board'))} · ${esc(b.title || '')}</h2>
+            <ol class="go-stand">${top.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
+              <span class="go-name">${esc(e.username)}</span><span class="go-pts">${Number(e.value).toLocaleString()}</span></li>`).join('')}</ol>` : ''}
+          <h2 class="label">${esc(t('game.yourTimeline'))}</h2>
+          ${timeline(false)}
+          <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
     }
 
@@ -527,6 +571,15 @@
             if (a === 'shareDaily') {
                 const st = G.st;
                 return shareText(t('game.dailyShareText', { no: G.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
+            }
+            if (a === 'runAgain') {
+                const best = Math.max(G.prevBest || 0, G.st.me.score);
+                const g = await O().startRun();
+                return open(g.id, { prevBest: best });
+            }
+            if (a === 'shareRun') {
+                const st = G.st, month = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' });
+                return shareText(t('run.share', { month, score: st.me.score.toLocaleString(), n: st.me.answered }) + '\n' + squares());
             }
             if (a === 'replayDaily') {
                 await O().previewResetDaily();

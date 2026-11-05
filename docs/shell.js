@@ -101,6 +101,7 @@
         const u = o ? await o.user() : null;
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
         renderDaily(o, u);
+        renderRun(o, u);
         renderOnlineHome(o, u);
     }
 
@@ -118,6 +119,45 @@
         let d = null;
         if (u) { try { d = await o.dailySummary(); } catch (e) { d = null; } }
         drawDaily(box, o, u, d);
+    }
+
+    // ─── home: Monthly Run ─────────────────────────────────────────────────
+    async function renderRun(o, u) {
+        const box = $('home-run');
+        if (!o || !FEATURES.daily) { box.innerHTML = ''; return; }
+        if (!box.firstElementChild) drawRun(box, o, null);
+        let r = null;
+        if (u) { try { r = await o.runSummary(); } catch (e) { r = null; } }
+        drawRun(box, o, r);
+    }
+
+    function drawRun(box, o, r) {
+        const monthName = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' }).toUpperCase();
+        const pts = n => Number(n).toLocaleString();
+        const line = !r ? t('run.rules')
+            : r.best == null ? t('run.none', { days: r.days_left })
+            : r.rank ? t('run.best', { score: pts(r.best), rank: r.rank, players: r.players })
+            : t('run.bestUnranked', { score: pts(r.best) });
+        box.innerHTML = `
+          <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div class="row" style="justify-content:space-between">
+              <span class="eyebrow">${esc(t('run.eyebrow', { month: monthName }))}</span>
+              ${r ? `<span class="note">${esc(t('run.daysLeft', { days: r.days_left }))}</span>` : ''}</div>
+            <h2 class="serif" style="font-size:22px;line-height:1.2">${esc(r ? r.title : t('run.short'))}</h2>
+            <p class="muted" style="font-size:14px">${esc(r ? r.description : t('run.rules'))}</p>
+            ${r ? `<p style="font-weight:600">${esc(line)}</p>` : ''}
+            ${r && r.above ? `<p class="note">🎯 ${esc(t('run.above', { name: r.above.username, score: pts(r.above.value) }))}</p>` : ''}
+            <button class="btn ${r && r.best != null ? 'dark' : 'primary'} block" data-run="play">${esc(r && r.active ? t('run.continue') : t('run.play'))}</button>
+          </section>`;
+        box.querySelector('[data-run="play"]').addEventListener('click', async e => {
+            const b = e.currentTarget; b.disabled = true;
+            try {
+                const before = r && r.best;
+                const g = await o.startRun();
+                cachedProfile = null;
+                window.CircGame.open(g.id, { prevBest: before == null ? null : before });
+            } catch (err) { b.disabled = false; toast(err.message || t('common.error')); }
+        });
     }
 
     function drawDaily(box, o, u, d) {
@@ -146,7 +186,7 @@
                 ${hard.image_url ? `<img src="${esc(hard.image_url)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px">` : ''}
                 <span class="note"><b>${esc(t('home.daily.hardest'))}</b><br>${esc(t('home.daily.hardestPct', { title: hard.title, pct: hard.percent_right }))} (${esc(hard.year)})</span></div>` : ''}
           </section>
-          ${month ? `<button class="game-row" data-daily="month" style="flex-direction:column;align-items:flex-start;gap:2px">
+          ${false ? `<button class="game-row" data-daily="month" style="flex-direction:column;align-items:flex-start;gap:2px">
               <span class="eyebrow">${esc(t('home.month.eyebrow', { month: monthName }))}</span>
               <b>${esc(month.title)}</b>
               <span class="note">${esc(month.description)}</span>
@@ -304,6 +344,7 @@
             } else if (ranksTab === 'month') {
                 const b = await o.monthlyLeaderboard();
                 const fmt = v => b.metric === 'accuracy' ? v + '%' : b.metric === 'best_streak' || b.metric === 'artists_named' ? String(v) : pts(v);
+                b.me = b.me && b.me.ranked === false ? null : b.me;      // guests: their best shows on the home card
                 el.innerHTML = `<section class="panel" style="padding:14px;margin-bottom:10px">
                     <b class="serif" style="font-size:18px">${esc(b.title)}</b>
                     <p class="note">${esc(b.description)} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
@@ -407,7 +448,12 @@
               </span></div>
             ${o && o.pushSupported && o.pushSupported() ? `<button id="pf-push"><span>${esc(t('profile.notifications'))}</span>
               <span class="value" id="pf-push-v">…</span></button>` : ''}
-            <div><span>${esc(t('profile.language'))}</span><span class="value">${esc(window.CircI18n.languages().find(l => l.code === window.CircI18n.lang).name)}</span></div>
+            ${o && o.previewTestPush && document.querySelector('script[src="preview.js"]') && o.pushSupported && o.pushSupported()
+              ? `<button id="pf-testpush"><span>${esc(t('profile.testPush'))}</span><span class="value" aria-hidden="true">🔔</span></button>` : ''}
+            <div><span>${esc(t('profile.language'))}</span>
+              <span class="seg" role="group" aria-label="${esc(t('profile.language'))}">
+                ${window.CircI18n.languages().map(l => `<button data-lang="${l.code}" aria-pressed="${l.code === window.CircI18n.lang}">${esc(l.name)}</button>`).join('')}
+              </span></div>
           </section>
           <section class="panel list" aria-label="More">
             <button id="pf-feedback"><span>${esc(t('profile.feedback'))}</span><span class="value" aria-hidden="true">›</span></button>
@@ -435,12 +481,20 @@
         const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
         const guard = fn => async () => { try { await fn(); } catch (e) { toast(e.message || t('common.error')); } };
 
-        document.querySelectorAll('#profile-body .seg button').forEach(b => b.addEventListener('click', () => {
+        document.querySelectorAll('#profile-body [data-lang]').forEach(b => b.addEventListener('click', () => {
+            window.CircI18n.setLanguage(b.dataset.lang);
+            renderProfile();
+        }));
+        document.querySelectorAll('#profile-body .seg button[data-theme]').forEach(b => b.addEventListener('click', () => {
             store.set(THEME_KEY, b.dataset.theme);
             applyTheme(b.dataset.theme);
             renderProfile();
         }));
         on('pf-feedback', () => $('open-report-btn').click());
+        on('pf-testpush', guard(async () => {
+            if (!(await o.pushOn())) return toast(t('profile.testPushOff'));
+            toast(t((await o.previewTestPush()) ? 'profile.testPushSent' : 'profile.testPushOff'));
+        }));
         if ($('pf-push')) {
             let pushIsOn = false;
             o.pushOn().then(v => { pushIsOn = v; $('pf-push-v').textContent = t(v ? 'profile.notifOn' : 'profile.notifOff'); }).catch(() => {});
