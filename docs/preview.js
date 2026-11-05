@@ -11,5 +11,9 @@
             'padding:3px 10px;border-radius:0 0 8px 8px;text-decoration:none;white-space:nowrap;' +
             'margin-top:env(safe-area-inset-top,0px)';
         document.body.appendChild(a);
+        // only on the main tabs: during a game it would cover the header
+        const sync = () => { a.style.display = document.body.classList.contains('tabs-on') ? '' : 'none'; };
+        new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        sync();
     });
 })();
