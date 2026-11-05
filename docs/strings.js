@@ -173,6 +173,7 @@
             'game.dailyShare': 'Share result',
             'game.dailyShareText': 'CIRCArt daily No. {no}: {correct}/{total} · {score} pts',
             'game.copiedResult': 'Result copied',
+            'game.replayTest': 'Play again (test version only)',
             'game.artistBonus': 'Artist bonus',
             'game.artistBonusText': 'After placing, name the artist out of 4 for +200.',
             'game.artistOff': 'No artist question: just the timeline.',

@@ -599,6 +599,20 @@
         const o = online();
         if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); });
 
+        // A new version took over (sw.js skips waiting): reload so the page and its
+        // files match again — straight away on a tab, otherwise after the game.
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            let pending = false;
+            const tryReload = () => {
+                const active = document.querySelector('.screen.active');
+                if (!active || Object.values(TAB_SCREENS).includes(active.id)) location.reload();
+                else pending = true;
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', tryReload);
+            new MutationObserver(() => { if (pending) tryReload(); })
+                .observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+        }
+
         // a tapped notification while the app is already open
         if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
             if (!e.data || e.data.type !== 'circart:open') return;

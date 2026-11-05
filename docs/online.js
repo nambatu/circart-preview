@@ -314,13 +314,12 @@
         return !!sub;
     }
 
-    // Live updates for one game (players joining, answers coming in, rounds
-    // changing). Calls onChange; re-fetch with getGame(). Returns unsubscribe.
+    // Live updates for one game: every join, answer and round change touches
+    // the games row. Calls onChange; re-fetch with getGame(). Returns unsubscribe.
     function watchGame(id, onChange) {
         if (!sb) return () => {};
         const ch = sb.channel('game-' + id)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'games', filter: 'id=eq.' + id }, onChange)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: 'game_id=eq.' + id }, onChange)
             .subscribe();
         return () => sb.removeChannel(ch);
     }
@@ -335,6 +334,7 @@
         answer, pickArtist, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus,
+        previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         pushSupported, pushPermission, pushOn, enablePush, disablePush,
     };
 
