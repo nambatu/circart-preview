@@ -265,6 +265,10 @@
         return g('start_run', { p_display_name: displayName || null });
     }
     const runSummary         = () => g('run_summary');
+    // finished months only: top 3 of a month's best runs (default last month; null while it's running)
+    const monthlyWinners     = month => rpc('monthly_winners', { p_month: month || null });
+    // months where I made the top 3: [{month, title, rank, value}], newest first
+    const myBadges           = () => rpc('my_badges');
     const myResults          = id => rpc('my_results', { p_game: id });
     const rematch            = id => rpc('rematch', { p_game: id });
     const rematchInfo        = id => rpc('rematch_info', { p_game: id });
@@ -341,6 +345,7 @@
         answer, pickArtist, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
+        monthlyWinners, myBadges,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         pushSupported, pushPermission, pushOn, enablePush, disablePush,

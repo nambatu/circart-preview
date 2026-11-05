@@ -333,6 +333,19 @@
               <span class="go-pts">${esc(value(e))}</span></li>`).join('')}</ol>`;
     }
 
+    const MEDALS = ['🥇', '🥈', '🥉'];
+    const monthLabel = iso => new Date(iso + 'T12:00:00').toLocaleString(window.CircI18n.lang, { month: 'long', year: 'numeric' });
+
+    // last month's podium (from 010); hidden while there's nothing to show
+    function winnersStrip(w) {
+        if (!w || !w.entries || !w.entries.length) return '';
+        return `<section class="panel winners" style="margin-bottom:10px">
+            <div class="eyebrow">${esc(t('ranks.winnersTitle', { month: monthLabel(w.month) }))}</div>
+            <div class="note">${esc(w.title)}</div>
+            <ol>${w.entries.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="medal">${MEDALS[e.rank - 1] || e.rank}</span>
+              <b>${esc(e.username)}</b><span class="go-pts">${Number(e.value).toLocaleString()}</span></li>`).join('')}</ol></section>`;
+    }
+
     async function renderBoard(o) {
         const el = $('ranks-board');
         const pts = n => t('ranks.pts', { n: Number(n).toLocaleString() });
@@ -342,10 +355,10 @@
                 el.innerHTML = `<p class="note" style="margin-bottom:8px">${esc(t('game.daily', { no: b.challenge_no }))} · ${esc(b.players === 1 ? t('ranks.players1') : t('ranks.players', { n: b.players }))}</p>
                   ${boardList(b.entries, e => pts(e.score))}`;
             } else if (ranksTab === 'month') {
-                const b = await o.monthlyLeaderboard();
+                const [b, w] = await Promise.all([o.monthlyLeaderboard(), o.monthlyWinners ? o.monthlyWinners().catch(() => null) : null]);
                 const fmt = v => b.metric === 'accuracy' ? v + '%' : b.metric === 'best_streak' || b.metric === 'artists_named' ? String(v) : pts(v);
                 b.me = b.me && b.me.ranked === false ? null : b.me;      // guests: their best shows on the home card
-                el.innerHTML = `<section class="panel" style="padding:14px;margin-bottom:10px">
+                el.innerHTML = `${winnersStrip(w)}<section class="panel" style="padding:14px;margin-bottom:10px">
                     <b class="serif" style="font-size:18px">${esc(b.title)}</b>
                     <p class="note">${esc(b.description)} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
                   ${boardList(b.entries, e => fmt(e.value))}
@@ -441,6 +454,7 @@
 
         box.innerHTML = `
           ${account}
+          <div id="pf-badges"></div>
           <section class="panel list" aria-label="Settings">
             <div><span>${esc(t('profile.appearance'))}</span>
               <span class="seg" role="group" aria-label="${esc(t('profile.appearance'))}">
@@ -462,6 +476,15 @@
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
           </section>`;
         wireProfile(o);
+        if (u && o.myBadges) o.myBadges().then(bs => {
+            const el = $('pf-badges');
+            if (!el || !bs || !bs.length) return;
+            el.innerHTML = `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+              <h2 class="label">${esc(t('profile.badges'))}</h2>
+              ${bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
+                <span><b>${esc(monthLabel(b.month))}</b> · ${esc(b.title)}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
+            </section>`;
+        }).catch(() => {});
     }
 
     function signInButtons() {

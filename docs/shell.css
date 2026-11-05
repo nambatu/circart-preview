@@ -348,3 +348,12 @@ body.tabs-on #back-to-menu-btn { display: none; }
 /* ---------- Monthly Run ---------- */
 .run-hearts { font-size: 14px; letter-spacing: 1px; white-space: nowrap; }
 .run-best { color: var(--success); font-weight: 700; font-size: 17px; animation: goPop 0.6s ease-out; }
+
+/* ---------- winners + badges ---------- */
+.winners { padding: 14px; display: flex; flex-direction: column; gap: 6px; border: 2px solid var(--accent-color); }
+.winners ol { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.winners li { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 2px 8px; border-radius: 8px; }
+.winners li b { flex: 1; min-width: 0; }
+.winners li.me { background: var(--surface-2); }
+.medal { font-size: 22px; width: 28px; text-align: center; flex-shrink: 0; }
+.badge-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
