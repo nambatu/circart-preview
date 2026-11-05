@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: pip install --quiet pillow
       - name: Download missing images
         run: |
           set -e
@@ -40,10 +42,13 @@ jobs:
                   time.sleep(1)
               if not got:
                   print("FAILED", key, urls); fail += 1; continue
-              r = subprocess.run(["convert", tmp + "[0]", "-auto-orient", "-resize", "1000x1000>", "-strip",
-                                  "-quality", "82", dst])
-              if r.returncode != 0:
-                  print("CONVERT FAILED", key, url); fail += 1; continue
+              try:
+                  from PIL import Image, ImageOps
+                  im = ImageOps.exif_transpose(Image.open(tmp)).convert("RGB")
+                  im.thumbnail((1000, 1000))
+                  im.save(dst, "JPEG", quality=82, optimize=True, progressive=True)
+              except Exception as e:
+                  print("CONVERT FAILED", key, e); fail += 1; continue
               subprocess.run(["cp", dst, f"docs/art/{key}.jpg"])
               ok += 1
               time.sleep(0.5)          # be polite to Wikimedia
