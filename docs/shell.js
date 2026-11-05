@@ -471,6 +471,7 @@
           </section>
           <section class="panel list" aria-label="More">
             <button id="pf-feedback"><span>${esc(t('profile.feedback'))}</span><span class="value" aria-hidden="true">›</span></button>
+            ${window.CircOnboarding ? `<button id="pf-howto"><span>${esc(t('profile.howTo'))}</span><span class="value" aria-hidden="true">›</span></button>` : ''}
             <button id="pf-about"><span>${esc(t('profile.about'))}</span><span class="value" aria-hidden="true">›</span></button>
             ${u ? `<button id="pf-signout"><span>${esc(t('profile.signOut'))}</span></button>
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
@@ -527,6 +528,7 @@
             }));
         }
         on('pf-about', showAbout);
+        on('pf-howto', () => window.CircOnboarding && window.CircOnboarding.show());
         if (!o) return;
         on('pf-google', guard(() => o.signInWithGoogle()));
         on('pf-email-toggle', () => { $('pf-email-box').classList.remove('hidden'); $('pf-email-toggle').classList.add('hidden'); $('pf-email').focus(); });
@@ -666,6 +668,8 @@
         new MutationObserver(syncTabs).observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
         syncTabs();
         renderHome();
+        // first visit: a short "how to play" (once per device, never over an invite link)
+        setTimeout(() => { if (window.CircOnboarding) window.CircOnboarding.maybeShow(); }, 600);
 
         document.addEventListener('circart:auth', () => {
             cachedProfile = null;

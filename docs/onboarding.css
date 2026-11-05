@@ -1,0 +1,137 @@
+/* ============================================================
+   CIRCArt — first-time tutorial (onboarding.js).
+   Uses the shell.css tokens, so light/dark follow the app.
+   ============================================================ */
+
+html.onb-open, html.onb-open body { overflow: hidden; }
+
+.onb-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: flex-end; justify-content: center;
+    background: rgba(20, 16, 12, 0.5);
+    opacity: 0; transition: opacity 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.onb-overlay.open { opacity: 1; }
+
+.onb-sheet {
+    box-sizing: border-box; width: 100%; max-width: 440px;
+    max-height: calc(100dvh - 24px); overflow-y: auto;
+    background: var(--card-bg); color: var(--text-primary);
+    border: 1px solid var(--line); border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+    padding: 10px 20px calc(18px + env(safe-area-inset-bottom, 0px));
+    font-family: var(--font-body);
+    transform: translateY(24px); transition: transform 0.28s cubic-bezier(.2, .8, .2, 1);
+}
+.onb-overlay.open .onb-sheet { transform: none; }
+
+@media (min-width: 560px) and (min-height: 600px) {
+    .onb-overlay { align-items: center; padding: 24px; }
+    .onb-sheet { border-radius: 20px; border-bottom: 1px solid var(--line); padding-bottom: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22); }
+}
+
+.onb-top { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+.onb-count { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--text-secondary); text-transform: uppercase; }
+.onb-skip { padding: 0 4px; font-size: 14px; }
+
+.onb-stage { overflow: hidden; touch-action: pan-y; }
+.onb-step { display: flex; flex-direction: column; gap: 6px; min-height: 340px; }
+.onb-step h2 { margin: 0 0 2px; font-size: 26px; font-weight: 600; line-height: 1.2; color: var(--text-primary); }
+.onb-body p { margin: 0 0 10px; font-size: 16px; line-height: 1.5; color: var(--text-primary); }
+.onb-body p.note { font-size: 14px; line-height: 1.45; color: var(--text-secondary); margin-bottom: 0; }
+
+.onb-step.in-next { animation: onb-in-next 0.26s ease both; }
+.onb-step.in-prev { animation: onb-in-prev 0.26s ease both; }
+@keyframes onb-in-next { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes onb-in-prev { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+
+/* ---------- illustration frame ---------- */
+.onb-art {
+    height: 150px; margin: 2px 0 14px; border-radius: 14px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    position: relative; overflow: hidden;
+}
+
+/* 1 — mini timeline */
+.onb-tl { gap: 10px; }
+.onb-tl-drop {
+    position: relative; width: 38px; height: 48px; border-radius: 6px;
+    background: var(--card-bg); border: 2px solid var(--accent-color);
+    display: flex; align-items: center; justify-content: center;
+    font: 600 20px var(--font-heading); color: var(--accent-text);
+    box-shadow: var(--shadow);
+    animation: onb-bob 2.4s ease-in-out infinite;
+}
+.onb-tl-frame { position: absolute; inset: 5px; border: 1px solid var(--line); border-radius: 3px; }
+.onb-tl-row { display: flex; align-items: center; gap: 8px; }
+.onb-chip {
+    font: 600 15px var(--font-heading); color: var(--text-primary);
+    background: var(--card-bg); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+}
+.onb-dot { width: 14px; height: 2px; background: var(--line); border-radius: 2px; }
+.onb-gap {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-color); color: var(--on-accent); font: 600 20px var(--font-body);
+    box-shadow: 0 0 0 6px var(--gap-color, rgba(114, 47, 55, 0.15));
+    animation: onb-pulse 2.4s ease-in-out infinite;
+}
+.onb-tl-axis { display: flex; justify-content: space-between; width: 230px; font-size: 11px; letter-spacing: 0.6px; color: var(--text-secondary); text-transform: uppercase; }
+@keyframes onb-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+@keyframes onb-pulse { 0%, 100% { box-shadow: 0 0 0 4px var(--gap-color, rgba(114, 47, 55, 0.15)); } 50% { box-shadow: 0 0 0 9px var(--gap-color, rgba(114, 47, 55, 0.15)); } }
+
+/* 2 — bonus questions */
+.onb-bonus { gap: 10px; padding: 0 18px; align-items: stretch; }
+.onb-q {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--card-bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    font-size: 15px; font-weight: 500; color: var(--text-primary);
+}
+.onb-q b {
+    font: 600 14px var(--font-body); color: var(--accent-text);
+    background: var(--gap-color, rgba(114, 47, 55, 0.12)); border-radius: 999px; padding: 4px 10px;
+}
+
+/* 3 — daily */
+.onb-cells { display: grid; grid-template-columns: repeat(5, 26px); gap: 7px; }
+.onb-cell { width: 26px; height: 32px; border-radius: 5px; background: var(--card-bg); border: 1px solid var(--line); }
+.onb-cell.on { background: var(--accent-color); border-color: var(--accent-color); }
+.onb-streak { display: flex; align-items: baseline; gap: 6px; color: var(--text-secondary); font-size: 13px; }
+.onb-streak b { font-size: 24px; color: var(--accent-text); }
+
+/* 4 — friends */
+.onb-avatars { display: flex; }
+.onb-avatars span {
+    width: 52px; height: 52px; border-radius: 50%; margin-left: -10px;
+    display: flex; align-items: center; justify-content: center;
+    font: 600 20px var(--font-heading); border: 3px solid var(--surface-2);
+    background: var(--card-bg); color: var(--text-primary);
+}
+.onb-avatars span:first-child { margin-left: 0; background: var(--accent-color); color: var(--on-accent); }
+.onb-avatars span:last-child { color: var(--accent-text); font-family: var(--font-body); }
+.onb-modes { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.onb-modes li {
+    display: flex; flex-direction: column; gap: 2px;
+    border-left: 3px solid var(--accent-color); padding: 2px 0 2px 12px;
+}
+.onb-modes b { font-size: 15px; color: var(--text-primary); }
+.onb-modes span { font-size: 15px; line-height: 1.4; color: var(--text-secondary); }
+
+/* ---------- dots + nav ---------- */
+.onb-dots { display: flex; justify-content: center; gap: 8px; margin: 14px 0 14px; }
+.onb-dots span { width: 7px; height: 7px; border-radius: 999px; background: var(--line); transition: width 0.2s ease, background 0.2s ease; }
+.onb-dots span.on { width: 22px; background: var(--accent-color); }
+.onb-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.onb-nav .btn { width: 100%; }
+.onb-sheet .btn:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+    .onb-sheet .btn.primary:hover { background: var(--accent-hover); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .onb-overlay, .onb-sheet, .onb-dots span { transition: none; }
+    .onb-step.in-next, .onb-step.in-prev, .onb-tl-drop, .onb-gap { animation: none; }
+}

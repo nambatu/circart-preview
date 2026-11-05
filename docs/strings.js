@@ -199,6 +199,8 @@
             'run.again': 'Again',
             'run.share': 'CIRCArt {month} Run: {score} pts · {n} cards',
             'run.board': 'This month',
+            'onb.s3Note': 'Plus the Monthly Run: as many tries as you like, 3 lives, your best run counts.',
+            'profile.howTo': 'How to play',
             'ranks.winnersTitle': "{month}'s winners",
             'profile.badges': 'Your badges',
             'profile.badgeLine': 'Monthly Run · place {rank} · {score} pts',
