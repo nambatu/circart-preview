@@ -47,6 +47,8 @@
                     </div>
                     <p class="muted" data-i18n="home.tagline"></p>
 
+                    <!-- daily challenge + month banner (shell.js) -->
+                    <div id="home-daily"></div>
                     <section class="panel hero">
                         <div class="hero-img">
                             <img id="home-hero-img" alt="">
@@ -75,8 +77,6 @@
                         </div>
                     </section>
 
-                    <!-- daily challenge + month banner (shell.js) -->
-                    <div id="home-daily"></div>
                     <!-- your games + play with friends (shell.js) -->
                     <div id="home-online"></div>
 
@@ -119,7 +119,7 @@
         <!-- ==================== GAME WITH FRIENDS (game.js) ==================== -->
         <div id="game-online-screen" class="screen">
             <div class="go-head">
-                <button class="go-close" onclick="CircGame.close()" data-i18n-label="game.home">
+                <button class="go-close" onclick="CircGame.leaveAsk()" data-i18n-label="game.home">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
                 <b id="go-title"></b>
                 <b id="go-score" style="min-width:44px;text-align:right"></b>

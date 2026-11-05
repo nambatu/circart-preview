@@ -254,6 +254,9 @@
     const monthlyLeaderboard = month => rpc('monthly_leaderboard', { p_month: month || null });
     const alltimeLeaderboard = () => rpc('alltime_leaderboard');
     const myStats            = () => rpc('my_stats');
+    const myResults          = id => rpc('my_results', { p_game: id });
+    const rematch            = id => rpc('rematch', { p_game: id });
+    const rematchInfo        = id => rpc('rematch_info', { p_game: id });
 
     // Live updates for one game (players joining, answers coming in, rounds
     // changing). Calls onChange; re-fetch with getGame(). Returns unsubscribe.
@@ -275,6 +278,7 @@
         serverNow, createGame, joinGame, startGame, leaveGame, getGame, nextCard,
         answer, pickArtist, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
+        myResults, rematch, rematchInfo,
     };
 
     init();

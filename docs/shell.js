@@ -78,6 +78,7 @@
     }
 
     async function renderHome() {
+        if (online() && FEATURES.daily && !$('home-daily').firstElementChild) drawDaily($('home-daily'), online(), null, null);
         const sel = $('rounds-select');
         document.querySelectorAll('#round-chips .chip').forEach(c => {
             c.setAttribute('aria-pressed', String(c.dataset.rounds === sel.value));
@@ -112,8 +113,14 @@
     async function renderDaily(o, u) {
         const box = $('home-daily');
         if (!o || !FEATURES.daily) { box.innerHTML = ''; return; }
+        // draw the card straight away so the page doesn't jump when the data arrives
+        if (!box.firstElementChild) drawDaily(box, o, u, null);
         let d = null;
         if (u) { try { d = await o.dailySummary(); } catch (e) { d = null; } }
+        drawDaily(box, o, u, d);
+    }
+
+    function drawDaily(box, o, u, d) {
         const status = d ? d.status : 'not_started';
         const me = d && d.me;
         const btn = status === 'done'
@@ -581,6 +588,13 @@
 
         const o = online();
         if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); });
+
+        // links to a game you're in: ?game=<id> (from a share or a notification)
+        const gameId = new URLSearchParams(location.search).get('game');
+        if (gameId && o && FEATURES.friends) {
+            history.replaceState(null, '', location.pathname);
+            o.user().then(u => u && o.getGame(gameId).then(() => window.CircGame.open(gameId)).catch(() => toast(t('game.notFound'))));
+        }
 
         // invite links: ?join=K7Q2
         const code = new URLSearchParams(location.search).get('join');

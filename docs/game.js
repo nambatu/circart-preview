@@ -23,7 +23,7 @@
     function open(id, extra) {
         close(true);
         G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false,
-              challengeNo: extra && extra.challengeNo, board: null };
+              challengeNo: extra && extra.challengeNo, board: null, results: null, rematch: null };
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         $('game-online-screen').classList.add('active');
         $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
@@ -36,6 +36,7 @@
         clearInterval(tick); clearInterval(poll);
         unwatch = tick = poll = null;
         G = null;
+        $('go-body').innerHTML = '';
         if (!silent) window.CircShell.showTab('play');
     }
 
@@ -67,6 +68,12 @@
             if (st.phase === 'play' && !G.answer && (!G.card || G.card.wait) && (live || G.wantCard)) {
                 G.card = await O().nextCard(G.id);
                 G.cardTurn = st.current_turn;
+            }
+            if ((st.phase === 'finished' || st.phase === 'done') && !G.answer && !G.results) {
+                try { G.results = await O().myResults(G.id); } catch (e) { G.results = []; }
+            }
+            if (st.phase === 'finished' && st.kind !== 'daily') {
+                try { G.rematch = await O().rematchInfo(G.id); } catch (e) { G.rematch = null; }
             }
             if (st.kind === 'daily' && st.phase === 'done' && !G.answer && !G.board) {
                 try { G.board = await O().dailyLeaderboard(); G.challengeNo = G.board.challenge_no; } catch (e) { G.board = { entries: [] }; }
@@ -101,6 +108,7 @@
         }
         // realtime is primary; this catches a dropped connection
         if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(refresh, live ? 4000 : 30000);
+        else if (st.phase === 'finished' && st.kind !== 'daily') poll = setInterval(refresh, 10000);   // a rematch may appear
     }
 
     // ─── drawing ──────────────────────────────────────────────────────────
@@ -325,6 +333,7 @@
           <div style="text-align:center">
             <div class="label">${esc(t('game.dailyDone'))}</div>
             <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            <p style="font-size:22px;letter-spacing:2px;margin:4px 0">${squares()}</p>
             <p class="muted">${esc(t('game.dailyScore', { correct: me.correct, total: st.card_count }))}
               ${mine && mine.rank ? ' · ' + esc(t('game.dailyRank', { rank: mine.rank, players: b.players })) : ''}</p>
           </div>
@@ -354,10 +363,32 @@
             <div class="stat"><b>${st.me.score.toLocaleString()}</b><span>${esc(t('game.pointsLabel'))}</span></div>
             <div class="stat"><b>${acc}%</b><span>${esc(t('ranks.accuracy'))}</span></div>
             <div class="stat"><b>${st.me.best_streak}</b><span>${esc(t('ranks.bestStreak'))}</span></div></div>
+          ${rematchBox()}
+          <button class="btn outline block" data-act="shareGame">${esc(t('game.dailyShare'))}</button>
           <h2 class="label">${esc(t('game.timeline'))}</h2>
           ${timeline(false)}
           <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
+    }
+
+    function rematchBox() {
+        const r = G.rematch;
+        if (r && r.joined) return `<button class="btn primary block" data-act="openRematch">${esc(t('game.rematchOpen'))}</button>`;
+        if (r && r.status === 'lobby') return `<section class="panel strong" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+            <b>${esc(t('game.rematchBy', { name: r.host }))}</b>
+            <button class="btn primary block" data-act="rematch">${esc(t('game.rematchJoin'))}</button></section>`;
+        return `<button class="btn primary block" data-act="rematch">${esc(t('game.playAgain'))}</button>`;
+    }
+
+    // 🟩 right · 🟥 wrong · ⬜ too slow · 🎨 artist named too
+    function squares() {
+        return (G.results || []).map(r => r.timed_out ? '⬜' : r.correct ? (r.artist ? '🎨' : '🟩') : '🟥').join('');
+    }
+
+    async function shareText(text) {
+        const url = location.origin + location.pathname;
+        if (navigator.share) await navigator.share({ title: 'CIRCArt', text, url }).catch(() => {});
+        else { await navigator.clipboard.writeText(text + '\n' + url); window.CircShell.toast(t('game.copiedResult')); }
     }
 
     // ─── actions ──────────────────────────────────────────────────────────
@@ -400,12 +431,15 @@
             if (a === 'home') return close();
             if (a === 'shareDaily') {
                 const st = G.st;
-                const text = t('game.dailyShareText', { no: G.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() });
-                const url = location.origin + location.pathname;
-                if (navigator.share) await navigator.share({ title: 'CIRCArt', text, url }).catch(() => {});
-                else { await navigator.clipboard.writeText(text + ' ' + url); window.CircShell.toast(t('game.copiedResult')); }
-                return;
+                return shareText(t('game.dailyShareText', { no: G.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
             }
+            if (a === 'shareGame') {
+                const st = G.st, rank = st.players.findIndex(p => p.is_me) + 1;
+                return shareText(t('game.shareGame', { rank: '#' + rank, players: st.players.length, correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
+            }
+            if (a === 'rematch') { const r = await O().rematch(G.id); return open(r.id); }
+            if (a === 'openRematch') return open(G.rematch.id);
+            if (a === 'leaveYes') { await O().leaveGame(G.id); return close(); }
             if (a === 'share') {
                 const url = location.origin + location.pathname + '?join=' + G.st.code;
                 const text = t('game.shareText', { code: G.st.code });
@@ -415,5 +449,23 @@
         } catch (e) { window.CircShell.toast(e.message); }
     }
 
-    window.CircGame = { open, close, refresh };
+    // the ✕: a running live game asks first, everything else just goes home
+    function leaveAsk() {
+        if (!G || !G.st || G.st.kind !== 'live' || !['play', 'reveal', 'waiting'].includes(G.st.phase)) return close();
+        const m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" style="display:flex;flex-direction:column;gap:12px">
+            <h2 class="serif" style="font-size:22px">${esc(t('game.leaveTitle'))}</h2>
+            <p class="muted" style="font-size:14px">${esc(t('game.leaveLive'))}</p>
+            <button class="btn primary block" data-x="yes">${esc(t('game.leaveYes'))}</button>
+            <button class="btn link" data-x="no">${esc(t('game.leaveNo'))}</button></div>`;
+        m.addEventListener('click', async e => {
+            const x = e.target.closest('[data-x]');
+            if (e.target === m || (x && x.dataset.x === 'no')) return m.remove();
+            if (x && x.dataset.x === 'yes') { m.remove(); try { await O().leaveGame(G.id); } catch (err) { /* already gone */ } close(); }
+        });
+        document.body.appendChild(m);
+    }
+
+    window.CircGame = { open, close, refresh, leaveAsk };
 })();
