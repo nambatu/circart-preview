@@ -20,9 +20,10 @@
     let refreshing = false, again = false;
 
     // ─── open / close ─────────────────────────────────────────────────────
-    function open(id) {
+    function open(id, extra) {
         close(true);
-        G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false };
+        G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false,
+              challengeNo: extra && extra.challengeNo, board: null };
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         $('game-online-screen').classList.add('active');
         $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
@@ -67,6 +68,9 @@
                 G.card = await O().nextCard(G.id);
                 G.cardTurn = st.current_turn;
             }
+            if (st.kind === 'daily' && st.phase === 'done' && !G.answer && !G.board) {
+                try { G.board = await O().dailyLeaderboard(); G.challengeNo = G.board.challenge_no; } catch (e) { G.board = { entries: [] }; }
+            }
             draw();
             schedule();
         } catch (e) {
@@ -102,12 +106,14 @@
     // ─── drawing ──────────────────────────────────────────────────────────
     function draw() {
         const st = G.st;
-        $('go-title').textContent = st.kind === 'live' ? t('game.live') : t('game.async');
+        $('go-title').textContent = st.kind === 'live' ? t('game.live')
+            : st.kind === 'daily' ? (G.challengeNo ? t('game.daily', { no: G.challengeNo }) : t('game.dailyShort'))
+            : t('game.async');
         $('go-score').textContent = st.phase === 'lobby' ? '' : t('game.points', { n: st.me.score.toLocaleString() });
         const body = $('go-body');
         if (G.answer) return body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult(), wire();
         const view = {
-            lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal,
+            lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
             finished: viewPodium, dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
         }[st.phase] || (() => '');
         body.innerHTML = view();
@@ -169,6 +175,19 @@
 
     function viewReady() {
         const st = G.st;
+        if (st.kind === 'daily') {
+            const started = st.me.answered > 0;
+            return `<div class="page">
+              <section class="panel strong" style="padding:18px;display:flex;flex-direction:column;gap:10px">
+                <span class="eyebrow">${esc(G.challengeNo ? t('home.daily.eyebrow', { no: G.challengeNo }) : t('game.dailyShort'))}</span>
+                <h2 class="serif" style="font-size:24px">${esc(t('home.daily.title'))}</h2>
+                <p class="muted" style="font-size:14px">${esc(t('game.dailyStartText'))}</p>
+                ${started ? `<p class="note">${esc(t('game.card', { n: st.me.answered + 1, total: st.card_count }))} · ${esc(t('game.points', { n: st.me.score.toLocaleString() }))}</p>` : ''}
+                <button class="btn primary block" data-act="ready">${esc(started ? t('home.daily.continue') : t('game.dailyStart'))}</button>
+              </section>
+              ${st.timeline.length > 1 ? `<h2 class="label">${esc(t('game.yourTimeline'))} · ${st.timeline.length}</h2>${timeline(false)}` : ''}
+            </div>`;
+        }
         return `<div class="page">
           <div class="go-turns">${Array.from({ length: st.turns }, (_, i) =>
               `<span class="${i + 1 < st.current_turn ? 'done' : i + 1 === st.current_turn ? 'now' : ''}"></span>`).join('')}</div>
@@ -234,7 +253,7 @@
           ${r.streak > 1 ? `<p class="note">${esc(t('game.streak', { n: r.streak }))}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
-          ${G.picked || !r.artist_options ? `<button class="btn primary block" data-act="next">${esc(t('game.next'))}</button>` : ''}
+          ${G.picked || !r.artist_options ? `<button class="btn primary block" data-act="next">${esc(G.st.kind === 'daily' && a.position >= G.st.card_count ? t('game.results') : t('game.next'))}</button>` : ''}
         </div>`;
     }
 
@@ -297,6 +316,30 @@
         </div>`;
     }
 
+    function viewDailyDone() {
+        const st = G.st, b = G.board || { entries: [] }, me = st.me;
+        const no = G.challengeNo || b.challenge_no || '';
+        const top = b.entries.slice(0, 10);
+        const mine = b.me;
+        return `<div class="page">
+          <div style="text-align:center">
+            <div class="label">${esc(t('game.dailyDone'))}</div>
+            <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            <p class="muted">${esc(t('game.dailyScore', { correct: me.correct, total: st.card_count }))}
+              ${mine && mine.rank ? ' · ' + esc(t('game.dailyRank', { rank: mine.rank, players: b.players })) : ''}</p>
+          </div>
+          ${mine && !mine.ranked ? `<p class="note" style="text-align:center">${esc(t('game.dailyUnranked'))}</p>` : ''}
+          <button class="btn primary block" data-act="shareDaily">${esc(t('game.dailyShare'))}</button>
+          ${top.length ? `<h2 class="label">${esc(t('ranks.today'))}</h2>
+            <ol class="go-stand">${top.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
+              <span class="go-name">${esc(e.username)}</span><span class="go-pts">${e.score.toLocaleString()}</span></li>`).join('')}</ol>` : ''}
+          <h2 class="label">${esc(t('game.yourTimeline'))}</h2>
+          ${timeline(false)}
+          <p class="note" style="text-align:center">${esc(t('game.dailyTomorrow'))}</p>
+          <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
+        </div>`;
+    }
+
     function viewPodium() {
         const st = G.st, p = st.players;
         const winner = p[0];
@@ -355,6 +398,14 @@
             if (a === 'start') { await O().startGame(G.id); return refresh(); }
             if (a === 'leave') { await O().leaveGame(G.id); return close(); }
             if (a === 'home') return close();
+            if (a === 'shareDaily') {
+                const st = G.st;
+                const text = t('game.dailyShareText', { no: G.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() });
+                const url = location.origin + location.pathname;
+                if (navigator.share) await navigator.share({ title: 'CIRCArt', text, url }).catch(() => {});
+                else { await navigator.clipboard.writeText(text + ' ' + url); window.CircShell.toast(t('game.copiedResult')); }
+                return;
+            }
             if (a === 'share') {
                 const url = location.origin + location.pathname + '?join=' + G.st.code;
                 const text = t('game.shareText', { code: G.st.code });

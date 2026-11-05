@@ -295,3 +295,20 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .choice .ic { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--surface-2); }
 .choice.strong .ic { background: var(--accent-color); color: var(--on-accent); }
 .code-input { letter-spacing: 6px; text-transform: uppercase; font-weight: 600; }
+
+/* ---------- solo game on desktop/laptop ----------
+   style.css squeezes the card and the result panel into whatever height is
+   left, so on a short laptop window the trivia and Continue were cut off.
+   Here the game area scrolls instead, the card keeps a readable size, and
+   Continue stays pinned in view. Phones keep their own layout (≤780px). */
+@media (min-width: 781px) {
+    #game-screen .game-main { overflow-y: auto; justify-content: flex-start; }
+    #game-screen .game-header { margin-bottom: 1rem; flex-shrink: 0; }
+    #active-card-section { flex: none; align-items: flex-start; }
+    #active-card { height: clamp(300px, 52vh, 540px); max-height: none; }
+    #interaction-panel { align-self: stretch; }
+    #feedback-area { max-height: none; overflow: visible; margin: 0; }
+    #trivia-section, #did-you-know-section { flex: none; overflow-y: visible; }
+    #next-round-btn { position: sticky; bottom: 0.75rem; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+    #timeline-section h2 { margin-bottom: 1rem; }
+}

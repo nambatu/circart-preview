@@ -19,7 +19,7 @@
 
     // Multiplayer, daily challenge and leaderboards switch on here once their
     // screens are built (roadmap tasks 9–11). The server side is ready.
-    const FEATURES = { daily: false, friends: true, leaderboards: false };
+    const FEATURES = { daily: true, friends: true, leaderboards: true };
 
     // ─── theme ────────────────────────────────────────────────────────────
     const THEME_KEY = 'circart-theme';
@@ -99,7 +99,61 @@
         const o = online();
         const u = o ? await o.user() : null;
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
+        renderDaily(o, u);
         renderOnlineHome(o, u);
+    }
+
+    // ─── home: daily challenge + this month's challenge ───────────────────
+    function untilText(iso, o) {
+        const m = Math.max(0, Math.ceil((new Date(iso).getTime() - o.serverNow()) / 60000));
+        return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : m + ' min';
+    }
+
+    async function renderDaily(o, u) {
+        const box = $('home-daily');
+        if (!o || !FEATURES.daily) { box.innerHTML = ''; return; }
+        let d = null;
+        if (u) { try { d = await o.dailySummary(); } catch (e) { d = null; } }
+        const status = d ? d.status : 'not_started';
+        const me = d && d.me;
+        const btn = status === 'done'
+            ? `<button class="btn outline block" data-daily="results">${esc(t('game.results'))}</button>`
+            : `<button class="btn primary block" data-daily="play">${esc(status === 'in_progress' ? t('home.daily.continue') : t('home.daily.play'))}</button>`;
+        const done = status === 'done' && me ? `<p class="serif" style="font-size:18px">${esc(me.rank
+            ? t('home.daily.done', { score: me.score.toLocaleString(), rank: me.rank })
+            : t('home.daily.doneUnranked', { score: me.score.toLocaleString() }))}</p>` : '';
+        const hard = d && d.yesterdays_hardest;
+        const month = d && d.month;
+        const monthName = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' }).toUpperCase();
+        box.innerHTML = `
+          <section class="panel strong" style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div class="row" style="justify-content:space-between">
+              <span class="eyebrow">${esc(t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }))}</span>
+              ${d && d.streak > 0 ? `<span class="pill" title="daily streak">🔥 ${esc(d.streak === 1 ? t('home.streak1') : t('home.streak', { n: d.streak }))}</span>` : ''}
+            </div>
+            <h2 class="serif" style="font-size:22px;line-height:1.2">${esc(t('home.daily.title'))}</h2>
+            ${done || `<p class="muted" style="font-size:14px">${esc(t('home.daily.sub'))}</p>`}
+            ${btn}
+            ${d ? `<p class="note">${esc(t('home.daily.resets', { time: untilText(d.resets_at, o) }))}</p>` : ''}
+            ${hard ? `<div class="row" style="gap:10px;border-top:1px solid var(--line);padding-top:10px">
+                ${hard.image_url ? `<img src="${esc(hard.image_url)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px">` : ''}
+                <span class="note"><b>${esc(t('home.daily.hardest'))}</b><br>${esc(t('home.daily.hardestPct', { title: hard.title, pct: hard.percent_right }))} (${esc(hard.year)})</span></div>` : ''}
+          </section>
+          ${month ? `<button class="game-row" data-daily="month" style="flex-direction:column;align-items:flex-start;gap:2px">
+              <span class="eyebrow">${esc(t('home.month.eyebrow', { month: monthName }))}</span>
+              <b>${esc(month.title)}</b>
+              <span class="note">${esc(month.description)}</span>
+              <span class="note">${esc(month.me && month.me.rank ? t('home.month.rank', { rank: month.me.rank, days: month.days_left }) : t('home.month.norank', { days: month.days_left }))}</span>
+            </button>` : ''}`;
+        box.querySelectorAll('[data-daily]').forEach(b => b.addEventListener('click', async () => {
+            if (b.dataset.daily === 'month') { ranksTab = 'month'; return showTab('ranks'); }
+            b.disabled = true;
+            try {
+                const g = await o.playDaily();
+                cachedProfile = null;
+                window.CircGame.open(g.id, { challengeNo: g.challenge_no });
+            } catch (e) { b.disabled = false; toast(e.message || t('common.error')); }
+        }));
     }
 
     // ─── home: games with friends ─────────────────────────────────────────
@@ -204,31 +258,94 @@
         catch (e) { return '?'; }
     }
 
-    // ─── ranks (for now: your stats; leaderboards come with task 11) ──────
+    // ─── ranks: leaderboards + your stats ─────────────────────────────────
+    let ranksTab = 'today';
     async function renderRanks() {
         const box = $('ranks-body');
         const o = online();
         if (!o) { box.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`; return; }
-        if (!(await o.user())) { box.innerHTML = `<p class="muted">${esc(t('ranks.signIn'))}</p>`; return; }
+        const u = await o.user();
+        if (!u) { box.innerHTML = `<p class="muted">${esc(t('ranks.signIn'))}</p>`; return; }
+        const tabs = ['today', 'month', 'allTime'];
+        box.innerHTML = `
+          <div class="seg" role="group" aria-label="${esc(t('ranks.title'))}" style="align-self:flex-start">
+            ${tabs.map(k => `<button data-rt="${k}" aria-pressed="${ranksTab === k}">${esc(t('ranks.' + k))}</button>`).join('')}
+          </div>
+          <div id="ranks-board" style="margin-top:12px"><p class="muted">…</p></div>
+          <div id="ranks-stats" style="margin-top:20px"></div>`;
+        box.querySelectorAll('[data-rt]').forEach(b => b.addEventListener('click', () => { ranksTab = b.dataset.rt; renderRanks(); }));
+        renderBoard(o);
+        renderStats(o);
+    }
+
+    function boardList(entries, value) {
+        if (!entries.length) return `<p class="muted">${esc(t('ranks.nobody'))}</p>`;
+        return `<ol class="go-stand">${entries.map(e => `
+            <li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
+              <span class="go-name">${esc(e.username)}${e.is_me ? ' ' + esc(t('game.you')) : ''}</span>
+              <span class="go-pts">${esc(value(e))}</span></li>`).join('')}</ol>`;
+    }
+
+    async function renderBoard(o) {
+        const el = $('ranks-board');
+        const pts = n => t('ranks.pts', { n: Number(n).toLocaleString() });
         try {
-            const s = await o.soloStats();
-            if (!s.games) { box.innerHTML = `<p class="muted">${esc(t('ranks.empty'))}</p>`; return; }
-            const pct = s.accuracy == null ? '–' : Math.round(s.accuracy * 100) + '%';
-            box.innerHTML = `
+            if (ranksTab === 'today') {
+                const b = await o.dailyLeaderboard();
+                el.innerHTML = `<p class="note" style="margin-bottom:8px">${esc(t('game.daily', { no: b.challenge_no }))} · ${esc(b.players === 1 ? t('ranks.players1') : t('ranks.players', { n: b.players }))}</p>
+                  ${boardList(b.entries, e => pts(e.score))}`;
+            } else if (ranksTab === 'month') {
+                const b = await o.monthlyLeaderboard();
+                const fmt = v => b.metric === 'accuracy' ? v + '%' : b.metric === 'best_streak' || b.metric === 'artists_named' ? String(v) : pts(v);
+                el.innerHTML = `<section class="panel" style="padding:14px;margin-bottom:10px">
+                    <b class="serif" style="font-size:18px">${esc(b.title)}</b>
+                    <p class="note">${esc(b.description)} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
+                  ${boardList(b.entries, e => fmt(e.value))}
+                  ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: fmt(b.me.value) }))}</p>` : ''}`;
+            } else {
+                const b = await o.alltimeLeaderboard();
+                el.innerHTML = `${boardList(b.entries, e => pts(e.points))}
+                  ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: pts(b.me.points) }))}</p>` : ''}`;
+            }
+            const p = cachedProfile || await o.getProfile().catch(() => null);
+            if (p && (p.is_guest || !p.username)) el.insertAdjacentHTML('beforeend', `<p class="note" style="margin-top:8px">${esc(t('ranks.notRanked'))}</p>`);
+        } catch (e) {
+            el.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`;
+        }
+    }
+
+    async function renderStats(o) {
+        const el = $('ranks-stats');
+        try {
+            const s = await o.myStats();
+            const solo = s.solo || {};
+            const pct = v => v == null ? '–' : Math.round(v * 100) + '%';
+            const online = s.cards_placed ? `
+              <section class="panel" style="padding:16px;margin-bottom:14px">
+                <h2 class="label" style="margin-bottom:12px">${esc(t('ranks.online'))}</h2>
+                <div class="stats-grid">
+                  <div class="stat"><b>${s.games_played}</b><span>${esc(t('ranks.games'))}</span></div>
+                  <div class="stat"><b>${pct(s.accuracy)}</b><span>${esc(t('ranks.accuracy'))}</span></div>
+                  <div class="stat"><b>${s.wins}</b><span>${esc(t('ranks.wins'))}</span></div>
+                  <div class="stat"><b>${Number(s.total_points).toLocaleString()}</b><span>${esc(t('ranks.points'))}</span></div>
+                  <div class="stat"><b>${s.best_streak}</b><span>${esc(t('ranks.bestStreak'))}</span></div>
+                  <div class="stat"><b>${s.daily_streak}</b><span>${esc(t('ranks.dailyStreak'))}</span></div>
+                </div></section>` : '';
+            const soloBox = solo.games ? `
               <section class="panel" style="padding:16px">
                 <h2 class="label" style="margin-bottom:12px">${esc(t('ranks.solo'))}</h2>
                 <div class="stats-grid">
-                  <div class="stat"><b>${s.games}</b><span>${esc(t('ranks.games'))}</span></div>
-                  <div class="stat"><b>${pct}</b><span>${esc(t('ranks.accuracy'))}</span></div>
-                  <div class="stat"><b>${s.cards_placed}</b><span>${esc(t('ranks.cards'))}</span></div>
-                  <div class="stat"><b>${s.best_score}</b><span>${esc(t('ranks.bestScore'))}</span></div>
-                  <div class="stat"><b>${s.best_streak}</b><span>${esc(t('ranks.bestStreak'))}</span></div>
-                  <div class="stat"><b>${s.total_score}</b><span>${esc(t('ranks.points'))}</span></div>
-                </div>
-              </section>`;
-        } catch (e) {
-            box.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`;
-        }
+                  <div class="stat"><b>${solo.games}</b><span>${esc(t('ranks.games'))}</span></div>
+                  <div class="stat"><b>${pct(solo.accuracy)}</b><span>${esc(t('ranks.accuracy'))}</span></div>
+                  <div class="stat"><b>${solo.cards_placed}</b><span>${esc(t('ranks.cards'))}</span></div>
+                  <div class="stat"><b>${solo.best_score}</b><span>${esc(t('ranks.bestScore'))}</span></div>
+                  <div class="stat"><b>${solo.best_streak}</b><span>${esc(t('ranks.bestStreak'))}</span></div>
+                  <div class="stat"><b>${solo.total_score}</b><span>${esc(t('ranks.points'))}</span></div>
+                </div></section>` : '';
+            el.innerHTML = online || soloBox
+                ? `<h2 class="label" style="margin-bottom:10px">${esc(t('ranks.yourStats'))}</h2>${online}${soloBox}`
+                : `<p class="muted">${esc(t('ranks.empty'))}</p>`;
+        } catch (e) { el.innerHTML = ''; }
     }
 
     // ─── profile ──────────────────────────────────────────────────────────
@@ -397,6 +514,9 @@
             soloLog.streak = correct ? soloLog.streak + 1 : 0;
             soloLog.best = Math.max(soloLog.best, soloLog.streak);
             soloLog.cards.push({ id: card.id, correct, artist, title, year });
+            // desktop: the result sits above the timeline, so bring it into view
+            const main = document.querySelector('#game-screen .game-main');
+            if (main && innerWidth > 780) main.scrollTo({ top: 0, behavior: 'smooth' });
             return result;
         };
 
