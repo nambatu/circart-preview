@@ -1,0 +1,1309 @@
+/* ============================================================
+   CIRCArt — one stylesheet, phone to desktop.
+
+   Desktop is the base. Everything phone-specific lives in the
+   breakpoint near the bottom, so the two builds that used to be
+   maintained separately (www + www-mobile) are now one file.
+
+   Layout adapts on SIZE (max-width) and input adapts on
+   CAPABILITY (hover / pointer), never on user-agent sniffing —
+   an iPad reports as a desktop and a touchscreen laptop is both.
+   ============================================================ */
+
+:root {
+    --bg-color: #fcfbf9;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --accent-color: #9d8c70;
+    --accent-hover: #bdae93;
+    --card-bg: #ffffff;
+    --gap-color: rgba(157, 140, 112, 0.15);
+    --gap-hover: rgba(157, 140, 112, 0.4);
+    --success: #4a7c59;
+    --error: #c84b31;
+    --wine-red: #722F37;
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+}
+
+#app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.screen.active {
+    display: flex;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* The vertical timeline's OLDER/NEWER labels only make sense on
+   the phone layout; the horizontal desktop timeline uses a heading. */
+.timeline-direction {
+    display: none;
+}
+
+/* Two phrasings of the same instruction; capability picks one. */
+.instruction-touch { display: none; }
+.instruction-mouse { display: inline; }
+
+/* ---------- START SCREEN ---------- */
+#start-screen {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#start-screen h1 {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+#start-screen p {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin-bottom: 3rem;
+}
+
+.settings {
+    margin-bottom: 2.5rem;
+    width: 100%;
+    max-width: 800px;
+}
+
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto 2rem auto;
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+    border: 1px solid rgba(255,255,255,0.4);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.settings-card h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.5rem;
+}
+
+.primary-card {
+    border-top: 4px solid var(--accent-color);
+}
+
+.setting-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings select {
+    padding: 0.5rem 1rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    width: 100%;
+    max-width: 300px;
+}
+
+.start-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.primary-btn {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    touch-action: manipulation;
+}
+
+.primary-btn:active {
+    transform: scale(0.96);
+}
+
+.gallery-btn-style {
+    background-color: #555;
+}
+
+.small-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* ---------- GAME SCREEN ---------- */
+header, .game-header {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+main, .game-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+}
+
+#active-card-section {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 1200px;
+    flex: 1;
+    min-height: 0;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#active-card {
+    width: auto;
+    min-width: 250px;
+    max-width: 450px;
+    max-height: 55vh;
+    flex: 1;
+}
+
+.card-image-container {
+    width: 100%;
+    flex: 1;
+    min-height: 80px;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.card-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.zoomable-img {
+    cursor: zoom-in;
+    transition: transform 0.2s ease;
+}
+
+.card-details {
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 1px solid #f0f0f0;
+}
+
+.card-details h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-details p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.card-details .year {
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+}
+
+/* ---------- INTERACTION PANEL ---------- */
+#interaction-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 350px;
+    max-width: 600px;
+}
+
+.bonus-section {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.bonus-section h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.bonus-section .hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.bonus-section input {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+}
+
+.bonus-section .instruction {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+#feedback-area {
+    text-align: center;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    width: 100%;
+    margin: auto 0;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#feedback-message {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+#feedback-message.success { color: var(--success); }
+#feedback-message.error { color: var(--error); }
+
+#bonus-feedback {
+    list-style: none;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+#bonus-feedback li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.metadata-box {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: #f9f9f9;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    border: 1px solid #eee;
+}
+
+#trivia-section, #did-you-know-section {
+    background: #f0f7ff;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+    text-align: left;
+    border-left: 4px solid var(--accent-color);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#did-you-know-section {
+    background: #fff8eb;
+    border-left: 4px solid #f39c12;
+}
+
+#trivia-section h3, #did-you-know-section h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--accent-color);
+}
+
+#did-you-know-section h3 {
+    color: #e67e22;
+}
+
+#trivia-section p, #did-you-know-section p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* ---------- TIMELINE (horizontal) ---------- */
+#timeline-section {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0.5rem;
+    padding: 0 1rem;
+    flex-shrink: 0;
+}
+
+#timeline-section h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.timeline {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.5rem 0 1rem 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0;
+    min-height: 200px;
+    width: 100%;
+}
+
+.timeline::-webkit-scrollbar { height: 8px; }
+.timeline::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.timeline::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+.timeline::-webkit-scrollbar-thumb:hover { background: #999; }
+
+/* ---------- PLACEMENT SLOTS ----------
+   One design in both orientations: a dashed frame that reads as an empty
+   place in the sequence, with a round + in the middle. Horizontal and
+   vertical differ only in which axis the frame is stretched along. */
+.timeline-gap {
+    flex: 0 0 56px;
+    align-self: stretch;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    margin: 0 6px;
+    border: 2px dashed rgba(157, 140, 112, 0.4);
+    border-radius: 10px;
+    background: #f8f6f1;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.timeline-gap:active {
+    background: #efe9de;
+    border-color: var(--accent-color);
+}
+
+/* The + is drawn, not typed. A text glyph is positioned by the font's own
+   metrics, so it sits fractionally off-centre and moves if the webfont
+   fails to load; two bars are exact at any size. */
+.gap-btn {
+    position: relative;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gap-btn::before,
+.gap-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: #fff;
+    border-radius: 1px;
+}
+
+.gap-btn::before {
+    width: 14px;
+    height: 2px;
+    transform: translate(-50%, -50%);
+}
+
+.gap-btn::after {
+    width: 2px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+}
+
+/* First-run coaching: app.js puts .learning on the timeline until the player
+   has placed their first card ever, then takes it off permanently. */
+.timeline.learning .gap-btn {
+    animation: gapPulse 1.8s ease-in-out infinite;
+}
+
+.timeline-card {
+    flex-shrink: 1;
+    flex-basis: 350px;
+    min-width: 150px;
+    width: 160px;
+    border: 1px solid #eee;
+    margin: 0;
+    transition: all 0.3s ease;
+}
+
+.timeline-card .card-image-container {
+    height: 180px;
+    flex: none;
+}
+
+.timeline-card .card-details {
+    padding: 0.75rem;
+}
+
+.timeline-card .card-details h3 {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timeline-card .card-details p {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timeline-card .card-details .year {
+    font-size: 0.9rem;
+}
+
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* ---------- END SCREEN ---------- */
+#end-screen {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#end-screen h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.final-score {
+    font-size: 5rem;
+    font-family: var(--font-heading);
+    color: var(--accent-color);
+    margin: 1rem 0;
+}
+
+.score-breakdown {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+    text-align: left;
+    width: 100%;
+    max-width: 400px;
+}
+
+.score-breakdown p {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+/* ---------- GALLERY ---------- */
+.gallery-main {
+    overflow-y: auto;
+    width: 100%;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    width: 100%;
+}
+
+.gallery-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.gallery-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    background: #f9f9f9;
+}
+
+.gallery-details {
+    padding: 1rem;
+    text-align: center;
+}
+
+.gallery-details h3 { font-size: 1rem; margin-bottom: 0.25rem; }
+.gallery-details p { font-size: 0.85rem; color: var(--text-secondary); }
+.gallery-details .year { font-weight: 600; color: var(--accent-color); }
+
+/* ---------- LOADING OVERLAY ---------- */
+#loading-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#loading-overlay p {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0 2rem;
+}
+
+#lottie-loader {
+    width: 250px;
+    height: 250px;
+}
+
+/* ---------- REPORT BUTTON & MODALS ---------- */
+.report-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--text-primary);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 30px;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 100;
+    transition: transform 0.2s ease;
+}
+
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-content h2 { margin-bottom: 0.5rem; }
+.modal-content p { margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary); }
+
+.modal-content textarea {
+    width: 100%;
+    padding: 0.75rem;
+    font-family: var(--font-body);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    resize: vertical;
+    font-size: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 1rem;
+}
+
+/* ---------- ZOOM MODAL ---------- */
+.zoom-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.zoom-modal img {
+    max-width: 95vw;
+    max-height: 95vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.close-zoom {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/* ---------- INSTALL PROMPT ---------- */
+#install-hint {
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 420px;
+    background: var(--card-bg);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-left: 4px solid var(--accent-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 400;
+    animation: hintIn 0.3s ease-out;
+}
+
+@keyframes hintIn {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+#install-hint p {
+    flex: 1;
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+#install-hint strong { color: var(--text-primary); }
+
+#install-hint button {
+    flex-shrink: 0;
+    font-family: var(--font-body);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+#install-accept {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0.5rem 1.1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+#install-dismiss {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+}
+
+/* ============================================================
+   HOVER-CAPABLE POINTERS ONLY
+
+   Touch browsers emulate :hover and make it stick after a tap,
+   leaving buttons looking pressed. Gating these on hover:hover
+   keeps the desktop polish without that artefact.
+   ============================================================ */
+@media (hover: hover) and (pointer: fine) {
+    .primary-btn:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+    .zoomable-img:hover { transform: scale(1.03); }
+    .report-btn:hover { transform: scale(1.05); }
+    .secondary-btn:hover { background: #f0f0f0; }
+    .close-zoom:hover { color: #ccc; }
+    .timeline-gap:hover {
+        background: #f3eee4;
+        border-color: var(--accent-color);
+    }
+    .timeline-gap:hover .gap-btn {
+        transform: scale(1.15);
+        background-color: var(--accent-hover);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    }
+}
+
+/* Coarse pointers (fingers) need bigger targets than a mouse. */
+@media (pointer: coarse) {
+    .instruction-touch { display: inline; }
+    .instruction-mouse { display: none; }
+    .bonus-section input,
+    .settings select { font-size: 16px; } /* < 16px makes iOS zoom the page on focus */
+}
+
+/* ============================================================
+   PHONE LAYOUT
+
+   Everything below re-flows the game into a single column with
+   a sticky artwork card and a vertical timeline. Previously this
+   lived in a separate www-mobile build.
+   ============================================================ */
+@media (max-width: 780px) {
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        line-height: 1.5;
+        font-size: 14px;
+    }
+
+    #app {
+        max-width: none;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* ---- start screen ---- */
+    #start-screen {
+        padding: 2rem 1.5rem;
+        overflow-y: auto;
+    }
+
+    #start-screen h1 { font-size: 3.5rem; margin-bottom: 0.75rem; }
+
+    #start-screen p {
+        font-size: 1rem;
+        max-width: 320px;
+        margin-bottom: 2rem;
+    }
+
+    .settings { max-width: 360px; margin-bottom: 1.5rem; }
+    .settings-container { gap: 1rem; margin-bottom: 0; }
+
+    .settings-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.04);
+        backdrop-filter: none;
+        gap: 0;
+    }
+
+    .settings-card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+    .primary-card { border-top-width: 3px; }
+    .settings select { border-radius: 8px; max-width: 200px; }
+
+    .start-actions { gap: 0.75rem; }
+
+    .primary-btn {
+        padding: 0.85rem 1.75rem;
+        font-size: 1rem;
+        transition: background-color 0.2s, transform 0.15s;
+    }
+
+    .small-btn { padding: 0.5rem 1.25rem; font-size: 0.9rem; }
+
+    /* ---- gallery ---- */
+    #gallery-screen header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .gallery-card { border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .gallery-card img { height: 140px; background: #f5f5f5; }
+    .gallery-details { padding: 0.5rem; }
+    .gallery-details h3 { font-size: 0.8rem; margin-bottom: 0.15rem; }
+    .gallery-details p { font-size: 0.75rem; }
+
+    /* ---- game shell ---- */
+    header, .game-header {
+        justify-content: center;
+        padding: 0.6rem 1rem;
+        margin-bottom: 0;
+        flex-shrink: 0;
+        background: var(--bg-color);
+        z-index: 20;
+    }
+
+    .stats { gap: 1.5rem; font-size: 0.95rem; }
+
+    main, .game-main {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        align-items: stretch;
+    }
+
+    #active-card-section {
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        gap: 0;
+        margin-bottom: 0;
+        flex: none;
+    }
+
+    /* The artwork pins to the top of the scroll area so it stays
+       visible while you scroll the timeline looking for a slot. */
+    #active-card {
+        position: sticky;
+        top: 0;
+        z-index: 15;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        max-height: 28vh;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        flex: none;
+    }
+
+    .card-image-container { min-height: 60px; }
+
+    .card-details { padding: 0.5rem 0.75rem; }
+    .card-details h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .card-details p { font-size: 0.8rem; }
+    .card-details .year { margin-top: 0.15rem; font-size: 1rem; }
+
+    #interaction-panel {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        padding: 0.5rem 0;
+        flex: none;
+        display: block;
+    }
+
+    .bonus-section { padding: 0.75rem 1rem; display: block; }
+    .bonus-section h3 { margin-bottom: 0.25rem; font-size: 0.95rem; }
+    .bonus-section .hint { font-size: 0.8rem; margin-bottom: 0.5rem; }
+
+    .bonus-section input {
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 0.4rem;
+        border-radius: 6px;
+    }
+
+    .bonus-section .instruction {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    /* ---- full-screen feedback ----
+       On a phone the result and its writing deserve the whole
+       screen instead of a squeezed panel. :has() is supported in
+       every current browser and Android WebView 105+. */
+    #active-card-section:has(#feedback-area:not(.hidden)) {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        background: var(--bg-color);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+        animation: fadeIn 0.25s ease-out;
+    }
+
+    #active-card-section:has(#feedback-area:not(.hidden)) #active-card {
+        position: relative;
+        max-height: 42vh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    #active-card-section:has(#feedback-area:not(.hidden)) #next-round-btn {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 1rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+        border-radius: 12px;
+        background: var(--wine-red);
+    }
+
+    #feedback-area {
+        padding: 1.25rem 1rem;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+        max-height: none;
+        overflow-y: auto;
+    }
+
+    #feedback-message { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    #bonus-feedback { margin-bottom: 0.75rem; }
+    #bonus-feedback li { padding: 0.3rem 0; font-size: 0.85rem; }
+    .metadata-box { font-size: 0.75rem; }
+
+    #trivia-section, #did-you-know-section {
+        border-radius: 8px;
+        border-left-width: 3px;
+        flex: none;
+        overflow-y: visible;
+    }
+
+    #trivia-section h3, #did-you-know-section h3 { font-size: 0.9rem; margin-bottom: 0.3rem; }
+    #trivia-section p, #did-you-know-section p { font-size: 0.82rem; }
+
+    /* ---- vertical timeline ---- */
+    #timeline-section {
+        padding: 0 1rem 5rem 1rem;
+        margin-top: 0;
+    }
+
+    #timeline-section h2 { display: none; }
+
+    .timeline-direction {
+        display: block;
+        text-align: center;
+        padding: 0.5rem 0;
+    }
+
+    .direction-label {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        background: rgba(157, 140, 112, 0.08);
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+    }
+
+    /* column-reverse puts the NEWEST work at the top, which is how people
+       expect a feed to read. app.js still builds the list oldest-first, so
+       every gap carries an aria-label describing where it sits — the visual
+       order and the DOM order deliberately differ here. */
+    .timeline {
+        flex-direction: column-reverse;
+        flex-wrap: nowrap;
+        align-items: center;
+        overflow-x: visible;
+        padding: 0;
+        min-height: 50px;
+        position: relative;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 2px;
+        background: linear-gradient(to bottom, transparent, var(--gap-color) 10%, var(--gap-color) 90%, transparent);
+        transform: translateX(-50%);
+        z-index: 0;
+    }
+
+    /* The gap is drawn as an empty slot rather than a bare + on a line.
+       Testers kept missing it: a 52px row is a fine target, but an invisible
+       one, so the eye only registered a small circle and never read it as
+       somewhere a card could go. A dashed frame between two solid cards says
+       "something belongs here" without anyone having to read the hint. */
+    /* Same slot, stretched along the other axis. 44px is the floor here, not
+       a style choice: it is the minimum comfortable touch target, and an
+       invisible-but-large target is exactly what confused testers before.
+       Trimmed from 52px + 6px margins to 44px + 4px, which gives back about
+       a fifth of the timeline's height without shrinking the target below
+       what a thumb can reliably hit. */
+    .timeline-gap {
+        flex: none;
+        align-self: auto;
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        min-height: 44px;
+        z-index: 1;
+        gap: 0.5rem;
+        margin: 4px 0;
+        /* Opaque, not translucent: the timeline's centre line would otherwise
+           show through the slot and read as a stray mark next to the +. It
+           still shows in the margins, where it works as a connector. */
+        background: #f8f6f1;
+    }
+
+    /* Until the first card has ever been placed, name the action outright.
+       flex:none + nowrap keep it on one line beside the +. */
+    .timeline.learning .timeline-gap::after {
+        content: 'Tap to place';
+        flex: none;
+        white-space: nowrap;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        letter-spacing: 0.01em;
+    }
+
+    /* The floating Report button sits bottom-right and would otherwise land
+       on top of the coaching label. Tuck it away while we are coaching. */
+    .timeline.learning ~ * .report-btn,
+    body:has(.timeline.learning) .report-btn {
+        opacity: 0.35;
+        transform: scale(0.85);
+        transform-origin: bottom right;
+    }
+
+
+    /* Slightly smaller circle on a phone, and a firm press state since
+       there is no hover to lean on. */
+    .gap-btn {
+        width: 32px;
+        height: 32px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .gap-btn::before { width: 13px; }
+    .gap-btn::after  { height: 13px; }
+
+    .timeline-gap:active .gap-btn {
+        transform: scale(1.18);
+        background-color: var(--wine-red);
+        box-shadow: 0 0 0 6px rgba(114, 47, 55, 0.15);
+    }
+
+    /* Timeline entries become a horizontal strip: thumb + text */
+    .timeline-card {
+        width: 100%;
+        flex-basis: auto;
+        min-width: 0;
+        flex-direction: row !important;
+        height: 76px;
+        flex-shrink: 0;
+        z-index: 1;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .timeline-card .card-image-container {
+        width: 76px;
+        min-width: 76px;
+        height: 76px;
+        flex: none;
+    }
+
+    .timeline-card .card-image-container img { object-fit: cover; }
+
+    .timeline-card .card-details {
+        padding: 0.4rem 0.6rem;
+        text-align: left;
+        border-top: none;
+        border-left: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .timeline-card .card-details h3 { font-size: 0.78rem; margin-bottom: 0.1rem; }
+    .timeline-card .card-details p { font-size: 0.7rem; }
+    .timeline-card .card-details .year { font-size: 0.9rem; margin-top: 0.1rem; }
+
+    /* ---- end screen ---- */
+    #end-screen { padding: 2rem 1.5rem; }
+    #end-screen h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .final-score { font-size: 4rem; margin: 0.5rem 0; }
+
+    .score-breakdown {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        max-width: 320px;
+    }
+
+    .score-breakdown p { margin-bottom: 0.4rem; padding-bottom: 0.4rem; font-size: 0.9rem; }
+
+    /* ---- chrome ---- */
+    #loading-overlay p { font-size: 0.9rem; }
+    #lottie-loader { width: 200px; height: 200px; }
+
+    .report-btn {
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        right: 12px;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .modal-content { padding: 1.5rem; border-radius: 12px; max-width: 400px; }
+    .modal-content h2 { font-size: 1.2rem; }
+    .modal-content p { font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .modal-content textarea { padding: 0.6rem; border-radius: 6px; margin-bottom: 0.75rem; }
+    .modal-actions { gap: 0.75rem; }
+    .secondary-btn { border-radius: 6px; font-size: 0.9rem; }
+
+    .close-zoom { top: 12px; right: 16px; font-size: 2.5rem; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* First-run pulse on the placement slots. app.js adds .learning until the
+   player has placed a card for the first time, then removes it for good.
+   Two keyframe sets because the desktop + is centred with translateY(-50%),
+   which a bare scale() would throw away. */
+@keyframes gapPulse {
+    0%, 100% { transform: scale(1);    box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    50%      { transform: scale(1.14); box-shadow: 0 0 0 9px rgba(157,140,112,0.16); }
+}
+
+/* Keep content clear of the notch and the home indicator. */
+@supports (padding: env(safe-area-inset-top)) {
+    @media (max-width: 780px) {
+        #app {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    }
+}
+
+/* Respect a reduced-motion preference. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

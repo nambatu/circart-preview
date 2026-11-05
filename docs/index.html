@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- viewport-fit=cover lets the layout reach under the notch; zoom is
+         deliberately NOT disabled — the artwork is the point of the game,
+         and blocking pinch-zoom is an accessibility failure. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <meta name="description" content="Place masterpieces of art history in the correct chronological order on the timeline.">
+    <title>CIRCArt Preview</title>
+
+    <!-- Theme before anything paints, so dark mode never flashes white. -->
+    <script>
+        try {
+            var t = localStorage.getItem('circart-theme');
+            if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        } catch (e) {}
+    </script>
+
+    <!-- Installable web app -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#fcfbf9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CIRCArt β">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" href="icons/icon-192.png">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shell.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- ==================== PLAY TAB (home) ==================== -->
+        <div id="start-screen" class="screen active">
+            <div class="scroll">
+                <div class="page">
+                    <div class="home-head">
+                        <div class="wordmark" aria-label="CIRCArt">CIRC<span>Art</span></div>
+                        <button id="home-avatar" class="avatar" data-i18n-label="tab.profile">?</button>
+                    </div>
+                    <p class="muted" data-i18n="home.tagline"></p>
+
+                    <section class="panel hero">
+                        <div class="hero-img">
+                            <img id="home-hero-img" alt="">
+                            <div id="home-hero-caption" class="hero-caption"></div>
+                        </div>
+                        <div class="hero-body">
+                            <div class="eyebrow" data-i18n="home.solo.eyebrow"></div>
+                            <h2 data-i18n="home.solo.title"></h2>
+                            <div class="row" style="justify-content:space-between;margin-top:6px">
+                                <span class="label" id="round-chips-label" data-i18n="home.solo.rounds"></span>
+                                <div class="chips" id="round-chips" role="group" aria-labelledby="round-chips-label">
+                                    <button class="chip" data-rounds="5">5</button>
+                                    <button class="chip" data-rounds="10">10</button>
+                                    <button class="chip" data-rounds="15">15</button>
+                                    <button class="chip" data-rounds="20">20</button>
+                                </div>
+                            </div>
+                            <!-- app.js reads the number of rounds from this select -->
+                            <select id="rounds-select" class="hidden" aria-hidden="true" tabindex="-1">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                            </select>
+                            <button id="start-btn" class="btn primary block" style="margin-top:10px" data-i18n="home.solo.start"></button>
+                        </div>
+                    </section>
+
+                    <!-- Daily challenge, "your turn" and play-with-friends land here
+                         once their screens are built (roadmap tasks 9–11). -->
+                    <div id="home-online"></div>
+
+                    <!-- app.js opens the gallery from this button; the Gallery tab clicks it -->
+                    <button id="gallery-btn" class="hidden" tabindex="-1" aria-hidden="true"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== GALLERY TAB ==================== -->
+        <div id="gallery-screen" class="screen">
+            <header>
+                <h2 data-i18n="tab.gallery">Gallery</h2>
+                <button id="back-to-menu-btn" class="primary-btn small-btn">Back to Menu</button>
+            </header>
+            <main class="gallery-main">
+                <div id="gallery-grid" class="gallery-grid">
+                    <!-- Gallery items go here -->
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== RANKS TAB ==================== -->
+        <div id="ranks-screen" class="screen">
+            <div class="scroll">
+                <div class="page">
+                    <h1 class="serif" style="font-size:28px" data-i18n="ranks.title"></h1>
+                    <div id="ranks-body"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PROFILE TAB ==================== -->
+        <div id="profile-screen" class="screen">
+            <div class="scroll">
+                <div class="page" id="profile-body"></div>
+            </div>
+        </div>
+
+        <!-- ==================== GAME WITH FRIENDS (game.js) ==================== -->
+        <div id="game-online-screen" class="screen">
+            <div class="go-head">
+                <button class="go-close" onclick="CircGame.close()" data-i18n-label="game.home">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+                <b id="go-title"></b>
+                <b id="go-score" style="min-width:44px;text-align:right"></b>
+            </div>
+            <div class="scroll" id="go-body" aria-live="polite"></div>
+        </div>
+
+        <!-- ==================== GAME SCREEN ==================== -->
+        <div id="game-screen" class="screen">
+            <header class="game-header">
+                <div class="stats">
+                    <span>Round <span id="current-round">1</span> / <span id="total-rounds">10</span></span>
+                    <span>Score: <span id="score">0</span></span>
+                </div>
+                <button id="flag-btn" class="flag-btn" data-i18n-label="feedback.flag">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>
+                </button>
+            </header>
+
+            <main class="game-main">
+                <!-- Artwork to place, plus the interaction panel.
+                     Side by side on desktop, stacked on a phone. -->
+                <div id="active-card-section">
+                    <div id="active-card" class="card hidden">
+                        <div class="card-image-container">
+                            <img id="active-image" class="zoomable-img" src="" alt="Current Artwork">
+                        </div>
+                        <div id="active-details" class="card-details hidden">
+                            <h3 id="active-title">Title</h3>
+                            <p id="active-artist">Artist</p>
+                            <p class="year" id="active-year">Year</p>
+                        </div>
+                    </div>
+
+                    <div id="interaction-panel">
+                        <div class="bonus-section" id="bonus-section">
+                            <h3>Extra Points (Optional)</h3>
+                            <p class="hint">Guess the artist, title, or exact year for bonus points! (Typos allowed)</p>
+                            <input type="text" id="guess-artist" placeholder="Artist" autocomplete="off">
+                            <input type="text" id="guess-title" placeholder="Title" autocomplete="off">
+                            <input type="number" id="guess-year" placeholder="Year (exact)" inputmode="numeric">
+                            <!-- Wording follows the input device, chosen in CSS -->
+                            <p class="instruction">
+                                <span class="instruction-mouse">Click on a gap in the timeline below to place the artwork.</span>
+                                <span class="instruction-touch">Tap a + button in the timeline below to place the artwork.</span>
+                            </p>
+                        </div>
+
+                        <!-- Feedback Area (shown after placement) -->
+                        <div id="feedback-area" class="hidden">
+                            <h2 id="feedback-message">Correct!</h2>
+                            <ul id="bonus-feedback"></ul>
+                            <div id="active-extra-info" class="metadata-box">
+                                <span id="active-movement"></span> &bull; <span id="active-medium"></span> &bull; <span id="active-location"></span>
+                            </div>
+                            <div id="trivia-section" class="hidden">
+                                <h3>Artwork Details</h3>
+                                <p id="trivia-text"></p>
+                            </div>
+                            <div id="did-you-know-section" class="hidden">
+                                <h3>Did you know?</h3>
+                                <p id="did-you-know-text"></p>
+                            </div>
+                            <button id="next-round-btn" class="primary-btn">Continue</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline: horizontal on desktop, vertical on a phone.
+                     Both the heading and the direction labels are present;
+                     CSS shows whichever suits the current layout. -->
+                <div id="timeline-section">
+                    <h2>Timeline</h2>
+                    <!-- Newest at the top: the phone timeline is
+                         column-reverse, so these labels match the visual
+                         order rather than the DOM order. -->
+                    <div class="timeline-direction">
+                        <span class="direction-label">&#9650; Newer</span>
+                    </div>
+                    <div id="timeline" class="timeline">
+                        <!-- Filled by JS: gaps and cards -->
+                    </div>
+                    <div class="timeline-direction">
+                        <span class="direction-label">&#9660; Older</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== END SCREEN ==================== -->
+        <div id="end-screen" class="screen">
+            <h1>Game Over!</h1>
+            <p>Your Highscore:</p>
+            <div class="final-score" id="final-score">0</div>
+            <div class="score-breakdown" id="score-breakdown">
+                <!-- Breakdown -->
+            </div>
+            <button id="restart-btn" class="primary-btn">Play Again</button>
+        </div>
+
+        <!-- ==================== TAB BAR ==================== -->
+        <nav class="tabbar" aria-label="Main">
+            <button data-tab="play">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
+                <span data-i18n="tab.play">Play</span></button>
+            <button data-tab="ranks">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-5"/></svg>
+                <span data-i18n="tab.ranks">Ranks</span></button>
+            <button data-tab="gallery">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M3.5 16l5-5 4 4 3-3 5 4"/></svg>
+                <span data-i18n="tab.gallery">Gallery</span></button>
+            <button data-tab="profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4 20.5c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+                <span data-i18n="tab.profile">Profile</span></button>
+        </nav>
+
+        <!-- ==================== LOADING OVERLAY ==================== -->
+        <div id="loading-overlay" class="hidden">
+            <lottie-player id="lottie-loader" src="Abstract%20Painting%20Loader.json" background="transparent" speed="1" loop autoplay></lottie-player>
+            <p id="loading-text">Loading artworks from the museum...</p>
+        </div>
+
+        <!-- Opens the report form. Hidden: the flag in the game header and
+             Profile → Send feedback click it. -->
+        <button id="open-report-btn" class="report-btn">Report / Feedback</button>
+
+        <!-- ==================== REPORT MODAL ==================== -->
+        <div id="report-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Report / Feedback</h2>
+                <p>Spotted a wrong fact? Want to suggest a new feature? Let us know!</p>
+                <div id="report-card-context" class="hidden" style="text-align:left;font-size:0.85rem;border:1px solid;border-left:4px solid var(--accent-color);border-radius:6px;padding:0.6rem 0.75rem;margin-bottom:0.75rem;">
+                    <strong>About this card</strong>
+                    <div id="report-card-summary" style="margin-top:0.2rem;color:var(--text-secondary);"></div>
+                </div>
+
+                <label for="report-topic" style="display:block;text-align:left;font-size:0.85rem;margin-bottom:0.25rem;">What is this about?</label>
+                <select id="report-topic" style="width:100%;padding:0.5rem;margin-bottom:0.75rem;border:1px solid;border-radius:6px;font:inherit;">
+                    <option value="Wrong year">Wrong year</option>
+                    <option value="Wrong artist or title">Wrong artist or title</option>
+                    <option value="Image problem">Image problem</option>
+                    <option value="Wrong or unclear description">Wrong or unclear description</option>
+                    <option value="Feature suggestion">Feature suggestion</option>
+                    <option value="Something else" selected>Something else</option>
+                </select>
+
+                <textarea id="report-text" placeholder="Type your feedback here..." rows="5" maxlength="1000"></textarea>
+                <p id="report-hint" data-i18n="feedback.hint" style="font-size:0.75rem;color:var(--text-secondary);text-align:left;margin:0.4rem 0 0;"></p>
+
+                <div id="report-fallback" class="hidden" style="text-align:left;margin-top:0.75rem;">
+                    <p style="font-size:0.8rem;margin:0 0 0.4rem;">If your email app did not open, copy this and send it to <strong>julian@langschwerts.de</strong>:</p>
+                    <textarea id="report-fallback-text" rows="6" readonly style="width:100%;font-size:0.75rem;"></textarea>
+                    <button id="report-copy-btn" class="secondary-btn" style="margin-top:0.4rem;padding:0.35rem 1rem;font-size:0.8rem;">Copy to clipboard</button>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="cancel-report-btn" class="secondary-btn">Cancel</button>
+                    <button id="send-report-btn" class="primary-btn">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ZOOM MODAL ==================== -->
+        <div id="zoom-modal" class="zoom-modal hidden">
+            <span id="close-zoom-btn" class="close-zoom">&times;</span>
+            <img id="zoomed-image" src="" alt="Zoomed Artwork">
+        </div>
+
+        <!-- ==================== INSTALL HINT ====================
+             Android fires beforeinstallprompt and gets a real button.
+             iOS has no install prompt at all, so it gets instructions. -->
+        <div id="install-hint" class="hidden">
+            <p id="install-hint-text"></p>
+            <button id="install-accept" class="hidden">Install</button>
+            <button id="install-dismiss" aria-label="Dismiss">&times;</button>
+        </div>
+    </div>
+
+    <!-- Anonymous, cookieless analytics. No cookies, no personal data.
+         Dashboard: https://circart.goatcounter.com -->
+    <script data-goatcounter="https://circart.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+
+    <script src="strings.js"></script>
+    <!-- Online features. If this fails to load (offline), solo play is unaffected. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.89.0/dist/umd/supabase.js"></script>
+    <script src="online.js"></script>
+    <script src="app.js"></script>
+    <script src="shell.js"></script>
+    <script src="game.js"></script>
+    <script src="pwa.js"></script>
+    <script src="preview.js"></script>
+</body>
+</html>
