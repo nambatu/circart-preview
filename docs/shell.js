@@ -405,6 +405,8 @@
               <span class="seg" role="group" aria-label="${esc(t('profile.appearance'))}">
                 ${['system', 'light', 'dark'].map(k => `<button data-theme="${k}" aria-pressed="${theme === k}">${esc(t('profile.theme.' + k))}</button>`).join('')}
               </span></div>
+            ${o && o.pushSupported && o.pushSupported() ? `<button id="pf-push"><span>${esc(t('profile.notifications'))}</span>
+              <span class="value" id="pf-push-v">…</span></button>` : ''}
             <div><span>${esc(t('profile.language'))}</span><span class="value">${esc(window.CircI18n.languages().find(l => l.code === window.CircI18n.lang).name)}</span></div>
           </section>
           <section class="panel list" aria-label="More">
@@ -439,6 +441,14 @@
             renderProfile();
         }));
         on('pf-feedback', () => $('open-report-btn').click());
+        if ($('pf-push')) {
+            let pushIsOn = false;
+            o.pushOn().then(v => { pushIsOn = v; $('pf-push-v').textContent = t(v ? 'profile.notifOn' : 'profile.notifOff'); }).catch(() => {});
+            on('pf-push', guard(async () => {
+                if (pushIsOn) await o.disablePush(); else await o.enablePush();
+                renderProfile();
+            }));
+        }
         on('pf-about', showAbout);
         if (!o) return;
         on('pf-google', guard(() => o.signInWithGoogle()));
@@ -588,6 +598,13 @@
 
         const o = online();
         if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); });
+
+        // a tapped notification while the app is already open
+        if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
+            if (!e.data || e.data.type !== 'circart:open') return;
+            const id = new URL(e.data.url).searchParams.get('game');
+            if (id && o) window.CircGame.open(id);
+        });
 
         // links to a game you're in: ?game=<id> (from a share or a notification)
         const gameId = new URLSearchParams(location.search).get('game');

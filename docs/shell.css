@@ -312,3 +312,34 @@ body.tabs-on #back-to-menu-btn { display: none; }
     #next-round-btn { position: sticky; bottom: 0.75rem; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
     #timeline-section h2 { margin-bottom: 1rem; }
 }
+
+/* ---------- instant feedback ---------- */
+.go-flash { position: fixed; inset: 0; z-index: 2600; pointer-events: none; display: flex; align-items: center; justify-content: center;
+    animation: goFlash 0.85s ease-out forwards; }
+.go-flash.ok { background: color-mix(in srgb, var(--success) 22%, transparent); }
+.go-flash.bad { background: color-mix(in srgb, var(--error) 22%, transparent); }
+.go-flash span { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font: 700 52px var(--font-body); color: #fff; animation: goPop 0.85s ease-out forwards; }
+.go-flash.ok span { background: var(--success); }
+.go-flash.bad span { background: var(--error); }
+@keyframes goFlash { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes goPop { 0% { transform: scale(0.4); } 25% { transform: scale(1.08); } 40% { transform: scale(1); } 100% { transform: scale(1); } }
+.go-verdict { animation: goPop 0.5s ease-out; }
+.go-pick { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 6px 10px; border-radius: 12px;
+    background: var(--surface-2); text-align: center; font-weight: 600; font-size: 14px; border: 2px solid transparent; }
+.go-pick.chosen { border-color: var(--text-primary); }
+.go-pick.right { background: color-mix(in srgb, var(--success) 18%, var(--card-bg)); border-color: var(--success); color: var(--success); }
+.go-pick.wrong { background: color-mix(in srgb, var(--error) 14%, var(--card-bg)); border-color: var(--error); color: var(--error); }
+.go-artline { font-weight: 600; }
+.go-artline.ok { color: var(--success); }
+.go-artline.bad { color: var(--error); }
+.go-switch { display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; position: relative; }
+.go-switch > span:first-child { flex: 1; }
+.go-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.go-toggle { width: 48px; height: 28px; border-radius: 14px; background: var(--line); position: relative; flex-shrink: 0; transition: background 0.2s; }
+.go-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 0.2s; }
+.go-switch input:checked + .go-toggle { background: var(--accent-color); }
+.go-switch input:checked + .go-toggle::after { transform: translateX(20px); }
+.go-switch input:focus-visible + .go-toggle { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .go-verdict { animation: none; } }

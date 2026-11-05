@@ -17,6 +17,8 @@
     // all protection lives in the database rules.
     const SUPABASE_URL = 'https://rzptvdlejmdeaanhbbtd.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu';
+    // Web Push "application server" key (public). Empty = notifications off.
+    const VAPID_PUBLIC_KEY = 'BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c';
 
     const QUEUE_KEY = 'circart-pending-games';
     const QUEUE_MAX = 30;
@@ -36,6 +38,8 @@
         not_host: 'Only the host can do that.',
         need_two_players: 'You need at least two players.',
         bad_settings: 'Those game settings don\'t work.',
+        push_unsupported: 'This browser can\'t show notifications. On iPhone, add CIRCArt to your home screen first.',
+        push_denied: 'Notifications are blocked. You can allow them in your browser or phone settings.',
         card_not_open: 'That card isn\'t open.',
         already_answered: 'You already placed this card.',
         not_playing: 'This game isn\'t running.',
@@ -257,6 +261,58 @@
     const myResults          = id => rpc('my_results', { p_game: id });
     const rematch            = id => rpc('rematch', { p_game: id });
     const rematchInfo        = id => rpc('rematch_info', { p_game: id });
+    const gameOptions        = id => rpc('game_options', { p_game: id });
+    const setGameOptions     = (id, { artistBonus = null, movementBonus = null } = {}) =>
+        rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus });
+    // both bonus answers in one go (null = skipped)
+    const pickBonus          = (id, position, artist, movement) =>
+        rpc('pick_bonus', { p_game: id, p_position: position, p_artist: artist, p_movement: movement });
+
+    // ─── push notifications (async games) ─────────────────────────────────
+    // iPhone: only once the app is added to the home screen (iOS 16.4+).
+    const pushSupported = () => !!(VAPID_PUBLIC_KEY && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+    const pushPermission = () => ('Notification' in window ? Notification.permission : 'unsupported');
+    function urlB64(b64) {
+        const pad = '='.repeat((4 - b64.length % 4) % 4);
+        const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+        return Uint8Array.from(raw, c => c.charCodeAt(0));
+    }
+    async function pushSubscription() {
+        if (!pushSupported()) return null;
+        const reg = await navigator.serviceWorker.ready;
+        return reg.pushManager.getSubscription();
+    }
+    // Asks for permission (must follow a tap), subscribes this device, saves it.
+    async function enablePush() {
+        if (!pushSupported()) throw fail('push_unsupported');
+        await ensureGuest();
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') throw fail('push_denied');
+        const reg = await navigator.serviceWorker.ready;
+        const sub = (await reg.pushManager.getSubscription())
+            || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) });
+        const j = sub.toJSON();
+        await rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
+                                              p_user_agent: navigator.userAgent.slice(0, 200) });
+        return true;
+    }
+    async function disablePush() {
+        const sub = await pushSubscription();
+        if (!sub) return;
+        try { await rpc('remove_push_subscription', { p_endpoint: sub.endpoint }); } catch (e) { /* ignore */ }
+        await sub.unsubscribe();
+    }
+    // On this device: subscribed and permission still granted?
+    async function pushOn() {
+        if (!pushSupported() || pushPermission() !== 'granted') return false;
+        const sub = await pushSubscription();
+        if (sub && await user()) {                // keep the server's copy fresh (it may have been removed)
+            const j = sub.toJSON();
+            rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
+                                            p_user_agent: navigator.userAgent.slice(0, 200) }).catch(() => {});
+        }
+        return !!sub;
+    }
 
     // Live updates for one game (players joining, answers coming in, rounds
     // changing). Calls onChange; re-fetch with getGame(). Returns unsubscribe.
@@ -278,7 +334,8 @@
         serverNow, createGame, joinGame, startGame, leaveGame, getGame, nextCard,
         answer, pickArtist, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
-        myResults, rematch, rematchInfo,
+        myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus,
+        pushSupported, pushPermission, pushOn, enablePush, disablePush,
     };
 
     init();

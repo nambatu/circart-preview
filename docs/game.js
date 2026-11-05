@@ -23,7 +23,7 @@
     function open(id, extra) {
         close(true);
         G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false,
-              challengeNo: extra && extra.challengeNo, board: null, results: null, rematch: null };
+              challengeNo: extra && extra.challengeNo, board: null, results: null, rematch: null, sel: {}, bonusRes: null };
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         $('game-online-screen').classList.add('active');
         $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
@@ -62,12 +62,18 @@
             }
             if (live && st.phase === 'reveal' && G.revFor !== st.current_turn) {
                 G.answer = null; G.card = null;
-                try { G.rev = await O().reveal(G.id, st.current_turn); G.revFor = st.current_turn; } catch (e) { G.rev = null; }
+                try {
+                    G.rev = await O().reveal(G.id, st.current_turn); G.revFor = st.current_turn;
+                    if (!G.rev.mine.timed_out || G.rev.mine.slot != null) feel(!!G.rev.mine.correct);
+                } catch (e) { G.rev = null; }
             }
             // live deals the card to everyone at once; async waits for "Ready"
             if (st.phase === 'play' && !G.answer && (!G.card || G.card.wait) && (live || G.wantCard)) {
                 G.card = await O().nextCard(G.id);
                 G.cardTurn = st.current_turn;
+            }
+            if (st.phase === 'lobby' && st.kind !== 'daily') {
+                try { G.opts = await O().gameOptions(G.id); } catch (e) { G.opts = null; }
             }
             if ((st.phase === 'finished' || st.phase === 'done') && !G.answer && !G.results) {
                 try { G.results = await O().myResults(G.id); } catch (e) { G.results = []; }
@@ -160,11 +166,35 @@
           <p class="note" style="text-align:center">${esc(st.kind === 'live'
               ? t('game.liveRules', { n: st.card_count })
               : t('game.asyncRules', { turns: st.turns, cards: st.cards_per_turn }))}</p>
+          ${artistOption()}
           ${st.is_host
               ? `<button class="btn primary block" data-act="start" ${st.players.length < 2 ? 'disabled' : ''}>${esc(st.players.length < 2 ? t('game.waitPlayers') : t('game.start'))}</button>`
               : `<p class="muted" style="text-align:center">${esc(t('game.waitHost'))}</p>`}
           <button class="btn link" data-act="leave">${esc(t('game.leave'))}</button>
         </div>`;
+    }
+
+    function artistOption() {
+        const a = !G.opts || G.opts.artist_bonus !== false, m = !G.opts || G.opts.movement_bonus !== false;
+        if (!G.st.is_host) return `<p class="note" style="text-align:center">${esc(
+            a && m ? t('game.bonusBoth') : a ? t('game.bonusArtist') : m ? t('game.bonusMovement') : t('game.bonusNone'))}</p>`;
+        const sw = (key, on, title, text) => `<label class="panel go-switch"><span><b>${esc(title)}</b><br>
+            <span class="note">${esc(text)}</span></span>
+            <input type="checkbox" data-opt="${key}" ${on ? 'checked' : ''}><span class="go-toggle" aria-hidden="true"></span></label>`;
+        return sw('artist', a, t('game.artistBonus'), t('game.artistBonusText'))
+             + sw('movement', m, t('game.movementBonus'), t('game.movementBonusText'));
+    }
+
+    // ─── feedback you can feel: a colour flash, a mark, a short buzz ──────
+    // Android buzzes; iPhone browsers don't allow vibration, so it's visual there.
+    function feel(ok) {
+        try { if (navigator.vibrate) navigator.vibrate(ok ? 35 : [45, 70, 45]); } catch (e) { /* ignore */ }
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const f = document.createElement('div');
+        f.className = 'go-flash ' + (ok ? 'ok' : 'bad');
+        f.innerHTML = `<span>${ok ? '✓' : '✗'}</span>`;
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 900);
     }
 
     function timeline(clickable) {
@@ -229,13 +259,33 @@
         </div>`;
     }
 
+    // ─── bonus questions after placing: artist (+200) and movement (+100) ──
+    // Tap one answer per question; when every question has one, it's sent.
+    // "Skip" sends whatever is picked so far.
+    const opts = (r, k) => (r && r[k + '_options'] && r[k + '_options'].length) ? r[k + '_options'] : null;
+    function hasBonus(res) { return !!(opts(res, 'artist') || opts(res, 'movement')); }
+
+    function bonusRow(kind, title, pts, list) {
+        const sel = G.sel[kind], res = G.bonusRes, live = G.st.kind === 'live';
+        const real = res && res[kind];                       // async/daily: the right answer, after sending
+        const cls = n => G.picked
+            ? (live || !res ? (n === sel ? 'chosen' : '') : n === real ? 'right' : n === sel ? 'wrong' : '')
+            : (n === sel ? 'chosen' : '');
+        const mark = c => c === 'right' ? ' ✓' : c === 'wrong' ? ' ✗' : '';
+        return `<div style="display:flex;flex-direction:column;gap:8px"><b>${esc(title)} <span class="note">+${pts}</span></b>
+          <div class="two">${list.map(n => G.picked
+              ? `<span class="go-pick ${cls(n)}">${esc(n)}${mark(cls(n))}</span>`
+              : `<button class="go-pick ${cls(n)}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
+    }
+
     function artistPicker() {
-        const a = G.answer;
-        if (!a.res.artist_options || G.picked) return '';
-        return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
-          <b>${esc(t('game.whoPainted'))} <span class="note">+200</span></b>
-          <div class="two">${a.res.artist_options.map(n => `<button class="btn quiet" data-artist="${esc(n)}">${esc(n)}</button>`).join('')}</div>
-          <button class="btn link" data-act="skip">${esc(t('game.skip'))}</button></section>`;
+        const r = G.answer.res, a = opts(r, 'artist'), m = opts(r, 'movement');
+        if (!a && !m) return '';
+        if (G.picked && !G.sel.artist && !G.sel.movement) return '';
+        return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:14px">
+          ${a ? bonusRow('artist', t('game.whoPainted'), 200, a) : ''}
+          ${m ? bonusRow('movement', t('game.whichMovement'), 100, m) : ''}
+          ${G.picked ? '' : `<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
     }
 
     // live: you answered; the result comes when the round closes
@@ -257,11 +307,11 @@
         return `<div class="page">
           <div class="row" style="justify-content:space-between">
             <h2 class="serif go-verdict ${r.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
-            <b class="serif" style="font-size:26px">+${(r.points || 0) + (rev && rev.mine.artist_correct ? 200 : 0)}</b></div>
+            <b class="serif" style="font-size:26px">+${(r.points || 0) + (rev && rev.mine.artist_correct ? 200 : 0) + (rev && rev.mine.movement_correct ? 100 : 0)}</b></div>
           ${r.streak > 1 ? `<p class="note">${esc(t('game.streak', { n: r.streak }))}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
-          ${G.picked || !r.artist_options ? `<button class="btn primary block" data-act="next">${esc(G.st.kind === 'daily' && a.position >= G.st.card_count ? t('game.results') : t('game.next'))}</button>` : ''}
+          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc(G.st.kind === 'daily' && a.position >= G.st.card_count ? t('game.results') : t('game.next'))}</button>` : ''}
         </div>`;
     }
 
@@ -271,7 +321,7 @@
           ${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(c.title)}">` : ''}
           <div><b class="serif" style="font-size:26px">${c.year}</b>
             <div class="serif"><i>${esc(c.title)}</i></div>
-            <div class="muted">${esc(c.artist)}${rev.mine.artist_choice ? (rev.mine.artist_correct ? ' ✓' : '') : ''}</div>
+            <div class="muted">${esc(c.artist)}${c.movement_group ? ' · ' + esc(c.movement_group) : ''}</div>
             ${c.trivia ? `<p class="go-trivia">${esc(c.trivia)}</p>` : ''}</div></section>`;
     }
 
@@ -299,6 +349,8 @@
           <div class="row" style="justify-content:space-between">
             <h2 class="serif go-verdict ${m.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
             <b class="serif" style="font-size:26px">+${m.points}</b></div>
+          ${m.artist_choice ? `<p class="go-artline ${m.artist_correct ? 'ok' : 'bad'}">${esc(t('game.artistWas', { name: m.artist_choice }))} ${m.artist_correct ? '✓ +200' : '✗ · ' + esc(rev.card.artist)}</p>` : ''}
+          ${m.movement_choice ? `<p class="go-artline ${m.movement_correct ? 'ok' : 'bad'}">${esc(t('game.movementWas', { name: m.movement_choice }))} ${m.movement_correct ? '✓ +100' : '✗ · ' + esc(rev.card.movement_group || '')}</p>` : ''}
           ${cardStory(rev)}
           ${distribution(rev)}
           <h2 class="label">${esc(t('game.afterCard', { n: rev.position }))}</h2>
@@ -318,6 +370,7 @@
             <span class="note">${esc(t('game.closesIn', { time: fmtLeft(left(st.turn_deadline)) }))}</span></div>
           <section class="panel" style="padding:14px"><b>${esc(t('game.turnDone'))}</b>
             <p class="muted" style="font-size:14px">${esc(t('game.turnDoneText'))}</p></section>
+          ${pushPrompt()}
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
           ${st.timeline.length > 1 ? `<h2 class="label">${esc(t('game.timeline'))} · ${st.timeline.length}</h2>${timeline(false)}` : ''}
@@ -347,6 +400,22 @@
           <p class="note" style="text-align:center">${esc(t('game.dailyTomorrow'))}</p>
           <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
+    }
+
+    // after your first async turn: offer notifications, once per device
+    const ASKED = 'circart-push-asked';
+    function pushPrompt() {
+        const o = O();
+        let asked = null;
+        try { asked = localStorage.getItem(ASKED); } catch (e) { /* ignore */ }
+        if (asked || !o.pushSupported || o.pushPermission() === 'granted' || o.pushPermission() === 'denied') return '';
+        const iphone = !o.pushSupported() && /iPhone|iPad/.test(navigator.userAgent);
+        if (!o.pushSupported() && !iphone) return '';
+        return `<section class="panel strong" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+            <b class="serif" style="font-size:19px">${esc(t('push.title'))}</b>
+            <p class="muted" style="font-size:14px">${esc(iphone ? t('push.iphone') : t('push.text'))}</p>
+            <div class="two">${iphone ? '' : `<button class="btn primary" data-act="pushOn">${esc(t('push.on'))}</button>`}
+              <button class="btn quiet" data-act="pushLater">${esc(t('push.later'))}</button></div></section>`;
     }
 
     function viewPodium() {
@@ -395,8 +464,14 @@
     function wire() {
         const body = $('go-body');
         body.querySelectorAll('[data-gap]').forEach(b => b.addEventListener('click', () => place(+b.dataset.gap)));
-        body.querySelectorAll('[data-artist]').forEach(b => b.addEventListener('click', () => pick(b.dataset.artist)));
+        body.querySelectorAll('[data-artist]').forEach(b => b.addEventListener('click', () => choose('artist', b.dataset.artist)));
+        body.querySelectorAll('[data-movement]').forEach(b => b.addEventListener('click', () => choose('movement', b.dataset.movement)));
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
+        body.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', async () => {
+            const o = c.dataset.opt === 'artist' ? { artistBonus: c.checked } : { movementBonus: c.checked };
+            try { G.opts = await O().setGameOptions(G.id, o); } catch (e) { window.CircShell.toast(e.message); }
+            draw();
+        }));
     }
 
     async function place(slot) {
@@ -405,7 +480,9 @@
         try {
             const res = await O().answer(G.id, G.card.position, slot);
             G.answer = { position: G.card.position, turn: G.st.current_turn, res };
-            G.picked = !res.artist_options;
+            G.picked = !hasBonus(res);
+            G.sel = {}; G.bonusRes = null;
+            if (G.st.kind !== 'live') feel(!!res.correct && !res.timed_out);
             G.rev = null;
             if (G.st.kind !== 'live' && G.picked) G.rev = await O().reveal(G.id, G.answer.position);
         } catch (e) {
@@ -414,17 +491,31 @@
         refresh();
     }
 
-    async function pick(name) {
+    function choose(kind, name) {
+        if (!G.answer || G.picked) return;
+        G.sel[kind] = name;
+        const r = G.answer.res;
+        if ((!opts(r, 'artist') || G.sel.artist) && (!opts(r, 'movement') || G.sel.movement)) return pick();
+        draw();
+    }
+
+    async function pick() {
         if (!G.answer || G.picked) return;
         G.picked = true;
-        try { await O().pickArtist(G.id, G.answer.position, name); } catch (e) { /* the window closed: no bonus */ }
+        try {
+            const r = await O().pickBonus(G.id, G.answer.position, G.sel.artist || null, G.sel.movement || null);
+            if (r && ('artist_correct' in r)) {
+                G.bonusRes = r;
+                if (G.sel.artist || G.sel.movement) feel((!G.sel.artist || r.artist_correct) && (!G.sel.movement || r.movement_correct));
+            }
+        } catch (e) { /* the window closed: no bonus */ }
         if (G.st.kind !== 'live') { try { G.rev = await O().reveal(G.id, G.answer.position); } catch (e) { /* ignore */ } }
         refresh();
     }
 
     async function act(a) {
         try {
-            if (a === 'skip') return pick(null);
+            if (a === 'skip') return pick();
             if (a === 'next' || a === 'ready') { G.answer = null; G.card = null; G.rev = null; G.wantCard = true; return refresh(); }
             if (a === 'start') { await O().startGame(G.id); return refresh(); }
             if (a === 'leave') { await O().leaveGame(G.id); return close(); }
@@ -439,6 +530,11 @@
             }
             if (a === 'rematch') { const r = await O().rematch(G.id); return open(r.id); }
             if (a === 'openRematch') return open(G.rematch.id);
+            if (a === 'pushLater' || a === 'pushOn') {
+                try { localStorage.setItem('circart-push-asked', '1'); } catch (e) { /* ignore */ }
+                if (a === 'pushOn') { await O().enablePush(); window.CircShell.toast(t('push.done')); }
+                return draw();
+            }
             if (a === 'leaveYes') { await O().leaveGame(G.id); return close(); }
             if (a === 'share') {
                 const url = location.origin + location.pathname + '?join=' + G.st.code;
