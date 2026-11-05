@@ -102,6 +102,7 @@
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
         renderDaily(o, u);
         renderRun(o, u);
+        renderPacks(o, u);
         renderOnlineHome(o, u);
     }
 
@@ -158,6 +159,39 @@
                 window.CircGame.open(g.id, { prevBest: before == null ? null : before });
             } catch (err) { b.disabled = false; toast(err.message || t('common.error')); }
         });
+    }
+
+    // ─── home: card packs ──────────────────────────────────────────────────
+    async function renderPacks(o, u) {
+        const box = $('home-packs');
+        if (!o || !o.myPacks || !window.CircPacks) { box.innerHTML = ''; return; }
+        let packs = [];
+        if (u) { try { packs = await o.myPacks(); } catch (e) { packs = []; } }
+        if (!packs.length) { box.innerHTML = ''; return; }
+        window.CircPacks.setUnlocked(packs.filter(p => p.unlocked).map(p => p.id));
+        const de = window.CircI18n.lang === 'de';
+        const L = (p, k) => (de && p[k + '_de']) || p[k];
+        const fresh = packs.filter(p => p.new);
+        if (fresh.length) { fresh.forEach(p => toast(t('packs.new', { name: L(p, 'title') }))); o.markPacksSeen().catch(() => {}); }
+        box.innerHTML = `
+          <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+            <span class="eyebrow">${esc(t('packs.eyebrow'))}</span>
+            ${packs.map(p => `<div class="pack ${p.unlocked ? 'open' : ''}">
+              <div class="row" style="justify-content:space-between;align-items:baseline">
+                <b class="serif" style="font-size:18px">${esc(L(p, 'title'))}</b>
+                <span class="note">${esc(t('packs.cards', { n: p.cards }))}</span></div>
+              <p class="muted" style="font-size:14px">${esc(L(p, 'description'))}</p>
+              ${p.unlocked
+                ? `<div class="row" style="justify-content:space-between"><span class="note">✓ ${esc(t('packs.inSolo'))}</span>
+                    <button class="btn quiet" data-pack="${esc(p.id)}" ${p.cards ? '' : 'disabled'}>${esc(t('packs.play'))}</button></div>`
+                : `<div class="note">${esc(t('packs.locked', { task: L(p, 'unlock_text') }))} · ${esc(t('packs.progress', { n: p.progress, total: p.needed }))}</div>
+                   <div class="pack-bar"><span style="width:${p.needed ? Math.round(100 * p.progress / p.needed) : 0}%"></span></div>`}
+            </div>`).join('')}
+            ${packs.some(p => p.unlocked) ? `<label class="row note" style="gap:8px"><input type="checkbox" id="pack-mix" ${window.CircPacks.mixing() ? 'checked' : ''}> ${esc(t('packs.mix'))}</label>` : ''}
+          </section>`;
+        box.querySelectorAll('[data-pack]').forEach(b => b.addEventListener('click', () => window.CircPacks.play(b.dataset.pack)));
+        const mix = $('pack-mix');
+        if (mix) mix.addEventListener('change', () => window.CircPacks.setMixing(mix.checked));
     }
 
     function drawDaily(box, o, u, d) {
@@ -473,6 +507,8 @@
             <button id="pf-feedback"><span>${esc(t('profile.feedback'))}</span><span class="value" aria-hidden="true">›</span></button>
             ${window.CircOnboarding ? `<button id="pf-howto"><span>${esc(t('profile.howTo'))}</span><span class="value" aria-hidden="true">›</span></button>` : ''}
             <button id="pf-about"><span>${esc(t('profile.about'))}</span><span class="value" aria-hidden="true">›</span></button>
+            <a id="pf-privacy" href="${window.CircI18n.lang === 'de' ? 'privacy-de.html' : 'privacy-en.html'}"><span>${esc(t('profile.privacy'))}</span><span class="value" aria-hidden="true">›</span></a>
+            ${u && o && o.exportMyData ? `<button id="pf-export"><span>${esc(t('profile.export'))}</span><span class="value" aria-hidden="true">⤓</span></button>` : ''}
             ${u ? `<button id="pf-signout"><span>${esc(t('profile.signOut'))}</span></button>
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
           </section>`;
@@ -528,6 +564,14 @@
             }));
         }
         on('pf-about', showAbout);
+        on('pf-export', guard(async () => {
+            const data = await o.exportMyData();
+            const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+            const a = document.createElement('a');
+            a.href = url; a.download = 'circart-my-data.json';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }));
         on('pf-howto', () => window.CircOnboarding && window.CircOnboarding.show());
         if (!o) return;
         on('pf-google', guard(() => o.signInWithGoogle()));

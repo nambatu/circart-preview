@@ -47,6 +47,7 @@ jobs:
           done
           echo "loading deck"
           psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/deck.sql
+          if [ -f supabase/packs.sql ]; then echo "loading packs"; psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/packs.sql; fi
 
       - name: Export feedback (newest 200)
         run: |
