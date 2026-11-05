@@ -1,0 +1,23 @@
+# Cancels a GitHub Pages deployment that got stuck (it blocks every newer one).
+# Runs on push when this file changes, or by hand from the Actions tab.
+name: pages-unstick
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/pages-unstick.yml"]
+  workflow_dispatch:
+permissions:
+  pages: write
+  deployments: write
+  contents: read
+jobs:
+  unstick:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Cancel stuck Pages deployments
+        run: |
+          for sha in 6cd1b001dd13347a6a7e73aa1e3a3c11e4620df6 5f99addb1e3fb9f698378870f69ecacf27b149af; do
+            echo "cancel $sha"; gh api -X POST "repos/${{ github.repository }}/pages/deployments/$sha/cancel" || true
+          done
