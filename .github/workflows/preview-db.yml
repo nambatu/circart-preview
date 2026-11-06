@@ -1,5 +1,6 @@
-# CIRCArt Preview — keeps the preview database in step with the code and
-# exports in-app feedback for the evening builds.
+# CIRCArt Preview — keeps the preview database in step with the code.
+# (Feedback is NOT exported any more: this repo is public, and the evening
+# run reads feedback only through feedback_inbox(), which filters injections.)
 #
 # Needs one repository secret: SUPABASE_DB_URL = the preview project's
 # "Session pooler" connection string (Supabase → Connect), with the password.
@@ -9,12 +10,10 @@ on:
   push:
     branches: [main]
     paths: ["supabase/**", ".github/workflows/preview-db.yml"]
-  schedule:
-    - cron: "17 * * * *"          # hourly feedback export
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: preview-db
@@ -48,19 +47,3 @@ jobs:
           echo "loading deck"
           psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/deck.sql
           if [ -f supabase/packs.sql ]; then echo "loading packs"; psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/packs.sql; fi
-
-      - name: Export feedback (newest 200)
-        run: |
-          set -e
-          mkdir -p feedback
-          psql "$DB" -tA -c "
-            select coalesce(json_agg(f), '[]') from (
-              select id, created_at, topic, message, card_source_id, status
-                from public.feedback order by created_at desc limit 200) f" > feedback/feedback.json
-          git config user.name "circart-preview-bot"
-          git config user.email "circart-preview-bot@users.noreply.github.com"
-          git add feedback/feedback.json
-          if ! git diff --cached --quiet; then
-            git commit -q -m "Feedback export"
-            git pull -q --rebase && git push -q
-          fi

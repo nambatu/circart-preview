@@ -6,6 +6,10 @@
          deliberately NOT disabled — the artwork is the point of the game,
          and blocking pinch-zoom is an accessibility failure. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Content-Security-Policy: only our own files, the database and the analytics may run or be
+         contacted (limits the damage of any injected script). The sha256 is the theme script below:
+         if you change that script, update the hash. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NwmDhXOz/67qPRji5leHMUkIdowVCa5mjzhS7BJI1gM=' gc.zgo.at; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://circart.goatcounter.com https://collectionapi.metmuseum.org https://openaccess-api.clevelandart.org https://api.europeana.eu; worker-src 'self' blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="no-referrer">
     <meta name="description" content="Place masterpieces of art history in the correct chronological order on the timeline.">
     <title>CIRCArt Preview</title>
@@ -48,19 +52,23 @@
                     </div>
                     <p class="muted" data-i18n="home.tagline"></p>
 
-                    <!-- daily challenge + month banner (shell.js) -->
+                    <!-- Today: the daily challenge (shell.js) -->
+                    <h2 class="label home-label" data-i18n="home.today"></h2>
                     <div id="home-daily"></div>
-                    <!-- Monthly Run (shell.js) -->
-                    <div id="home-run"></div>
-                    <section class="panel hero">
+                    <!-- your running games with friends, only when there are any (shell.js) -->
+                    <div id="home-games"></div>
+
+                    <h2 class="label home-label" data-i18n="home.playLabel"></h2>
+                    <section class="panel hcard hero">
                         <div class="hero-img">
                             <img id="home-hero-img" alt="">
                             <div id="home-hero-caption" class="hero-caption"></div>
                         </div>
-                        <div class="hero-body">
-                            <div class="eyebrow" data-i18n="home.solo.eyebrow"></div>
-                            <h2 data-i18n="home.solo.title"></h2>
-                            <div class="row" style="justify-content:space-between;margin-top:6px">
+                        <div class="hcard-body">
+                            <div class="hcard-top"><span class="eyebrow" data-i18n="home.solo.eyebrow"></span></div>
+                            <h3 class="hcard-title" data-i18n="home.solo.title"></h3>
+                            <p class="hcard-text" data-i18n="home.solo.text"></p>
+                            <div class="row hcard-status" style="justify-content:space-between">
                                 <span class="label" id="round-chips-label" data-i18n="home.solo.rounds"></span>
                                 <div class="chips" id="round-chips" role="group" aria-labelledby="round-chips-label">
                                     <button class="chip" data-rounds="5">5</button>
@@ -76,14 +84,13 @@
                                 <option value="15">15</option>
                                 <option value="20">20</option>
                             </select>
-                            <button id="start-btn" class="btn primary block" style="margin-top:10px" data-i18n="home.solo.start"></button>
+                            <button id="start-btn" class="btn primary block" data-i18n="home.solo.start"></button>
                         </div>
                     </section>
-
-                    <!-- your games + play with friends (shell.js) -->
+                    <!-- Monthly Run (shell.js) -->
+                    <div id="home-run"></div>
+                    <!-- play with friends + join by code (shell.js) -->
                     <div id="home-online"></div>
-                    <!-- card packs (shell.js + packs.js) -->
-                    <div id="home-packs"></div>
 
                     <!-- app.js opens the gallery from this button; the Gallery tab clicks it -->
                     <button id="gallery-btn" class="hidden" tabindex="-1" aria-hidden="true"></button>
@@ -97,7 +104,13 @@
                 <h2 data-i18n="tab.gallery">Gallery</h2>
                 <button id="back-to-menu-btn" class="primary-btn small-btn">Back to Menu</button>
             </header>
+            <div class="gallery-switch"><div class="seg" id="gallery-seg" role="group">
+                <button data-gview="works" aria-pressed="true" data-i18n="gallery.works"></button>
+                <button data-gview="packs" aria-pressed="false" data-i18n="gallery.packs"></button>
+            </div></div>
             <main class="gallery-main">
+                <!-- card packs (shell.js) -->
+                <div id="gallery-packs" class="gallery-packs hidden"></div>
                 <div id="gallery-grid" class="gallery-grid">
                     <!-- Gallery items go here -->
                 </div>
@@ -124,7 +137,7 @@
         <!-- ==================== GAME WITH FRIENDS (game.js) ==================== -->
         <div id="game-online-screen" class="screen">
             <div class="go-head">
-                <button class="go-close" onclick="CircGame.leaveAsk()" data-i18n-label="game.home">
+                <button class="go-close" data-i18n-label="game.home">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
                 <b id="go-title"></b>
                 <b id="go-score" style="min-width:44px;text-align:right"></b>

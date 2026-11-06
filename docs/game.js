@@ -415,7 +415,7 @@
           ${b.me && b.me.ranked === false ? `<p class="note" style="text-align:center">${esc(t('game.dailyUnranked'))}</p>` : ''}
           <button class="btn primary block" data-act="runAgain">${esc(t('run.again'))}</button>
           <button class="btn outline block" data-act="shareRun">${esc(t('game.dailyShare'))}</button>
-          ${top.length ? `<h2 class="label">${esc(t('run.board'))} · ${esc(b.title || '')}</h2>
+          ${top.length ? `<h2 class="label">${esc(t('run.board'))} · ${esc((window.CircI18n.lang === 'de' && b.title_de) || b.title || '')}</h2>
             <ol class="go-stand">${top.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
               <span class="go-name">${esc(e.username)}</span><span class="go-pts">${Number(e.value).toLocaleString()}</span></li>`).join('')}</ol>` : ''}
           <h2 class="label">${esc(t('game.yourTimeline'))}</h2>
@@ -625,5 +625,7 @@
         document.body.appendChild(m);
     }
 
+    // the ✕ in the game header (no inline onclick: the Content-Security-Policy forbids it)
+    document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.go-close')) leaveAsk(); });
     window.CircGame = { open, close, refresh, leaveAsk };
 })();

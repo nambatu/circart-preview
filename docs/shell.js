@@ -51,6 +51,7 @@
         if (name === 'gallery') {
             $('start-screen').classList.add('active');     // app.js's gallery handler expects to leave the start screen
             $('gallery-btn').click();
+            setGalleryView(galleryView);
         } else {
             $(TAB_SCREENS[name]).classList.add('active');
         }
@@ -101,6 +102,7 @@
             if (visible(report)) { $('cancel-report-btn').click(); return true; }
             const sheets = [...document.querySelectorAll('body > .modal')].filter(visible);
             if (sheets.length) { sheets[sheets.length - 1].remove(); return true; }
+            if (visible($('gallery-screen')) && closePackDetail()) return true;
             return false;
         }
 
@@ -168,15 +170,11 @@
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
         renderDaily(o, u);
         renderRun(o, u);
-        renderPacks(o, u);
+        checkPacks(o, u);
         renderOnlineHome(o, u);
     }
 
     // ─── home: daily challenge + this month's challenge ───────────────────
-    function untilText(iso, o) {
-        const m = Math.max(0, Math.ceil((new Date(iso).getTime() - o.serverNow()) / 60000));
-        return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : m + ' min';
-    }
 
     async function renderDaily(o, u) {
         const box = $('home-daily');
@@ -186,6 +184,27 @@
         let d = null;
         if (u) { try { d = await o.dailySummary(); } catch (e) { d = null; } }
         drawDaily(box, o, u, d);
+    }
+
+    // ─── home: one card shape for everything ──────────────────────────────
+    // eyebrow (+ something small on the right), title, one sentence, an
+    // optional status line, the main button, and an optional footer row.
+    function hcard(c) {
+        return `
+          <section class="panel hcard ${c.cls || ''}"><div class="hcard-body">
+            <div class="hcard-top"><span class="eyebrow">${esc(c.eyebrow)}</span>${c.side ? `<span class="note">${esc(c.side)}</span>` : ''}</div>
+            <h3 class="hcard-title">${esc(c.title)}</h3>
+            ${c.text ? `<p class="hcard-text">${esc(c.text)}</p>` : ''}
+            ${c.status ? `<p class="hcard-status">${c.status}</p>` : ''}
+            ${c.button || ''}
+            ${c.foot ? `<div class="hcard-foot">${c.foot}</div>` : ''}
+          </div></section>`;
+    }
+
+    // "21 h" or "35 min": short enough for the top line of a card
+    function shortUntil(iso, o) {
+        const m = Math.max(0, Math.ceil((new Date(iso).getTime() - o.serverNow()) / 60000));
+        return m >= 60 ? Math.floor(m / 60) + ' h' : m + ' min';
     }
 
     // ─── home: Monthly Run ─────────────────────────────────────────────────
@@ -201,22 +220,19 @@
     function drawRun(box, o, r) {
         const monthName = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' }).toUpperCase();
         const pts = n => Number(n).toLocaleString();
-        const line = !r ? t('run.rules')
-            : r.best == null ? t('run.none', { days: r.days_left })
-            : r.rank ? t('run.best', { score: pts(r.best), rank: r.rank, players: r.players })
-            : t('run.bestUnranked', { score: pts(r.best) });
-        box.innerHTML = `
-          <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:8px">
-            <div class="row" style="justify-content:space-between">
-              <span class="eyebrow">${esc(t('run.eyebrow', { month: monthName }))}</span>
-              ${r ? `<span class="note">${esc(t('run.daysLeft', { days: r.days_left }))}</span>` : ''}</div>
-            <h2 class="serif" style="font-size:22px;line-height:1.2">${esc(r ? r.title : t('run.short'))}</h2>
-            <p class="muted" style="font-size:14px">${esc(r ? r.description : t('run.rules'))}</p>
-            ${r ? `<p class="note">${esc(t('run.rules'))}</p>` : ''}
-            ${r ? `<p style="font-weight:600">${esc(line)}</p>` : ''}
-            ${r && r.above ? `<p class="note">🎯 ${esc(t('run.above', { name: r.above.username, score: pts(r.above.value) }))}</p>` : ''}
-            <button class="btn ${r && r.best != null ? 'dark' : 'primary'} block" data-run="play">${esc(r && r.active ? t('run.continue') : t('run.play'))}</button>
-          </section>`;
+        const status = !r ? ''
+            : r.best == null ? esc(t('run.none', { days: r.days_left }))
+            : esc(r.rank ? t('run.best', { score: pts(r.best), rank: r.rank, players: r.players })
+                         : t('run.bestUnranked', { score: pts(r.best) }));
+        box.innerHTML = hcard({
+            eyebrow: t('run.eyebrow', { month: monthName }),
+            side: r ? t('run.daysLeft', { days: r.days_left }) : '',
+            title: r ? de(r, 'title') : t('run.short'),
+            text: r ? de(r, 'description') : t('run.rules'),
+            status,
+            button: `<button class="btn primary block" data-run="play">${esc(r && r.active ? t('run.continue') : t('run.play'))}</button>`,
+            foot: r && r.above ? `<span class="note">🎯 ${esc(t('run.above', { name: r.above.username, score: pts(r.above.value) }))}</span>` : '',
+        });
         box.querySelector('[data-run="play"]').addEventListener('click', async e => {
             const b = e.currentTarget; b.disabled = true;
             try {
@@ -228,73 +244,131 @@
         });
     }
 
-    // ─── home: card packs ──────────────────────────────────────────────────
-    async function renderPacks(o, u) {
-        const box = $('home-packs');
-        if (!o || !o.myPacks || !window.CircPacks) { box.innerHTML = ''; return; }
-        let packs = [];
-        if (u) { try { packs = await o.myPacks(); } catch (e) { packs = []; } }
-        if (!packs.length) { box.innerHTML = ''; return; }
+    // ─── card packs: unlock check on home, the collection in the Gallery ──
+    let packsCache = null;          // my_packs() result
+    let galleryView = 'works';      // 'works' | 'packs'
+    let openPack = null;            // pack id shown in detail, or null
+
+    async function checkPacks(o, u) {
+        if (!o || !o.myPacks || !window.CircPacks || !u) return;
+        let packs;
+        try { packs = await o.myPacks(); } catch (e) { return; }
+        packsCache = packs;
         window.CircPacks.setUnlocked(packs.filter(p => p.unlocked).map(p => p.id));
-        const de = window.CircI18n.lang === 'de';
-        const L = (p, k) => (de && p[k + '_de']) || p[k];
         const fresh = packs.filter(p => p.new);
-        if (fresh.length) { fresh.forEach(p => toast(t('packs.new', { name: L(p, 'title') }))); o.markPacksSeen().catch(() => {}); }
-        box.innerHTML = `
-          <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-            <span class="eyebrow">${esc(t('packs.eyebrow'))}</span>
-            ${packs.map(p => `<div class="pack ${p.unlocked ? 'open' : ''}">
-              <div class="row" style="justify-content:space-between;align-items:baseline">
-                <b class="serif" style="font-size:18px">${esc(L(p, 'title'))}</b>
-                <span class="note">${esc(t('packs.cards', { n: p.cards }))}</span></div>
-              <p class="muted" style="font-size:14px">${esc(L(p, 'description'))}</p>
-              ${p.unlocked
-                ? `<div class="row" style="justify-content:space-between"><span class="note">✓ ${esc(t('packs.inSolo'))}</span>
-                    <button class="btn quiet" data-pack="${esc(p.id)}" ${p.cards ? '' : 'disabled'}>${esc(t('packs.play'))}</button></div>`
-                : `<div class="note">${esc(t('packs.locked', { task: L(p, 'unlock_text') }))} · ${esc(t('packs.progress', { n: p.progress, total: p.needed }))}</div>
-                   <div class="pack-bar"><span style="width:${p.needed ? Math.round(100 * p.progress / p.needed) : 0}%"></span></div>`}
-            </div>`).join('')}
-            ${packs.some(p => p.unlocked) ? `<label class="row note" style="gap:8px"><input type="checkbox" id="pack-mix" ${window.CircPacks.mixing() ? 'checked' : ''}> ${esc(t('packs.mix'))}</label>` : ''}
-          </section>`;
-        box.querySelectorAll('[data-pack]').forEach(b => b.addEventListener('click', () => window.CircPacks.play(b.dataset.pack)));
+        if (fresh.length) { fresh.forEach(p => toast(t('packs.new', { name: packText(p, 'title') }))); o.markPacksSeen().catch(() => {}); }
+    }
+    // a month's theme (and other server texts) in German when there is one
+    function de(o, k) { return (o && window.CircI18n.lang === 'de' && o[k + '_de']) || (o && o[k]); }
+    function packText(p, k) { return (window.CircI18n.lang === 'de' && p[k + '_de']) || p[k]; }
+    const packImg = c => (c.image_local || c.image || c.image_source || '').replace(/\\/g, '/');
+
+    function setGalleryView(v) {
+        galleryView = v;
+        document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gview === v)));
+        $('gallery-grid').classList.toggle('hidden', v !== 'works');
+        $('gallery-packs').classList.toggle('hidden', v !== 'packs');
+        if (v === 'packs') renderGalleryPacks();
+    }
+
+    async function renderGalleryPacks() {
+        const box = $('gallery-packs');
+        const o = online();
+        const u = o ? await o.user() : null;
+        if (!packsCache && u) await checkPacks(o, u);
+        const packs = packsCache || [];
+        if (!packs.length || !window.CircPacks) {
+            box.innerHTML = `<p class="note gp-empty">${esc(t('gallery.empty'))}</p>`;
+            return;
+        }
+        const cards = {};
+        await Promise.all(packs.map(async p => { cards[p.id] = await window.CircPacks.cards(p.id); }));
+        const pack = openPack && packs.find(p => p.id === openPack);
+        if (pack) return drawPackDetail(box, pack, cards[pack.id]);
+        openPack = null;
+
+        const status = p => p.unlocked
+            ? `<span class="note gp-ok">✓ ${esc(t('gallery.unlocked'))}</span>`
+            : `<span class="note">${esc(t('packs.locked', { task: packText(p, 'unlock_text') }))} · ${esc(t('packs.progress', { n: p.progress, total: p.needed }))}</span>
+               <div class="pack-bar"><span style="width:${p.needed ? Math.round(100 * p.progress / p.needed) : 0}%"></span></div>`;
+        box.innerHTML = `<div class="gp-list">
+            ${packs.map(p => {
+                const cover = (cards[p.id] || []).filter(c => packImg(c)).sort((a, b) => (a.tier || 3) - (b.tier || 3)).slice(0, 3);
+                return `<button class="panel gp-tile ${p.unlocked ? '' : 'locked'}" data-open-pack="${esc(p.id)}">
+                  <span class="gp-cover">${cover.map(c => `<img src="${esc(packImg(c))}" alt="" loading="lazy">`).join('')}
+                    ${p.unlocked ? '' : '<span class="gp-lock" aria-hidden="true">🔒</span>'}</span>
+                  <span class="gp-body">
+                    <span class="row" style="justify-content:space-between;align-items:baseline">
+                      <b class="serif gp-title">${esc(packText(p, 'title'))}</b>
+                      <span class="note">${esc(t('packs.cards', { n: (cards[p.id] || []).length || p.cards }))}</span></span>
+                    <span class="muted gp-desc">${esc(packText(p, 'description'))}</span>
+                    ${status(p)}
+                  </span></button>`;
+            }).join('')}
+            ${packs.some(p => p.unlocked) ? `<label class="row note gp-mix"><input type="checkbox" id="pack-mix" ${window.CircPacks.mixing() ? 'checked' : ''}> ${esc(t('packs.mix'))}</label>` : ''}
+          </div>`;
+        box.querySelectorAll('[data-open-pack]').forEach(b => b.addEventListener('click', () => {
+            openPack = b.dataset.openPack; renderGalleryPacks();
+            const sc = box.closest('.gallery-main'); if (sc) sc.scrollTop = 0;
+        }));
         const mix = $('pack-mix');
         if (mix) mix.addEventListener('change', () => window.CircPacks.setMixing(mix.checked));
+    }
+
+    function drawPackDetail(box, p, cards) {
+        const list = (cards || []).slice().sort((a, b) => (a.year || 0) - (b.year || 0));
+        box.innerHTML = `<div class="gp-detail">
+            <button class="btn link gp-back" data-pack-back>‹ ${esc(t('gallery.allPacks'))}</button>
+            <h2 class="serif gp-h">${esc(packText(p, 'title'))}</h2>
+            <p class="muted">${esc(packText(p, 'description'))}</p>
+            ${p.unlocked
+              ? `<button class="btn primary block" data-pack-play="${esc(p.id)}" ${list.length ? '' : 'disabled'}>${esc(t('packs.play'))}</button>`
+              : `<div class="gp-need"><span class="note">${esc(t('packs.locked', { task: packText(p, 'unlock_text') }))} · ${esc(t('packs.progress', { n: p.progress, total: p.needed }))}</span>
+                 <div class="pack-bar"><span style="width:${p.needed ? Math.round(100 * p.progress / p.needed) : 0}%"></span></div>
+                 <span class="note">${esc(t('gallery.lockedHint'))}</span></div>`}
+          </div>
+          <div class="gallery-grid gp-grid ${p.unlocked ? '' : 'locked'}">
+            ${list.map(c => p.unlocked
+              ? `<div class="gallery-card"><img src="${esc(packImg(c))}" class="zoomable-img" alt="${esc(c.title)}" loading="lazy">
+                   <div class="gallery-details"><h3>${esc(c.title)}</h3><p>${esc(c.artist)}</p><p class="year">${esc(c.year)}</p></div></div>`
+              : `<div class="gallery-card gp-secret" aria-hidden="true"><img src="${esc(packImg(c))}" alt="" loading="lazy">
+                   <div class="gallery-details"><h3>?</h3></div></div>`).join('')}
+          </div>`;
+        box.querySelector('[data-pack-back]').addEventListener('click', closePackDetail);
+        const play = box.querySelector('[data-pack-play]');
+        if (play) play.addEventListener('click', () => window.CircPacks.play(play.dataset.packPlay));
+    }
+    function closePackDetail() {
+        if (!openPack) return false;
+        openPack = null; renderGalleryPacks();
+        return true;
     }
 
     function drawDaily(box, o, u, d) {
         const status = d ? d.status : 'not_started';
         const me = d && d.me;
-        const btn = status === 'done'
-            ? `<button class="btn outline block" data-daily="results">${esc(t('game.results'))}</button>`
-            : `<button class="btn primary block" data-daily="play">${esc(status === 'in_progress' ? t('home.daily.continue') : t('home.daily.play'))}</button>`;
-        const done = status === 'done' && me ? `<p class="serif" style="font-size:18px">${esc(me.rank
-            ? t('home.daily.done', { score: me.score.toLocaleString(), rank: me.rank })
-            : t('home.daily.doneUnranked', { score: me.score.toLocaleString() }))}</p>` : '';
         const hard = d && d.yesterdays_hardest;
-        const month = d && d.month;
-        const monthName = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' }).toUpperCase();
-        box.innerHTML = `
-          <section class="panel strong" style="padding:16px;display:flex;flex-direction:column;gap:8px">
-            <div class="row" style="justify-content:space-between">
-              <span class="eyebrow">${esc(t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }))}</span>
-              ${d && d.streak > 0 ? `<span class="pill" title="daily streak">🔥 ${esc(d.streak === 1 ? t('home.streak1') : t('home.streak', { n: d.streak }))}</span>` : ''}
-            </div>
-            <h2 class="serif" style="font-size:22px;line-height:1.2">${esc(t('home.daily.title'))}</h2>
-            ${done || `<p class="muted" style="font-size:14px">${esc(t('home.daily.sub'))}</p>`}
-            ${btn}
-            ${d ? `<p class="note">${esc(t('home.daily.resets', { time: untilText(d.resets_at, o) }))}</p>` : ''}
-            ${hard ? `<div class="row" style="gap:10px;border-top:1px solid var(--line);padding-top:10px">
-                ${hard.image_url ? `<img src="${esc(hard.image_url)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px">` : ''}
-                <span class="note"><b>${esc(t('home.daily.hardest'))}</b><br>${esc(t('home.daily.hardestPct', { title: hard.title, pct: hard.percent_right }))} (${esc(hard.year)})</span></div>` : ''}
-          </section>
-          ${false ? `<button class="game-row" data-daily="month" style="flex-direction:column;align-items:flex-start;gap:2px">
-              <span class="eyebrow">${esc(t('home.month.eyebrow', { month: monthName }))}</span>
-              <b>${esc(month.title)}</b>
-              <span class="note">${esc(month.description)}</span>
-              <span class="note">${esc(month.me && month.me.rank ? t('home.month.rank', { rank: month.me.rank, days: month.days_left }) : t('home.month.norank', { days: month.days_left }))}</span>
-            </button>` : ''}`;
+        const done = status === 'done';
+        const btn = done
+            ? `<button class="btn quiet block" data-daily="results">${esc(t('game.results'))}</button>`
+            : `<button class="btn primary block" data-daily="play">${esc(status === 'in_progress' ? t('home.daily.continue') : t('home.daily.play'))}</button>`;
+        const result = done && me ? esc(me.rank
+            ? t('home.daily.done', { score: me.score.toLocaleString(), rank: me.rank })
+            : t('home.daily.doneUnranked', { score: me.score.toLocaleString() })) : '';
+        const streak = d && d.streak > 0 ? `🔥 ${esc(d.streak === 1 ? t('home.streak1') : t('home.streak', { n: d.streak }))}` : '';
+        box.innerHTML = hcard({
+            cls: 'strong',
+            eyebrow: t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }),
+            side: d ? t('home.daily.newIn', { time: shortUntil(d.resets_at, o) }) : '',
+            title: t('home.daily.title'),
+            text: done ? '' : t('home.daily.sub'),
+            status: [result, streak].filter(Boolean).join(' · '),
+            button: btn,
+            foot: hard ? `<div class="row" style="gap:10px">
+                ${hard.image_url ? `<img src="${esc(hard.image_url)}" alt="" class="hcard-thumb">` : ''}
+                <span class="note"><b>${esc(t('home.daily.hardest'))}</b><br>${esc(t('home.daily.hardestPct', { title: hard.title, pct: hard.percent_right }))} (${esc(hard.year)})</span></div>` : '',
+        });
         box.querySelectorAll('[data-daily]').forEach(b => b.addEventListener('click', async () => {
-            if (b.dataset.daily === 'month') { ranksTab = 'month'; return showTab('ranks'); }
             b.disabled = true;
             try {
                 const g = await o.playDaily();
@@ -307,7 +381,7 @@
     // ─── home: games with friends ─────────────────────────────────────────
     async function renderOnlineHome(o, u) {
         const box = $('home-online');
-        if (!o || !FEATURES.friends) { box.innerHTML = ''; return; }
+        if (!o || !FEATURES.friends) { box.innerHTML = ''; $('home-games').innerHTML = ''; return; }
         let games = [];
         if (u) { try { games = await o.myGames(); } catch (e) { games = []; } }
         const mine = games.filter(g => !g.dropped);
@@ -316,7 +390,7 @@
             const m = Math.max(0, Math.ceil((new Date(iso).getTime() - o.serverNow()) / 60000));
             return m >= 60 ? Math.floor(m / 60) + ' h' : m + ' min';
         };
-        const names = g => g.others.length === 0 ? '—'
+        const names = g => g.others.length === 0 ? t('home.waitingFriends')
             : g.others.length <= 2 ? g.others.join(' & ') : g.others.slice(0, 2).join(', ') + ' +' + (g.others.length - 2);
         const info = g => g.status === 'lobby' ? t('home.lobbyInfo', { code: g.code })
             : g.status === 'finished' ? t('home.finished', { rank: g.my_rank || '–' })
@@ -324,23 +398,29 @@
             : g.my_turn ? t('home.turnInfo', { turn: g.turn, turns: g.turns, left: left(g.turn_deadline) })
             : t('home.waitingOthers', { turn: g.turn, turns: g.turns });
 
-        box.innerHTML = `
-          ${mine.length ? `<section style="display:flex;flex-direction:column;gap:8px">
-            <div class="row"><h2 class="label">${esc(t('home.yourGames'))}</h2>${turns ? `<span class="badge">${turns}</span>` : ''}</div>
+        const gbox = $('home-games');
+        gbox.innerHTML = mine.length ? `
+          <h2 class="label home-label row">${esc(t('home.yourGamesLabel'))}${turns ? `<span class="badge">${turns}</span>` : ''}</h2>
+          <div class="home-games">
             ${mine.map(g => `<button class="game-row" data-game="${esc(g.id)}">
                 <span style="flex:1;min-width:0"><b style="display:block">${esc(names(g))}</b>
                   <span class="note">${esc(info(g))}</span></span>
                 ${g.my_turn ? `<span class="badge">${esc(t('game.yourTurn'))}</span>` : ''}</button>`).join('')}
-          </section>` : ''}
-          <button class="btn dark block" id="home-friends">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>
-            ${esc(t('friends.title'))}</button>
-          <form class="row" id="home-join" style="margin:0">
-            <label class="note" for="home-code" style="flex-shrink:0">${esc(t('home.code.label'))}</label>
-            <input id="home-code" class="input code-input" maxlength="4" placeholder="K7Q2" autocomplete="off" autocapitalize="characters">
-            <button class="btn quiet" type="submit">${esc(t('home.code.join'))}</button>
-          </form>`;
-        box.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => window.CircGame.open(b.dataset.game)));
+          </div>` : '';
+        box.innerHTML = hcard({
+            eyebrow: t('home.friends.eyebrow'),
+            title: t('friends.title'),
+            text: t('home.friends.text'),
+            button: `<button class="btn primary block" id="home-friends">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></svg>
+              ${esc(t('home.friends.start'))}</button>`,
+            foot: `<form class="row" id="home-join" style="margin:0">
+              <label class="note" for="home-code" style="flex-shrink:0">${esc(t('home.code.label'))}</label>
+              <input id="home-code" class="input code-input" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters">
+              <button class="btn quiet" type="submit">${esc(t('home.code.join'))}</button>
+            </form>`,
+        });
+        gbox.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => window.CircGame.open(b.dataset.game)));
         $('home-friends').addEventListener('click', friendsSheet);
         $('home-join').addEventListener('submit', e => { e.preventDefault(); joinByCode($('home-code').value); });
     }
@@ -442,7 +522,7 @@
         if (!w || !w.entries || !w.entries.length) return '';
         return `<section class="panel winners" style="margin-bottom:10px">
             <div class="eyebrow">${esc(t('ranks.winnersTitle', { month: monthLabel(w.month) }))}</div>
-            <div class="note">${esc(w.title)}</div>
+            <div class="note">${esc(de(w, 'title'))}</div>
             <ol>${w.entries.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="medal">${MEDALS[e.rank - 1] || e.rank}</span>
               <b>${esc(e.username)}</b><span class="go-pts">${Number(e.value).toLocaleString()}</span></li>`).join('')}</ol></section>`;
     }
@@ -460,8 +540,8 @@
                 const fmt = v => b.metric === 'accuracy' ? v + '%' : b.metric === 'best_streak' || b.metric === 'artists_named' ? String(v) : pts(v);
                 b.me = b.me && b.me.ranked === false ? null : b.me;      // guests: their best shows on the home card
                 el.innerHTML = `${winnersStrip(w)}<section class="panel" style="padding:14px;margin-bottom:10px">
-                    <b class="serif" style="font-size:18px">${esc(b.title)}</b>
-                    <p class="note">${esc(b.description)} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
+                    <b class="serif" style="font-size:18px">${esc(de(b, 'title'))}</b>
+                    <p class="note">${esc(de(b, 'description'))} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
                   ${boardList(b.entries, e => fmt(e.value))}
                   ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: fmt(b.me.value) }))}</p>` : ''}`;
             } else {
@@ -586,7 +666,7 @@
             el.innerHTML = `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
               <h2 class="label">${esc(t('profile.badges'))}</h2>
               ${bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
-                <span><b>${esc(monthLabel(b.month))}</b> · ${esc(b.title)}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
+                <span><b>${esc(monthLabel(b.month))}</b> · ${esc(de(b, 'title'))}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
             </section>`;
         }).catch(() => {});
     }
@@ -777,6 +857,7 @@
         hookSoloGame();
 
         new MutationObserver(syncTabs).observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+        document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.addEventListener('click', () => setGalleryView(b.dataset.gview)));
         setupBack();
         syncTabs();
         renderHome();
