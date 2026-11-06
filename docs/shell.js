@@ -146,6 +146,7 @@
               ${r ? `<span class="note">${esc(t('run.daysLeft', { days: r.days_left }))}</span>` : ''}</div>
             <h2 class="serif" style="font-size:22px;line-height:1.2">${esc(r ? r.title : t('run.short'))}</h2>
             <p class="muted" style="font-size:14px">${esc(r ? r.description : t('run.rules'))}</p>
+            ${r ? `<p class="note">${esc(t('run.rules'))}</p>` : ''}
             ${r ? `<p style="font-weight:600">${esc(line)}</p>` : ''}
             ${r && r.above ? `<p class="note">🎯 ${esc(t('run.above', { name: r.above.username, score: pts(r.above.value) }))}</p>` : ''}
             <button class="btn ${r && r.best != null ? 'dark' : 'primary'} block" data-run="play">${esc(r && r.active ? t('run.continue') : t('run.play'))}</button>

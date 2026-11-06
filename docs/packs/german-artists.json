@@ -3,8 +3,8 @@
   "id": "german-artists",
   "title": "German Artists",
   "title_de": "Deutsche Künstler",
-  "description": "Five centuries of art from the German-speaking world – from Dürer's hare and Holbein's king to Friedrich's lonely monk, Klimt's gold and the Expressionists. Includes Austrian artists (Klimt, Schiele).",
-  "description_de": "Fünf Jahrhunderte Kunst aus dem deutschsprachigen Raum – von Dürers Hasen und Holbeins König über Friedrichs einsamen Mönch bis zu Klimts Gold und den Expressionisten. Mit österreichischen Künstlern (Klimt, Schiele).",
+  "description": "25 works by German-speaking artists, from Dürer to the Blue Rider.",
+  "description_de": "25 Werke deutschsprachiger Künstler, von Dürer bis zum Blauen Reiter.",
   "unlock_hint": "Play the daily challenge 3 days in a row to unlock.",
   "unlock_rule": {
    "type": "daily_streak",

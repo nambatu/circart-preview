@@ -3,8 +3,8 @@
   "id": "baroque-masters",
   "title": "Baroque Masters",
   "title_de": "Meister des Barock",
-  "description": "Drama, darkness and dazzling light: 25 masterpieces from Caravaggio to Vermeer, Rubens to Rachel Ruysch – the age of the Baroque and the Dutch Golden Age.",
-  "description_de": "Drama, Dunkelheit und gleißendes Licht: 25 Meisterwerke von Caravaggio bis Vermeer, von Rubens bis Rachel Ruysch – das Zeitalter des Barock und des Goldenen Zeitalters der Niederlande.",
+  "description": "25 works from Rubens to Vermeer, painted when candlelight was the star.",
+  "description_de": "25 Werke von Rubens bis Vermeer, aus der Zeit, als Kerzenlicht der Star war.",
   "unlock_hint": "Finish 3 runs to unlock.",
   "unlock_rule": {
    "type": "runs_finished",
