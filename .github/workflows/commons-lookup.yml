@@ -39,6 +39,7 @@ jobs:
               while True:
                   r = get(dict(action="query", list="categorymembers", cmtitle="Category:" + cat,
                                cmtype=kind, cmlimit=500, **cont))
+                  if "query" not in r: print("no query in answer for", cat, kind, str(r)[:300])
                   out += [m["title"] for m in r.get("query", {}).get("categorymembers", [])]
                   if "continue" not in r: return out
                   cont = r["continue"]
