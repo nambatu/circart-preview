@@ -44,7 +44,14 @@ jobs:
                   if "continue" not in r: return out
                   cont = r["continue"]
           root, depth = os.environ["CAT"], int(os.environ.get("DEPTH") or 2)
-          seen, queue, files = set(), [(root, 0)], {}
+          # "search:<words>" → the best matching categories
+          if root.startswith("search:"):
+              r = get(dict(action="query", list="search", srsearch=root[7:], srnamespace=14, srlimit=8))
+              cats = [x["title"].split(":", 1)[1] for x in r.get("query", {}).get("search", [])]
+              print("categories found:", cats)
+          else:
+              cats = [root]
+          seen, queue, files = set(), [(c, 0) for c in cats], {}
           while queue:
               cat, d = queue.pop(0)
               if cat in seen: continue
