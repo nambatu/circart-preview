@@ -421,3 +421,8 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
 /* bonus questions: the painting stays in view (tap to zoom), picks lock after one tap */
 .go-bonus-art { max-height: 140px; max-width: 70%; border-radius: 10px; object-fit: contain; cursor: zoom-in; display: block; }
 .go-pick.locked:not(.chosen) { opacity: 0.45; }
+
+/* story dailies: the chapter after each card and the outro */
+.go-chapter { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; border-left: 3px solid var(--accent-color); }
+.go-chapter p { margin: 0; font-family: var(--font-heading); font-size: 17px; line-height: 1.45; }
+.go-credit { margin-top: 6px; font-size: 12px; opacity: 0.8; }

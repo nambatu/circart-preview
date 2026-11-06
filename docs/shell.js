@@ -199,6 +199,7 @@
         if (!box.firstElementChild) drawDaily(box, o, u, null);
         let d = null;
         if (u) { try { d = await o.dailySummary(); } catch (e) { d = null; } }
+        if (d && o.dailyStory) { try { d.story = await o.dailyStory(); } catch (e) { d.story = null; } }
         drawDaily(box, o, u, d);
     }
 
@@ -374,10 +375,10 @@
         const streak = d && d.streak > 0 ? `🔥 ${esc(d.streak === 1 ? t('home.streak1') : t('home.streak', { n: d.streak }))}` : '';
         box.innerHTML = hcard({
             cls: 'strong',
-            eyebrow: t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }),
+            eyebrow: d && d.story ? t('story.eyebrow') : t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }),
             side: d ? t('home.daily.newIn', { time: shortUntil(d.resets_at, o) }) : '',
-            title: t('home.daily.title'),
-            text: done ? '' : t('home.daily.sub'),
+            title: d && d.story ? de(d.story, 'title') : t('home.daily.title'),
+            text: done ? '' : d && d.story ? de(d.story, 'intro') : t('home.daily.sub'),
             status: [result, streak].filter(Boolean).join(' · '),
             button: btn,
             foot: hard ? `<div class="row" style="gap:10px">

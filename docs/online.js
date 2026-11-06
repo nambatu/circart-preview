@@ -278,6 +278,8 @@
     const rematch            = id => rpc('rematch', { p_game: id });
     const rematchInfo        = id => rpc('rematch_info', { p_game: id });
     const gameOptions        = id => rpc('game_options', { p_game: id });
+    // story dailies (019): title, intro, my chapters so far, outro when done; null on normal days
+    const dailyStory         = (date = null) => rpc('daily_story', { p_date: date });
     const setGameOptions     = (id, { artistBonus = null, movementBonus = null, timer = null } = {}) =>
         rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus, p_timer: timer });
     // both bonus answers in one go (null = skipped)
@@ -362,6 +364,7 @@
         monthlyWinners, myBadges, myPacks, markPacksSeen, exportMyData,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
+        dailyStory,
         pushSupported, pushPermission, pushOn, enablePush, disablePush,
     };
 

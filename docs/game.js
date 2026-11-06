@@ -55,6 +55,10 @@
         try {
             const st = G.st = await O().getGame(G.id);
             const live = st.kind === 'live';
+            if (st.kind === 'daily' && O().dailyStory && (G.story === undefined || G.storyAt !== st.me.answered)) {
+                try { G.story = await O().dailyStory(st.challenge_date || null); } catch (e) { G.story = null; }
+                G.storyAt = st.me.answered;
+            }
 
             // a new live round or async turn: forget the previous card
             if (G.answer && live && (st.phase === 'play' || st.phase === 'reveal') && G.answer.turn !== st.current_turn) {
@@ -244,9 +248,10 @@
             const started = st.me.answered > 0;
             return `<div class="page">
               <section class="panel strong" style="padding:18px;display:flex;flex-direction:column;gap:10px">
-                <span class="eyebrow">${esc(G.challengeNo ? t('home.daily.eyebrow', { no: G.challengeNo }) : t('game.dailyShort'))}</span>
-                <h2 class="serif" style="font-size:24px">${esc(t('home.daily.title'))}</h2>
-                <p class="muted" style="font-size:14px">${esc(t('game.dailyStartText'))}</p>
+                <span class="eyebrow">${esc(G.story ? t('story.eyebrow') : G.challengeNo ? t('home.daily.eyebrow', { no: G.challengeNo }) : t('game.dailyShort'))}</span>
+                <h2 class="serif" style="font-size:24px">${esc(G.story ? de(G.story, 'title') : t('home.daily.title'))}</h2>
+                <p class="muted" style="font-size:${G.story ? 16 : 14}px;line-height:1.5">${esc(G.story ? de(G.story, 'intro') : t('game.dailyStartText'))}</p>
+                ${G.story ? `<p class="note">${esc(t('story.howTo'))}</p>` : ''}
                 ${started ? `<p class="note">${esc(t('game.card', { n: st.me.answered + 1, total: st.card_count }))} · ${esc(t('game.points', { n: st.me.score.toLocaleString() }))}</p>` : ''}
                 <button class="btn primary block" data-act="ready">${esc(started ? t('home.daily.continue') : t('game.dailyStart'))}</button>
               </section>
@@ -349,8 +354,24 @@
           ${G.st.kind === 'run' ? `<p class="note">${hearts(G.st)} ${!r.correct ? esc(G.st.status === 'finished' ? t('run.over') : t('run.lifeLost')) : ''}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
+          ${rev && G.story ? chapterFor(a.position) : ''}
           ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc((G.st.kind === 'daily' && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>` : ''}
         </div>`;
+    }
+
+    // ─── story dailies (019) ─────────────────────────────────────────────
+    const de = (o, k) => (o && window.CircI18n.lang === 'de' && o[k + '_de']) || (o && o[k]) || '';
+    function chapterFor(pos) {
+        const s = G.story;
+        const ch = s && s.chapters && s.chapters.find(c => c.position === pos);
+        if (!ch || !de(ch, 'chapter')) return '';
+        return `<section class="panel go-chapter"><span class="eyebrow">${esc(t('story.next'))}</span>
+          <p>${esc(de(ch, 'chapter'))}</p></section>`;
+    }
+    function creditFor(pos) {
+        const s = G.story;
+        const ch = s && s.chapters && s.chapters.find(c => c.position === pos);
+        return ch && ch.credit ? `<p class="note go-credit">${esc(ch.credit)}</p>` : '';
     }
 
     function cardStory(rev) {
@@ -360,7 +381,8 @@
           <div><b class="serif" style="font-size:26px">${c.year}</b>
             <div class="serif"><i>${esc(c.title)}</i></div>
             <div class="muted">${esc(c.artist)}${c.movement_group ? ' · ' + esc(c.movement_group) : ''}</div>
-            ${c.trivia ? `<p class="go-trivia">${esc(c.trivia)}</p>` : ''}</div></section>`;
+            ${c.trivia ? `<p class="go-trivia">${esc(c.trivia)}</p>` : ''}
+            ${G.story && G.answer ? creditFor(G.answer.position) : ''}</div></section>`;
     }
 
     function distribution(rev) {
@@ -454,6 +476,8 @@
               ${mine && mine.rank ? ' · ' + esc(t('game.dailyRank', { rank: mine.rank, players: b.players })) : ''}</p>
           </div>
           ${mine && !mine.ranked ? `<p class="note" style="text-align:center">${esc(t('game.dailyUnranked'))}</p>` : ''}
+          ${G.story && de(G.story, 'outro') ? `<section class="panel go-chapter"><span class="eyebrow">${esc(de(G.story, 'title'))}</span>
+            <p>${esc(de(G.story, 'outro'))}</p></section>` : ''}
           <button class="btn primary block" data-act="shareDaily">${esc(t('game.dailyShare'))}</button>
           ${top.length ? `<h2 class="label">${esc(t('ranks.today'))}</h2>
             <ol class="go-stand">${top.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
@@ -576,6 +600,7 @@
             }
         } catch (e) { if (G.st.kind !== 'live') G.bonusRes = { closed: true }; }   // the window closed: no bonus points
         if (G.st.kind !== 'live') { try { G.rev = await O().reveal(G.id, G.answer.position); } catch (e) { /* ignore */ } }
+        if (G.st.kind === 'daily' && G.story) { try { G.story = await O().dailyStory(G.st.challenge_date || null); } catch (e) { /* keep */ } }
         if (G.bonusRes && G.bonusRes.closed && G.rev) {
             G.bonusRes.artist = G.rev.card.artist;
             G.bonusRes.movement = G.rev.card.movement_group;
