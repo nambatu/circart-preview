@@ -72,7 +72,7 @@
                 G.card = await O().nextCard(G.id);
                 G.cardTurn = st.current_turn;
             }
-            if (st.phase === 'lobby' && st.kind !== 'daily') {
+            if ((st.kind === 'live' || st.kind === 'async') && (st.phase === 'lobby' || !G.opts)) {
                 try { G.opts = await O().gameOptions(G.id); } catch (e) { G.opts = null; }
             }
             if ((st.phase === 'finished' || st.phase === 'done') && !G.answer && !G.results) {
@@ -102,8 +102,9 @@
         clearInterval(tick); clearInterval(poll);
         const st = G.st;
         const live = st.kind === 'live';
-        let due = null;
-        if (st.phase === 'play' && G.card && G.card.ends_at && !G.answer) due = G.card.ends_at;
+        let due = null, bonusDue = false;
+        if (st.phase === 'play' && G.card && G.card.ends_at && !G.answer && timed()) due = G.card.ends_at;
+        else if (G.answer && !G.picked && G.answer.bonusEnds && st.kind !== 'live') { due = new Date(G.answer.bonusEnds).toISOString(); bonusDue = true; }
         else if (st.phase === 'reveal') due = st.next_round_at;
         else if (live && st.phase === 'waiting') due = st.turn_deadline;
         if (due) {
@@ -112,7 +113,7 @@
                 document.querySelectorAll('[data-countdown]').forEach(el => { el.textContent = Math.ceil(ms / 1000); });
                 const bar = $('go-bar');
                 if (bar && G.card && G.card.seconds) bar.style.width = (100 * ms / (G.card.seconds * 1000)) + '%';
-                if (ms <= 0) { clearInterval(tick); setTimeout(refresh, 400); }
+                if (ms <= 0) { clearInterval(tick); if (bonusDue) pick(); else setTimeout(refresh, 400); }   // bonus time up: send what's picked
             }, 200);
         }
         // realtime is primary; this catches a dropped connection
@@ -178,14 +179,19 @@
         </div>`;
     }
 
+    // games with friends can switch the timer off (018); daily and runs always have it
+    const timed = () => !(G.opts && G.opts.timer === false && (G.st.kind === 'live' || G.st.kind === 'async'));
+
     function artistOption() {
         const a = !G.opts || G.opts.artist_bonus !== false, m = !G.opts || G.opts.movement_bonus !== false;
         if (!G.st.is_host) return `<p class="note" style="text-align:center">${esc(
-            a && m ? t('game.bonusBoth') : a ? t('game.bonusArtist') : m ? t('game.bonusMovement') : t('game.bonusNone'))}</p>`;
+            a && m ? t('game.bonusBoth') : a ? t('game.bonusArtist') : m ? t('game.bonusMovement') : t('game.bonusNone'))}
+            ${esc(timed() ? t('game.timerOnNote') : t('game.timerOffNote'))}</p>`;
         const sw = (key, on, title, text) => `<label class="panel go-switch"><span><b>${esc(title)}</b><br>
             <span class="note">${esc(text)}</span></span>
             <input type="checkbox" data-opt="${key}" ${on ? 'checked' : ''}><span class="go-toggle" aria-hidden="true"></span></label>`;
-        return sw('artist', a, t('game.artistBonus'), t('game.artistBonusText'))
+        return sw('timer', timed(), t('game.timer'), t(G.st.kind === 'live' ? 'game.timerTextLive' : 'game.timerTextAsync'))
+             + sw('artist', a, t('game.artistBonus'), t('game.artistBonusText'))
              + sw('movement', m, t('game.movementBonus'), t('game.movementBonusText'));
     }
 
@@ -270,9 +276,9 @@
         return `<div class="page">
           <div class="row" style="justify-content:space-between">
             <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
-            <span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>
+            ${timed() ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>` : ''}
           </div>
-          <div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar"></div></div>
+          ${timed() ? '<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar"></div></div>' : ''}
           <div class="go-art">${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(t('game.artAlt'))}">` : `<div class="go-typo serif">${esc(c.title || '?')}</div>`}</div>
           <div class="row" style="justify-content:space-between"><b>${esc(t('game.tap'))}</b>
             ${G.st.kind === 'live' ? `<span class="note">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}</span>` : ''}</div>
@@ -289,13 +295,16 @@
     function bonusRow(kind, title, pts, list) {
         const sel = G.sel[kind], res = G.bonusRes, live = G.st.kind === 'live';
         const real = res && res[kind];                       // async/daily: the right answer, after sending
+        // closed = the 20-second window ran out: no points, but you still see the right answer
         const cls = n => G.picked
-            ? (live || !res ? (n === sel ? 'chosen' : '') : n === real ? 'right' : n === sel ? 'wrong' : '')
+            ? (live || !res || !real ? (n === sel ? 'chosen' : '')
+               : n === real ? 'right' : n === sel ? (res.closed ? 'chosen' : 'wrong') : '')
             : (n === sel ? 'chosen' : '');
         const mark = c => c === 'right' ? ' ✓' : c === 'wrong' ? ' ✗' : '';
+        const locked = G.picked || !!sel;                   // one tap per question, no changing your mind
         return `<div style="display:flex;flex-direction:column;gap:8px"><b>${esc(title)} <span class="note">+${pts}</span></b>
-          <div class="two">${list.map(n => G.picked
-              ? `<span class="go-pick ${cls(n)}">${esc(n)}${mark(cls(n))}</span>`
+          <div class="two">${list.map(n => locked
+              ? `<span class="go-pick ${cls(n)}${G.picked ? '' : ' locked'}">${esc(n)}${mark(cls(n))}</span>`
               : `<button class="go-pick ${cls(n)}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
     }
 
@@ -303,7 +312,14 @@
         const r = G.answer.res, a = opts(r, 'artist'), m = opts(r, 'movement');
         if (!a && !m) return '';
         if (G.picked && !G.sel.artist && !G.sel.movement) return '';
+        const res = G.bonusRes;
+        const showArt = !G.picked && G.card && G.card.image_url;   // look at the painting again while you decide
+        const ends = !G.picked && G.answer.bonusEnds && G.st.kind !== 'live';
         return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:14px">
+          ${showArt || ends ? `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
+              ${showArt ? `<img class="go-bonus-art zoomable-img" src="${esc(G.card.image_url)}" alt="${esc(t('game.artAlt'))}">` : '<span></span>'}
+              ${ends ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.max(0, Math.ceil((G.answer.bonusEnds - O().serverNow()) / 1000))}</span>s</span>` : ''}</div>` : ''}
+          ${res && res.closed ? `<p class="note">${esc(t('game.bonusClosed'))}</p>` : ''}
           ${a ? bonusRow('artist', t('game.whoPainted'), 200, a) : ''}
           ${m ? bonusRow('movement', t('game.whichMovement'), 100, m) : ''}
           ${G.picked ? '' : `<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
@@ -316,7 +332,7 @@
           <h2 class="serif" style="font-size:26px">${esc(a.res.timed_out ? t('game.tooSlow') : t('game.locked'))}</h2>
           ${a.res.timed_out ? '' : artistPicker()}
           <p class="muted">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}
-            · <span data-countdown>${Math.ceil(left(G.st.turn_deadline) / 1000)}</span>s</p>
+            ${timed() ? `· <span data-countdown>${Math.ceil(left(G.st.turn_deadline) / 1000)}</span>s` : ''}</p>
           ${standings(5)}
         </div>`;
     }
@@ -516,7 +532,8 @@
         body.querySelectorAll('[data-movement]').forEach(b => b.addEventListener('click', () => choose('movement', b.dataset.movement)));
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
         body.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', async () => {
-            const o = c.dataset.opt === 'artist' ? { artistBonus: c.checked } : { movementBonus: c.checked };
+            const o = c.dataset.opt === 'artist' ? { artistBonus: c.checked }
+                    : c.dataset.opt === 'timer' ? { timer: c.checked } : { movementBonus: c.checked };
             try { G.opts = await O().setGameOptions(G.id, o); } catch (e) { window.CircShell.toast(e.message); }
             draw();
         }));
@@ -527,7 +544,8 @@
         document.querySelectorAll('[data-gap]').forEach(b => { b.disabled = true; });
         try {
             const res = await O().answer(G.id, G.card.position, slot);
-            G.answer = { position: G.card.position, turn: G.st.current_turn, res };
+            G.answer = { position: G.card.position, turn: G.st.current_turn, res,
+                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? O().serverNow() + 19000 : null };
             G.picked = !hasBonus(res);
             G.sel = {}; G.bonusRes = null;
             if (G.st.kind !== 'live') feel(!!res.correct && !res.timed_out);
@@ -540,7 +558,7 @@
     }
 
     function choose(kind, name) {
-        if (!G.answer || G.picked) return;
+        if (!G.answer || G.picked || G.sel[kind]) return;   // first tap counts
         G.sel[kind] = name;
         const r = G.answer.res;
         if ((!opts(r, 'artist') || G.sel.artist) && (!opts(r, 'movement') || G.sel.movement)) return pick();
@@ -556,8 +574,12 @@
                 G.bonusRes = r;
                 if (G.sel.artist || G.sel.movement) feel((!G.sel.artist || r.artist_correct) && (!G.sel.movement || r.movement_correct));
             }
-        } catch (e) { /* the window closed: no bonus */ }
+        } catch (e) { if (G.st.kind !== 'live') G.bonusRes = { closed: true }; }   // the window closed: no bonus points
         if (G.st.kind !== 'live') { try { G.rev = await O().reveal(G.id, G.answer.position); } catch (e) { /* ignore */ } }
+        if (G.bonusRes && G.bonusRes.closed && G.rev) {
+            G.bonusRes.artist = G.rev.card.artist;
+            G.bonusRes.movement = G.rev.card.movement_group;
+        }
         refresh();
     }
 

@@ -417,3 +417,7 @@ body.tabs-on #back-to-menu-btn { display: none; }
 
 /* install banner: above the tab bar, never under it */
 body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+
+/* bonus questions: the painting stays in view (tap to zoom), picks lock after one tap */
+.go-bonus-art { max-height: 140px; max-width: 70%; border-radius: 10px; object-fit: contain; cursor: zoom-in; display: block; }
+.go-pick.locked:not(.chosen) { opacity: 0.45; }

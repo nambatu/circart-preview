@@ -278,16 +278,18 @@
     const rematch            = id => rpc('rematch', { p_game: id });
     const rematchInfo        = id => rpc('rematch_info', { p_game: id });
     const gameOptions        = id => rpc('game_options', { p_game: id });
-    const setGameOptions     = (id, { artistBonus = null, movementBonus = null } = {}) =>
-        rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus });
+    const setGameOptions     = (id, { artistBonus = null, movementBonus = null, timer = null } = {}) =>
+        rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus, p_timer: timer });
     // both bonus answers in one go (null = skipped)
     const pickBonus          = (id, position, artist, movement) =>
         rpc('pick_bonus', { p_game: id, p_position: position, p_artist: artist, p_movement: movement });
 
     // ─── push notifications (async games) ─────────────────────────────────
     // iPhone: only once the app is added to the home screen (iOS 16.4+).
-    const pushSupported = () => !!(VAPID_PUBLIC_KEY && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
-    const pushPermission = () => ('Notification' in window ? Notification.permission : 'unsupported');
+    // Firefox on Android supports web push but may not offer window.Notification;
+    // there, subscribe() asks for permission itself.
+    const pushSupported = () => !!(VAPID_PUBLIC_KEY && 'serviceWorker' in navigator && 'PushManager' in window);
+    const pushPermission = () => ('Notification' in window ? Notification.permission : 'default');
     function urlB64(b64) {
         const pad = '='.repeat((4 - b64.length % 4) % 4);
         const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
@@ -302,11 +304,18 @@
     async function enablePush() {
         if (!pushSupported()) throw fail('push_unsupported');
         await ensureGuest();
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') throw fail('push_denied');
+        if ('Notification' in window) {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') throw fail('push_denied');
+        }
         const reg = await navigator.serviceWorker.ready;
-        const sub = (await reg.pushManager.getSubscription())
-            || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) });
+        let sub;
+        try {
+            sub = (await reg.pushManager.getSubscription())
+                || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC_KEY) });
+        } catch (e) {
+            throw fail(e && e.name === 'NotAllowedError' ? 'push_denied' : 'push_unsupported');
+        }
         const j = sub.toJSON();
         await rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
                                               p_user_agent: navigator.userAgent.slice(0, 200) });
@@ -320,7 +329,7 @@
     }
     // On this device: subscribed and permission still granted?
     async function pushOn() {
-        if (!pushSupported() || pushPermission() !== 'granted') return false;
+        if (!pushSupported() || pushPermission() === 'denied') return false;
         const sub = await pushSubscription();
         if (sub && await user()) {                // keep the server's copy fresh (it may have been removed)
             const j = sub.toJSON();
