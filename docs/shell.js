@@ -43,6 +43,22 @@
         setTimeout(() => el.remove(), 2600);
     }
 
+    // ─── install ("Install app" in Profile) ───────────────────────────────
+    // Chrome, Edge, Brave and Samsung Internet fire beforeinstallprompt; pwa.js
+    // shows its banner from it. We keep the event too, so Profile can offer
+    // the install later. Firefox and iPhone browsers never fire it: they get a
+    // one-line how-to instead.
+    let installEvt = null;
+    window.addEventListener('beforeinstallprompt', e => { installEvt = e; });
+    window.addEventListener('appinstalled', () => { installEvt = null; });
+    const isInstalled = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    function installHowTo() {
+        const ua = navigator.userAgent;
+        if (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+            return /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua) ? t('install.iosOther') : t('install.ios');
+        return t('install.menu');
+    }
+
     // ─── tabs ─────────────────────────────────────────────────────────────
     const TAB_SCREENS = { play: 'start-screen', ranks: 'ranks-screen', gallery: 'gallery-screen', profile: 'profile-screen' };
 
@@ -435,6 +451,16 @@
         return m;
     }
 
+    // server error → text in the player's language (falls back to online.js's English text)
+    function errText(e) {
+        const k = 'err.' + (e && e.code);
+        const s = t(k);
+        return s && s !== k ? s : (e && e.message) || t('common.error');
+    }
+    const isDefaultName = n => !n || /^Guest [0-9]+$/.test(n);
+    // a first username from the name someone already uses ("Julian L." → "JulianL.")
+    const suggestUsername = n => isDefaultName(n) ? '' : String(n).replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20);
+
     async function currentName() {
         const o = online();
         return (o && await o.user()) ? await profileName() : '';
@@ -445,8 +471,8 @@
         const m = sheet(`
           <h2 class="serif" style="font-size:24px">${esc(t('friends.title'))}</h2>
           <p class="muted" style="font-size:14px">${esc(t('friends.text'))}</p>
-          <label class="label" for="fs-name">${esc(t('friends.name'))}</label>
-          <input id="fs-name" class="input" maxlength="24" value="${esc(name === '?' ? '' : name)}">
+          ${isDefaultName(name === '?' ? '' : name) ? `<label class="label" for="fs-name">${esc(t('friends.name'))}</label>
+          <input id="fs-name" class="input" maxlength="24" autocomplete="nickname">` : ''}
           <button class="choice strong" data-kind="live"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M13 2.5L4.5 13.5H11l-1 8 8.5-11H12z"/></svg></span>
             <span><b>${esc(t('friends.live'))}</b><br><span class="note">${esc(t('friends.liveText'))}</span></span></button>
           <button class="choice" data-kind="async"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
@@ -454,7 +480,7 @@
         m.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', async () => {
             b.disabled = true;
             try {
-                const g = await online().createGame(b.dataset.kind, { displayName: m.querySelector('#fs-name').value.trim() || null });
+                const g = await online().createGame(b.dataset.kind, { displayName: (m.querySelector('#fs-name') ? m.querySelector('#fs-name').value.trim() : '') || null });
                 m.remove();
                 cachedProfile = null;
                 window.CircGame.open(g.id);
@@ -612,7 +638,7 @@
             <div class="row" style="gap:14px">
               <span class="avatar" style="width:56px;height:56px;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:default" aria-hidden="true">${esc((p && p.display_name || '?').slice(0, 1).toUpperCase())}</span>
               <div>
-                <h1 class="serif" style="font-size:24px;line-height:1.2">${esc(p ? p.display_name : '')}</h1>
+                <h1 class="serif" style="font-size:24px;line-height:1.2">${esc(p ? (!p.is_guest && p.username) || p.display_name : '')}</h1>
                 <div class="muted" style="font-size:14px">${esc(p && p.is_guest ? t('profile.guestName') : t('profile.signedInAs'))}</div>
               </div>
             </div>
@@ -622,15 +648,12 @@
               <p class="muted" style="font-size:14px">${esc(t('profile.guestText'))}</p>
               ${signInButtons()}
             </section>` : ''}
-            <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-              <label class="label" for="pf-name">${esc(t('profile.name'))}</label>
-              <div class="row"><input id="pf-name" class="input" maxlength="24" value="${esc(p ? p.display_name : '')}">
+            <section class="panel" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+              <label class="label" for="pf-name">${esc(t('profile.yourName'))}</label>
+              <div class="row"><input id="pf-name" class="input" maxlength="${p && !p.is_guest ? 20 : 24}" autocapitalize="off" autocomplete="nickname"
+                     value="${esc(p ? (p.is_guest ? (isDefaultName(p.display_name) ? '' : p.display_name) : (p.username || suggestUsername(p.display_name))) : '')}">
                 <button class="btn quiet" id="pf-name-save">${esc(t('profile.save'))}</button></div>
-              ${p && !p.is_guest ? `
-              <label class="label" for="pf-user">${esc(t('profile.username'))}${p.username ? '' : ' · ' + esc(t('profile.usernameNeeded'))}</label>
-              <div class="row"><input id="pf-user" class="input" maxlength="20" autocapitalize="off" autocomplete="username" value="${esc(p.username || '')}">
-                <button class="btn quiet" id="pf-user-save">${esc(t('profile.save'))}</button></div>
-              <p class="note">${esc(t('profile.usernameHint'))}</p>` : ''}
+              <p class="note">${esc(t(p && !p.is_guest ? (p.username ? 'profile.nameHint' : 'profile.nameHintNew') : 'profile.nameHintGuest'))}</p>
             </section>`;
 
         box.innerHTML = `
@@ -652,6 +675,7 @@
           </section>
           <section class="panel list" aria-label="More">
             <button id="pf-feedback"><span>${esc(t('profile.feedback'))}</span><span class="value" aria-hidden="true">›</span></button>
+            ${isInstalled() ? '' : `<button id="pf-install"><span>${esc(t('install.title'))}</span><span class="value" aria-hidden="true">⤓</span></button>`}
             ${window.CircOnboarding ? `<button id="pf-howto"><span>${esc(t('profile.howTo'))}</span><span class="value" aria-hidden="true">›</span></button>` : ''}
             <button id="pf-about"><span>${esc(t('profile.about'))}</span><span class="value" aria-hidden="true">›</span></button>
             <a id="pf-privacy" href="${window.CircI18n.lang === 'de' ? 'privacy-de.html' : 'privacy-en.html'}"><span>${esc(t('profile.privacy'))}</span><span class="value" aria-hidden="true">›</span></a>
@@ -686,7 +710,7 @@
 
     function wireProfile(o) {
         const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
-        const guard = fn => async () => { try { await fn(); } catch (e) { toast(e.message || t('common.error')); } };
+        const guard = fn => async () => { try { await fn(); } catch (e) { toast(errText(e)); } };
 
         document.querySelectorAll('#profile-body [data-lang]').forEach(b => b.addEventListener('click', () => {
             window.CircI18n.setLanguage(b.dataset.lang);
@@ -720,12 +744,28 @@
             setTimeout(() => URL.revokeObjectURL(url), 2000);
         }));
         on('pf-howto', () => window.CircOnboarding && window.CircOnboarding.show());
+        on('pf-install', async () => {
+            if (installEvt) {
+                const ev = installEvt; installEvt = null;
+                try { await ev.prompt(); } catch (e) { toast(installHowTo()); }
+                return;
+            }
+            const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('install.title'))}</h2>
+              <p class="muted" style="font-size:15px">${esc(installHowTo())}</p>`);
+            return m;
+        });
         if (!o) return;
         on('pf-google', guard(() => o.signInWithGoogle()));
         on('pf-email-toggle', () => { $('pf-email-box').classList.remove('hidden'); $('pf-email-toggle').classList.add('hidden'); $('pf-email').focus(); });
         on('pf-email-send', guard(async () => { await o.signInWithEmail($('pf-email').value.trim()); toast(t('profile.emailSent')); }));
-        on('pf-name-save', guard(async () => { await o.updateProfile({ displayName: $('pf-name').value }); cachedProfile = null; toast(t('profile.saved')); renderProfile(); }));
-        on('pf-user-save', guard(async () => { await o.updateProfile({ username: $('pf-user').value.trim() }); toast(t('profile.saved')); renderProfile(); }));
+        // one name for everything: for accounts it is the username (leaderboards) and the name in games
+        on('pf-name-save', guard(async () => {
+            const v = $('pf-name').value.trim();
+            const pr = cachedProfile;
+            if (pr && !pr.is_guest) await o.updateProfile({ username: v, displayName: v });
+            else await o.updateProfile({ displayName: v });
+            cachedProfile = null; toast(t('profile.saved')); renderProfile();
+        }));
         on('pf-signout', guard(async () => { await o.signOut(); cachedProfile = null; renderProfile(); }));
         on('pf-delete', guard(async () => {
             if (!deleteArmed) { deleteArmed = true; renderProfile(); setTimeout(() => { deleteArmed = false; }, 8000); return; }

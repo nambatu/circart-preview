@@ -414,3 +414,6 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .gp-secret { overflow: hidden; }
 .gp-secret img { cursor: default; }
 .gp-secret .gallery-details h3 { color: var(--text-secondary); }
+
+/* install banner: above the tab bar, never under it */
+body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
