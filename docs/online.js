@@ -280,8 +280,8 @@
     const gameOptions        = id => rpc('game_options', { p_game: id });
     // story dailies (019): title, intro, my chapters so far, outro when done; null on normal days
     const dailyStory         = (date = null) => rpc('daily_story', { p_date: date });
-    const setGameOptions     = (id, { artistBonus = null, movementBonus = null, timer = null } = {}) =>
-        rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus, p_timer: timer });
+    const setGameOptions     = (id, { artistBonus = null, movementBonus = null, timer = null, seconds = null } = {}) =>
+        rpc('set_game_options', { p_game: id, p_artist_bonus: artistBonus, p_movement_bonus: movementBonus, p_timer: timer, p_seconds: seconds });
     // both bonus answers in one go (null = skipped)
     const pickBonus          = (id, position, artist, movement) =>
         rpc('pick_bonus', { p_game: id, p_position: position, p_artist: artist, p_movement: movement });

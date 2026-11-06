@@ -322,14 +322,11 @@
                     ${status(p)}
                   </span></button>`;
             }).join('')}
-            ${packs.some(p => p.unlocked) ? `<label class="row note gp-mix"><input type="checkbox" id="pack-mix" ${window.CircPacks.mixing() ? 'checked' : ''}> ${esc(t('packs.mix'))}</label>` : ''}
           </div>`;
         box.querySelectorAll('[data-open-pack]').forEach(b => b.addEventListener('click', () => {
             openPack = b.dataset.openPack; renderGalleryPacks();
             const sc = box.closest('.gallery-main'); if (sc) sc.scrollTop = 0;
         }));
-        const mix = $('pack-mix');
-        if (mix) mix.addEventListener('change', () => window.CircPacks.setMixing(mix.checked));
     }
 
     function drawPackDetail(box, p, cards) {

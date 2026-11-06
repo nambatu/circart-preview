@@ -190,11 +190,16 @@
         const a = !G.opts || G.opts.artist_bonus !== false, m = !G.opts || G.opts.movement_bonus !== false;
         if (!G.st.is_host) return `<p class="note" style="text-align:center">${esc(
             a && m ? t('game.bonusBoth') : a ? t('game.bonusArtist') : m ? t('game.bonusMovement') : t('game.bonusNone'))}
-            ${esc(timed() ? t('game.timerOnNote') : t('game.timerOffNote'))}</p>`;
+            ${esc(timed() ? t('game.timerOnNote', { s: (G.opts && G.opts.seconds) || 20 }) : t('game.timerOffNote'))}</p>`;
         const sw = (key, on, title, text) => `<label class="panel go-switch"><span><b>${esc(title)}</b><br>
             <span class="note">${esc(text)}</span></span>
             <input type="checkbox" data-opt="${key}" ${on ? 'checked' : ''}><span class="go-toggle" aria-hidden="true"></span></label>`;
+        const secs = (G.opts && G.opts.seconds) || 20;
+        const SECONDS = [10, 15, 20, 30, 45, 60, 90];
+        const chips = timed() ? `<div class="chips go-secs" role="group" aria-label="${esc(t('game.timerSeconds'))}">${SECONDS.map(n =>
+            `<button class="chip" data-secs="${n}" aria-pressed="${n === secs}">${n}s</button>`).join('')}</div>` : '';
         return sw('timer', timed(), t('game.timer'), t(G.st.kind === 'live' ? 'game.timerTextLive' : 'game.timerTextAsync'))
+             + chips
              + sw('artist', a, t('game.artistBonus'), t('game.artistBonusText'))
              + sw('movement', m, t('game.movementBonus'), t('game.movementBonusText'));
     }
@@ -445,6 +450,7 @@
           <div style="text-align:center">
             <div class="label">${esc(t('run.over'))}</div>
             <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            <p class="note" style="margin-top:-6px">${esc(t('run.rightLabel'))}</p>
             ${newBest && me.score > 0 ? `<p class="run-best">🏆 ${esc(t('run.newBest'))}</p>` : ''}
             <p style="font-size:20px;letter-spacing:2px;margin:4px 0;word-break:break-all">${squares()}</p>
             <p class="muted">${esc(t('run.cards', { n: me.answered }))} · ${esc(t('ranks.bestStreak'))} ${me.best_streak}
@@ -559,6 +565,10 @@
             const o = c.dataset.opt === 'artist' ? { artistBonus: c.checked }
                     : c.dataset.opt === 'timer' ? { timer: c.checked } : { movementBonus: c.checked };
             try { G.opts = await O().setGameOptions(G.id, o); } catch (e) { window.CircShell.toast(e.message); }
+            draw();
+        }));
+        body.querySelectorAll('[data-secs]').forEach(b => b.addEventListener('click', async () => {
+            try { G.opts = await O().setGameOptions(G.id, { seconds: Number(b.dataset.secs) }); } catch (e) { window.CircShell.toast(e.message); }
             draw();
         }));
     }
