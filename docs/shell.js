@@ -69,6 +69,72 @@
         });
     }
 
+    // ─── the back button / back swipe ─────────────────────────────────────
+    // Android's back gesture and the browser's back button used to leave the
+    // app and throw the game away. Now one extra history entry ("guard") sits
+    // on top, and every back press lands here instead:
+    //   open window (tutorial, zoom, feedback, sheets)  → close it
+    //   solo game                                       → "Leave the game?"
+    //   game with friends / daily / run                 → live game asks, the rest saves and goes home
+    //   any other screen                                → home
+    //   home                                            → hint; the next back closes the app
+    function setupBack() {
+        if (!window.history || !history.pushState) return;
+        const isGuard = () => history.state && history.state.circart === 'guard';
+        const arm = () => { if (!isGuard()) history.pushState({ circart: 'guard' }, ''); };
+        history.replaceState({ circart: 'base' }, '');
+        arm();
+        let exitHint = false;
+        // after the "press again to close" hint, any tap means "I'm staying"
+        const rearm = () => { if (exitHint) { exitHint = false; arm(); } };
+        ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, rearm, true));
+
+        const visible = el => el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none';
+        function closeTopWindow() {
+            if (document.querySelector('.onb-overlay')) {
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                return true;
+            }
+            const zoom = $('zoom-modal');
+            if (visible(zoom)) { $('close-zoom-btn').click(); return true; }
+            const report = $('report-modal');
+            if (visible(report)) { $('cancel-report-btn').click(); return true; }
+            const sheets = [...document.querySelectorAll('body > .modal')].filter(visible);
+            if (sheets.length) { sheets[sheets.length - 1].remove(); return true; }
+            return false;
+        }
+
+        function askLeaveSolo() {
+            const m = document.createElement('div');
+            m.className = 'modal';
+            m.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" style="display:flex;flex-direction:column;gap:12px">
+                <h2 class="serif" style="font-size:22px">${esc(t('back.leaveTitle'))}</h2>
+                <p class="muted" style="font-size:14px">${esc(t('back.leaveSolo'))}</p>
+                <button class="btn primary block" data-x="stay">${esc(t('back.stay'))}</button>
+                <button class="btn link" data-x="leave">${esc(t('back.leave'))}</button></div>`;
+            m.addEventListener('click', e => {
+                const x = e.target.closest('[data-x]');
+                if (e.target === m || (x && x.dataset.x === 'stay')) return m.remove();
+                if (x && x.dataset.x === 'leave') { m.remove(); showTab('play'); }
+            });
+            document.body.appendChild(m);
+            m.querySelector('[data-x="stay"]').focus();
+        }
+
+        window.addEventListener('popstate', () => {
+            if (closeTopWindow()) return arm();
+            const active = document.querySelector('.screen.active');
+            const id = active ? active.id : '';
+            if (id === 'game-screen') { askLeaveSolo(); return arm(); }
+            if (id === 'game-online-screen') { window.CircGame.leaveAsk(); return arm(); }
+            if (id !== 'start-screen') { showTab('play'); return arm(); }
+            // home: first back shows a hint and leaves the guard off,
+            // so the next back really closes the app
+            exitHint = true;
+            toast(t('back.again'));
+        });
+    }
+
     // ─── home ─────────────────────────────────────────────────────────────
     let deck = null;
     async function loadDeck() {
@@ -711,6 +777,7 @@
         hookSoloGame();
 
         new MutationObserver(syncTabs).observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+        setupBack();
         syncTabs();
         renderHome();
         // first visit: a short "how to play" (once per device, never over an invite link)
@@ -749,14 +816,14 @@
         // links to a game you're in: ?game=<id> (from a share or a notification)
         const gameId = new URLSearchParams(location.search).get('game');
         if (gameId && o && FEATURES.friends) {
-            history.replaceState(null, '', location.pathname);
+            history.replaceState(history.state, '', location.pathname);
             o.user().then(u => u && o.getGame(gameId).then(() => window.CircGame.open(gameId)).catch(() => toast(t('game.notFound'))));
         }
 
         // invite links: ?join=K7Q2
         const code = new URLSearchParams(location.search).get('join');
         if (code && o && FEATURES.friends) {
-            history.replaceState(null, '', location.pathname);
+            history.replaceState(history.state, '', location.pathname);
             joinByCode(code);
         }
     }
