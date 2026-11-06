@@ -24,7 +24,7 @@ jobs:
           python3 - <<'PY'
           import json, os, re, time, urllib.parse, urllib.request
           API = "https://commons.wikimedia.org/w/api.php"
-          UA = {"User-Agent": "CIRCArt-preview-lookup/1.0 (art timeline game)"}
+          UA = {"User-Agent": "CIRCArtPreviewLookup/1.0 (https://github.com/nambatu/circart-preview; art timeline game) python-urllib"}
           def get(params):
               params = dict(params, format="json", formatversion=2)
               req = urllib.request.Request(API + "?" + urllib.parse.urlencode(params), headers=UA)
@@ -32,7 +32,7 @@ jobs:
                   try:
                       return json.load(urllib.request.urlopen(req, timeout=60))
                   except Exception as e:
-                      time.sleep(3 * (i + 1))
+                      print("request failed:", repr(e)[:200]); time.sleep(3 * (i + 1))
               return {}
           def members(cat, kind):
               out, cont = [], {}
