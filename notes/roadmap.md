@@ -58,6 +58,7 @@ Built by the separate scheduled task "CIRCArt story daily" (every evening 17:52 
 **Planning horizon (Julian, 6 Nov):** the next day(s) matter most, not next week or month. Not every day needs a story; a normal random daily is fine when nothing is approved.
 
 ## Queue (top = next)
+D4. [ ] **Story daily for Fri 13 Nov: "Bad luck, good luck / Pech und Glück"** (famous art thefts) — approved by Julian 9 Nov (7 cards as in the draft; mention the IRA link in the Vermeer chapter). Build from `src/dailies/drafts/draft-2026-11-09-stolen.md` in the Wed 11 run (its deadline comes before Monet's); live before Thu 12 Nov 24:00.
 D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets Leben in acht Bildern"** — approved by Julian 8 Nov (8 cards; pack repeats are fine). Build from `src/dailies/drafts/draft-2026-11-08-monet.md` in the Wed 11 / Thu 12 / Fri 13 run; live before Fri 13 Nov 24:00.
 37. [ ] **Check the style (Stilrichtung / movement) of every card** (Julian, 7 Nov). Correction from Julian: the trivia is fine; the problem is the **card information page** (the one with location, artist, medium …) — its style sometimes differs from the style question, and is sometimes plain wrong.
     - Likely cause: the info page shows the card's raw `movement` from the deck (e.g. "Mannerism", "Early Netherlandish"), while the style question and its answer use `movement_group` (the mapped group from migration `007_movement.sql` / `GROUPS` in `solo.js`). So the two can disagree even when both are "right", and the raw value itself may be wrong.
@@ -130,6 +131,6 @@ D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets L
 - 2026-11-07 (18:10) · story-daily run · D1 live for Sun 8 Nov; new draft "Half a cloak" (St Martin)
 - 2026-11-08 (17:10) · evening build (Sun) · 36 tap a painting to enlarge · deployed: NO (no push access)
 - 2026-11-08 (18:10) · story-daily run · D2 "Half a cloak" live for Wed 11 Nov; new draft "Monet's life in eight pictures" for Sat 14 Nov (approved by Julian that evening)
-- 2026-11-09 (18:00) · story-daily run · nothing due for 10/11 Nov (St Martin already live); new draft "Bad luck, good luck" (art thefts) for Fri 13 Nov, waiting for Julian
+- 2026-11-09 (18:00) · story-daily run · nothing due for 10/11 Nov (St Martin already live); new draft "Bad luck, good luck" (art thefts) for Fri 13 Nov, approved by Julian the same evening (D4)
 - 2026-11-09 · manual session · moved development into this repo (src/, CLAUDE.md, notes/), evening build switched off, story task pointed here; 35 + 36 deployed · next: 37 (style check) or 31
 - 2026-11-09 (evening build, Mon) · 31 countdown bar fix · tests green · deployed yes · next: 37 (style check, needs splitting) or 32a
