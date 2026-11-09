@@ -32,7 +32,7 @@ The next 1–2 days come first: build approved drafts for tomorrow / the day aft
 3. **One artist's life** — Dürer, Rembrandt, van Gogh, Artemisia Gentileschi, Hokusai, Monet (approved for his birthday, 14 Nov). Chapters follow the biography. Harder (years close together) → good for a "hard Sunday".
 4. **One subject through time** — the Annunciation, the self-portrait, the sea, the city at night, cats, vanitas. ✅ St Martin's cloak → live for Wed 11 Nov.
 5. **Teacher and pupil chains** — Verrocchio → Leonardo; Perugino → Raphael; Rubens → van Dyck.
-6. **Art crime and lucky escapes** — the Mona Lisa 1911, the Ghent Altarpiece, wartime evacuations.
+6. **Art crime and lucky escapes** — the Mona Lisa 1911, the Ghent Altarpiece, wartime evacuations. Drafted 9 Nov for Fri 13 Nov (waiting). Spare thefts: Turner "Shade and Darkness" (Frankfurt 1994), Rembrandt "Jacob de Gheyn III" (stolen four times), Vermeer "The Concert" (Gardner 1990).
 7. **Lost and rebuilt** — works destroyed in wars or fires and what came back (Dresden, Würzburg 1945).
 8. **One city across 500 years** — Venice, Paris, Amsterdam, Nuremberg.
 9. **Women who were written out** — ✅ live for Sun 8 Nov. Another round for International Women's Day (8 Mar): Angelica Kauffman, Mary Moser, Clara Peeters, Rachel Ruysch, Marie-Guillemine Benoist.
@@ -60,3 +60,4 @@ Julian answers "approve", "change …" or "drop". Approved drafts are built into
 - 2026-11-07 (story-daily run) · "Half a cloak / Ein halber Mantel" (St Martin) · **Julian 7 Nov evening: change — add one more modern painting; Bassenheim Rider OK if no card within ±30 years; date Wed 11 Nov confirmed** → changed · built early and **live 8 Nov** for **Wed 11 Nov** (`2026-11-11-saint-martin.json`). Wilfred Thompson (1918) had only one source, so the modern card is Gebhard Fugel's ceiling painting in Wangen im Allgäu (1900).
 - 2026-11-08 (story-daily run) · "Monet's life in eight pictures / Monets Leben in acht Bildern" (full draft in `drafts/draft-2026-11-08-monet.md`) · **Julian 8 Nov evening: approved as suggested (8 cards) for Sat 14 Nov; repeats from packs are fine in general** → build in the Wed 11 / Thu 12 / Fri 13 run, live before Fri 24:00
 - Mon 9 + Tue 10 Nov: no story, normal random daily.
+- 2026-11-09 (story-daily run) · "Bad luck, good luck / Pech und Glück" (famous art thefts, 7 cards, suggested Fri 13 Nov; full draft in `drafts/draft-2026-11-09-stolen.md`) · **waiting**
