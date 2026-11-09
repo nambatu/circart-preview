@@ -52,7 +52,9 @@ Cloud sessions can't reach Wikimedia directly; GitHub Actions can. To find artwo
 
 ## Scheduled tasks (they run on their own in the cloud)
 - **"CIRCArt story daily"**, every evening at 17:52 Berlin time: builds approved story dailies for the next 1–2 days, writes one new draft and sends Julian a short report. It follows `src/dailies/SKILL.md` and pushes to this repo. Work sessions leave story work (`D…` items, `src/dailies/`) to it unless Julian asks otherwise.
-- **"CIRCArt evening build"**: switched off (9 Nov 2026). It couldn't push to this repo and its Supabase access was unreliable. If Julian wants an automatic evening work session again, create it from a Claude Code session with this repo attached, so it can push.
+- **"CIRCArt evening build"**, every day at 16:41 Berlin time (recreated 9 Nov 2026 from a Claude Code session): one roadmap task per day (up to three on Thursdays), tested and deployed to the preview, then a short report. It runs in the "CircART" cloud environment, which has this repo attached, and pushes to `main`. It has the Supabase connector for feedback.
+- Both tasks run in the cloud; Julian's PC doesn't need to be on.
+- This is a dev repo: pushing and merging to `main` here is fine without asking (Julian, 9 Nov). The rules above about nambatu/circart still apply.
 
 ## Supabase
 - Preview project id `rzptvdlejmdeaanhbbtd`. Schema changes go through migration files + the `preview-db` Action, not through ad-hoc SQL.
