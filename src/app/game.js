@@ -288,7 +288,7 @@
             <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
             ${timed() ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>` : ''}
           </div>
-          ${timed() ? '<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar"></div></div>' : ''}
+          ${timed() ? `<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${c.seconds && c.ends_at ? Math.max(0, Math.min(100, 100 * left(c.ends_at) / (c.seconds * 1000))) : 100}%"></div></div>` : ''}
           <div class="go-art">${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(t('game.artAlt'))}">` : `<div class="go-typo serif">${esc(c.title || '?')}</div>`}</div>
           <div class="row" style="justify-content:space-between"><b>${esc(t('game.tap'))}</b>
             ${G.st.kind === 'live' ? `<span class="note">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}</span>` : ''}</div>
