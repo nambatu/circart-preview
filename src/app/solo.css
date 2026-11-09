@@ -1,0 +1,39 @@
+/* CIRCArt — solo game: tap answers instead of typing (solo.js).
+   Load after shell.css. Buttons follow the multiplayer .go-pick look, but sit
+   on card colour so they stand out from the beige/dark bonus panel. */
+.solo-mc input { display: none; }
+.solo-mc #solo-bonus { display: flex; flex-direction: column; gap: 14px; margin: 2px 0 0; }
+.solo-mc #solo-bonus:empty { display: none; }
+.solo-q { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.solo-q b { font: 600 13px var(--font-body); color: var(--text-primary); }
+.solo-q b .note { color: var(--text-secondary); font-weight: 600; margin-left: 2px; }
+.solo-q .two { gap: 8px; }
+.solo-mc .go-pick {
+    cursor: pointer; font: 600 14px/1.2 var(--font-body); color: var(--text-primary);
+    min-height: 46px; padding: 6px 10px; background: var(--card-bg); border: 2px solid var(--line);
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent; overflow-wrap: anywhere;
+}
+.solo-mc .go-pick:active { transform: scale(0.97); }
+.solo-mc .go-pick:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+.solo-mc .go-pick.chosen {
+    background: color-mix(in srgb, var(--accent-color) 12%, var(--card-bg));
+    border-color: var(--accent-color); color: var(--accent-text);
+}
+@media (hover: hover) and (pointer: fine) {
+    .solo-mc .go-pick:not(.chosen):hover { border-color: var(--text-secondary); }
+}
+.solo-mc .instruction { margin-top: 14px; }
+
+/* phones: keep the timeline close — no heading/hint, tighter buttons */
+@media (max-width: 780px) {
+    .bonus-section.solo-mc { padding: 12px; }
+    .solo-mc > h3, .solo-mc > .hint { display: none; }
+    .solo-mc #solo-bonus { gap: 10px; }
+    .solo-q { gap: 6px; }
+    .solo-q b { font-size: 12px; }
+    .solo-q .two { gap: 6px; }
+    .solo-mc .go-pick { font-size: 13px; min-height: 40px; padding: 4px 8px; border-radius: 10px; }
+    .solo-mc .instruction { margin-top: 10px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .solo-mc .go-pick { transition: none; } .solo-mc .go-pick:active { transform: none; } }

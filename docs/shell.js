@@ -350,7 +350,14 @@
           </div>`;
         box.querySelector('[data-pack-back]').addEventListener('click', closePackDetail);
         const play = box.querySelector('[data-pack-play]');
-        if (play) play.addEventListener('click', () => window.CircPacks.play(play.dataset.packPlay));
+        if (play) play.addEventListener('click', () => {
+            // Close the pack page first and leave the Gallery, so the game opens
+            // on its own full screen instead of below the gallery (task 35).
+            const id = play.dataset.packPlay;
+            openPack = null;
+            const sc = box.closest('.gallery-main'); if (sc) sc.scrollTop = 0;
+            window.CircPacks.play(id);
+        });
     }
     function closePackDetail() {
         if (!openPack) return false;
@@ -866,6 +873,123 @@
         };
     }
 
+    // ─── tap a painting to see it large (task 36) ─────────────────────────
+    // Every card image opens app.js's zoom window (#zoom-modal). On top of it:
+    // pinch or double-tap to zoom, drag to look around, a tap closes it (when
+    // not zoomed in), and so do ✕, Escape and the back swipe (setupBack).
+    const ZOOM_SEL = '.zoomable-img, .go-art img, .go-tl img, .go-story img, .go-bonus-art, .hcard-thumb';
+    function setupZoom() {
+        const modal = $('zoom-modal'), img = $('zoomed-image'), x = $('close-zoom-btn');
+        if (!modal || !img) return;
+        if (x) {
+            x.setAttribute('role', 'button');
+            x.setAttribute('tabindex', '0');
+            x.setAttribute('aria-label', t('common.close'));
+        }
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        const Z = { s: 1, x: 0, y: 0 };
+        const pts = new Map();
+        let pinch = null, pan = null, down = null, lastTap = null, tapTimer = 0;
+        const isOpen = () => !modal.classList.contains('hidden');
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+        function apply() {
+            const W = modal.clientWidth, H = modal.clientHeight;
+            const mx = Math.max(0, (img.offsetWidth * Z.s - W) / 2), my = Math.max(0, (img.offsetHeight * Z.s - H) / 2);
+            Z.x = clamp(Z.x, -mx, mx); Z.y = clamp(Z.y, -my, my);
+            if (Z.s <= 1.001) { Z.s = 1; Z.x = 0; Z.y = 0; }
+            img.style.transform = `translate(${Z.x}px, ${Z.y}px) scale(${Z.s})`;
+            modal.classList.toggle('zoomed', Z.s > 1);
+        }
+        // zoom to scale ns, keeping the point under (px, py) where it is
+        function zoomAt(px, py, ns) {
+            ns = clamp(ns, 1, 5);
+            const r = modal.getBoundingClientRect();
+            const ax = px - (r.left + r.width / 2), ay = py - (r.top + r.height / 2);
+            Z.x = ax - (ax - Z.x) * ns / Z.s;
+            Z.y = ay - (ay - Z.y) * ns / Z.s;
+            Z.s = ns;
+            apply();
+        }
+        function reset() { Z.s = 1; Z.x = 0; Z.y = 0; pts.clear(); pinch = pan = down = lastTap = null; clearTimeout(tapTimer); apply(); }
+        function open(src, alt) {
+            reset();
+            img.src = src;
+            img.alt = alt || '';
+            modal.classList.remove('hidden');
+            if (x) x.focus({ preventScroll: true });
+        }
+        function close() { reset(); modal.classList.add('hidden'); }
+
+        // open: catch the tap before app.js's own handler on <body>
+        document.addEventListener('click', e => {
+            const el = e.target;
+            if (modal.contains(el)) {
+                // inside the window we decide (app.js would close on any backdrop tap)
+                if (x && x.contains(el)) { e.stopPropagation(); close(); }
+                else e.stopPropagation();
+                return;
+            }
+            if (!(el instanceof HTMLImageElement) || !el.matches(ZOOM_SEL)) return;
+            if (el.closest('button, a, .gp-secret') || !el.currentSrc && !el.src) return;
+            e.preventDefault();
+            e.stopPropagation();
+            open(el.currentSrc || el.src, el.alt);
+        }, true);
+        if (x) x.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen()) { e.stopPropagation(); close(); } }, true);
+
+        const mid = () => { const [a, b] = [...pts.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; };
+        modal.addEventListener('pointerdown', e => {
+            if (x && x.contains(e.target)) return;
+            try { modal.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+            pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            modal.classList.add('gesturing');
+            if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, t: Date.now() }; pan = { x: e.clientX, y: e.clientY }; }
+            if (pts.size === 2) { const m = mid(); pinch = { d: m.d, s: Z.s, mx: m.x, my: m.y }; down = null; pan = null; }
+        });
+        modal.addEventListener('pointermove', e => {
+            if (!pts.has(e.pointerId)) return;
+            pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (pinch && pts.size >= 2) {
+                const m = mid();
+                Z.x += m.x - pinch.mx; Z.y += m.y - pinch.my;
+                pinch.mx = m.x; pinch.my = m.y;
+                zoomAt(m.x, m.y, pinch.s * m.d / pinch.d);
+            } else if (pan && pts.size === 1) {
+                if (Z.s > 1) { Z.x += e.clientX - pan.x; Z.y += e.clientY - pan.y; apply(); }
+                pan = { x: e.clientX, y: e.clientY };
+            }
+        });
+        const up = e => {
+            if (!pts.has(e.pointerId)) return;
+            pts.delete(e.pointerId);
+            if (pts.size === 1) { const p = [...pts.values()][0]; pan = { x: p.x, y: p.y }; pinch = null; }
+            if (pts.size) return;
+            modal.classList.remove('gesturing');
+            pinch = null; pan = null;
+            const d = down; down = null;
+            if (e.type !== 'pointerup' || !d || Date.now() - d.t > 350 || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12) return;
+            // a tap: two quick taps zoom in / out, one tap closes (unless zoomed in)
+            if (lastTap && Date.now() - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+                clearTimeout(tapTimer); lastTap = null;
+                if (Z.s > 1) { Z.s = 1; apply(); } else zoomAt(e.clientX, e.clientY, 2.5);
+                return;
+            }
+            lastTap = { x: e.clientX, y: e.clientY, t: Date.now() };
+            clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => { lastTap = null; if (Z.s === 1 && isOpen()) close(); }, 320);
+        };
+        modal.addEventListener('pointerup', up);
+        modal.addEventListener('pointercancel', up);
+        modal.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Z.s * (e.deltaY < 0 ? 1.2 : 1 / 1.2)); }, { passive: false });
+        modal.addEventListener('gesturestart', e => e.preventDefault());   // iOS: no page zoom behind the window
+        modal.addEventListener('dragstart', e => e.preventDefault());
+        // the back swipe clicks ✕ (setupBack); app.js hides the window, we reset the zoom
+        new MutationObserver(() => { if (!isOpen() && Z.s !== 1) reset(); }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+
     // ─── called by app.js ─────────────────────────────────────────────────
     let serverSeen = new Set();
     window.CircShell = {
@@ -897,6 +1021,7 @@
         new MutationObserver(syncTabs).observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
         document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.addEventListener('click', () => setGalleryView(b.dataset.gview)));
         setupBack();
+        setupZoom();
         syncTabs();
         renderHome();
         // first visit: a short "how to play" (once per device, never over an invite link)

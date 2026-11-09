@@ -1,0 +1,17 @@
+{
+ "site": "https://nambatu.github.io/circart-preview",
+ "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
+ "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
+ "label": "Mon 9 Nov, 11:30",
+ "changes": [
+  "Tap any painting to see it big. Pinch or double-tap to zoom in, and tap once to close.",
+  "\"Play this pack\" now opens the game on its own full screen.",
+  "Behind the scenes: the code now lives in this repo, so future updates come out faster."
+ ],
+ "test": [
+  "Gallery → Packs → open an unlocked pack → \"Play this pack\": the game should fill the whole screen.",
+  "In a game with friends or the daily, tap the painting: it opens big, pinch to zoom, one tap closes it.",
+  "Swipe back while a painting is open: it should close the painting, not the game."
+ ],
+ "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
+}

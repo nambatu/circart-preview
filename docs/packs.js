@@ -54,7 +54,18 @@
     window.CircPacks = {
         setUnlocked() { /* packs are never mixed into normal games */ },
         // one solo game with only this pack (uses the round count chosen on the home screen)
-        play(id) { arm(id); if (startBtn) startBtn.click(); },
+        // one solo game with only this pack (uses the round count chosen on the home screen)
+        // app.js's start only swaps the start screen for the game screen, so any
+        // other open screen (the Gallery) is closed here first. Otherwise the
+        // game opened in the bottom half, under the pack page (task 35).
+        play(id) {
+            arm(id);
+            document.querySelectorAll('.screen.active').forEach(s => s.classList.remove('active'));
+            const start = document.getElementById('start-screen');
+            if (start) start.classList.add('active');
+            window.scrollTo(0, 0);
+            if (startBtn) startBtn.click();
+        },
         cards: packCards,
     };
 })();

@@ -1,0 +1,86 @@
+# CIRCArt Preview — list Wikimedia Commons files of a category (with licence,
+# author and size), for writing story dailies. The Claude workspace can't
+# reach Wikimedia; GitHub Actions can. Start it with:
+#   gh workflow run commons-lookup.yml -f category="Würzburger Dom" -f depth=2
+# Result: commons-lookup/<category>.json in this repo.
+name: commons-lookup
+on:
+  workflow_dispatch:
+    inputs:
+      category: { description: "Commons category (without 'Category:')", required: true }
+      depth:    { description: "subcategory depth", required: false, default: "2" }
+permissions:
+  contents: write
+jobs:
+  lookup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query Commons
+        env:
+          CAT: ${{ inputs.category }}
+          DEPTH: ${{ inputs.depth }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, time, urllib.parse, urllib.request
+          API = "https://commons.wikimedia.org/w/api.php"
+          UA = {"User-Agent": "CIRCArtPreviewLookup/1.0 (https://github.com/nambatu/circart-preview; art timeline game) python-urllib"}
+          def get(params):
+              params = dict(params, format="json", formatversion=2)
+              req = urllib.request.Request(API + "?" + urllib.parse.urlencode(params), headers=UA)
+              for i in range(4):
+                  try:
+                      return json.load(urllib.request.urlopen(req, timeout=60))
+                  except Exception as e:
+                      print("request failed:", repr(e)[:200]); time.sleep(3 * (i + 1))
+              return {}
+          def members(cat, kind):
+              out, cont = [], {}
+              while True:
+                  r = get(dict(action="query", list="categorymembers", cmtitle="Category:" + cat,
+                               cmtype=kind, cmlimit=500, **cont))
+                  if "query" not in r: print("no query in answer for", cat, kind, str(r)[:300])
+                  out += [m["title"] for m in r.get("query", {}).get("categorymembers", [])]
+                  if "continue" not in r: return out
+                  cont = r["continue"]
+          root, depth = os.environ["CAT"], int(os.environ.get("DEPTH") or 2)
+          # "search:<words>" → the best matching categories
+          if root.startswith("search:"):
+              r = get(dict(action="query", list="search", srsearch=root[7:], srnamespace=14, srlimit=8))
+              cats = [x["title"].split(":", 1)[1] for x in r.get("query", {}).get("search", [])]
+              print("categories found:", cats)
+          else:
+              cats = [root]
+          seen, queue, files = set(), [(c, 0) for c in cats], {}
+          while queue:
+              cat, d = queue.pop(0)
+              if cat in seen: continue
+              seen.add(cat)
+              for f in members(cat, "file"): files.setdefault(f, cat)
+              if d < depth:
+                  for s in members(cat, "subcat"): queue.append((s.split(":", 1)[1], d + 1))
+          titles, rows = list(files), []
+          strip = lambda h: re.sub(r"<[^>]+>", "", h or "").strip()
+          for i in range(0, len(titles), 40):
+              r = get(dict(action="query", titles="|".join(titles[i:i + 40]), prop="imageinfo",
+                           iiprop="url|size|extmetadata", iiurlwidth=1280))
+              for p in r.get("query", {}).get("pages", []):
+                  ii = (p.get("imageinfo") or [{}])[0]; md = ii.get("extmetadata", {})
+                  rows.append({"file": p["title"].split(":", 1)[1], "category": files.get(p["title"]),
+                               "width": ii.get("width"), "height": ii.get("height"),
+                               "thumb": ii.get("thumburl"), "url": ii.get("url"),
+                               "license": strip(md.get("LicenseShortName", {}).get("value")),
+                               "artist": strip(md.get("Artist", {}).get("value"))[:120],
+                               "desc": strip(md.get("ImageDescription", {}).get("value"))[:200]})
+          os.makedirs("commons-lookup", exist_ok=True)
+          name = re.sub(r"[^A-Za-z0-9_-]+", "_", root)
+          json.dump(sorted(rows, key=lambda x: (x["category"] or "", x["file"])),
+                    open(f"commons-lookup/{name}.json", "w"), ensure_ascii=False, indent=1)
+          print(len(rows), "files from", len(seen), "categories")
+          PY
+      - name: Commit
+        run: |
+          git config user.name "circart-bot"; git config user.email "bot@users.noreply.github.com"
+          git add commons-lookup
+          git commit -m "commons lookup: ${{ inputs.category }}" || echo "nothing new"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

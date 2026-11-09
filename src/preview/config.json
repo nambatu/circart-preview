@@ -1,0 +1,9 @@
+{
+  "ready": false,
+  "note": "Fill in after Julian's one-time setup (README A + B). The anon key and URL are public by design; the DB password lives only in the GitHub secret SUPABASE_DB_URL.",
+  "game_repo": "OWNER/REPO",
+  "preview_repo": "OWNER/circart-preview",
+  "site": "https://OWNER.github.io/circart-preview",
+  "supabase_url": "https://XXXX.supabase.co",
+  "anon_key": "PASTE-ANON-KEY"
+}

@@ -1,0 +1,50 @@
+# CIRCArt Preview — keeps the preview database in step with the code.
+# (Feedback is NOT exported any more: this repo is public, and the evening
+# run reads feedback only through feedback_inbox(), which filters injections.)
+#
+# Needs one repository secret: SUPABASE_DB_URL = the preview project's
+# "Session pooler" connection string (Supabase → Connect), with the password.
+name: preview-db
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**", ".github/workflows/preview-db.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-db
+  cancel-in-progress: false
+
+jobs:
+  db:
+    runs-on: ubuntu-latest
+    env:
+      DB: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply new migrations, then the deck
+        if: github.event_name != 'schedule'
+        run: |
+          set -e
+          psql "$DB" -v ON_ERROR_STOP=1 -q -c "
+            create table if not exists public._preview_migrations (name text primary key, applied_at timestamptz default now());
+            alter table public._preview_migrations enable row level security;
+            revoke all on public._preview_migrations from anon, authenticated;"
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            n=$(basename "$f")
+            done=$(psql "$DB" -tAc "select 1 from public._preview_migrations where name = '$n'")
+            if [ -z "$done" ]; then
+              echo "applying $n"
+              psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f "$f"
+              psql "$DB" -q -c "insert into public._preview_migrations (name) values ('$n')"
+            fi
+          done
+          echo "loading deck"
+          psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/deck.sql
+          if [ -f supabase/packs.sql ]; then echo "loading packs"; psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/packs.sql; fi
+          if [ -f supabase/dailies.sql ]; then echo "loading story dailies"; psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/dailies.sql; fi

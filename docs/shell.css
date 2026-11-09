@@ -429,3 +429,20 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
 
 /* lobby: seconds per card */
 .go-secs { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 4px; }
+
+/* tap a painting to see it large (task 36): pinch / double-tap zoom, drag, tap or ✕ to close */
+.go-art img, .go-tl img, .go-story img, .hcard-thumb { cursor: zoom-in; }
+.zoom-modal { touch-action: none; overscroll-behavior: contain; overflow: hidden; -webkit-user-select: none; user-select: none; }
+.zoom-modal #zoomed-image {
+    max-width: 100vw; max-height: 100vh; max-height: 100dvh; border-radius: 0;
+    transform-origin: center center; transition: transform .2s ease; will-change: transform;
+    -webkit-user-drag: none; cursor: zoom-in;
+}
+.zoom-modal.zoomed #zoomed-image { cursor: grab; }
+.zoom-modal.gesturing #zoomed-image { transition: none; }
+.zoom-modal .close-zoom {
+    z-index: 2; top: calc(10px + env(safe-area-inset-top, 0px)); right: 12px;
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    font-size: 30px; line-height: 1; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff;
+}
+.zoom-modal .close-zoom:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
