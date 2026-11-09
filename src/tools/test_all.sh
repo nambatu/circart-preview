@@ -25,7 +25,11 @@ for t in "$BE"/tests/*.test.mjs; do
   case "$res" in *"all checks passed"*) ;; *) [ "$name" = foundation ] || fail=1 ;; esac
 done
 if [ "${1:-}" != "--no-e2e" ]; then
-  S="$WORK/e2e"; mkdir -p "$S/site"
+  S="$WORK/e2e"; rm -rf "$S"; mkdir -p "$S/site"
+  # base game (images, app.js, artline.json) from Julian's game repo, read-only, like deploy_preview.sh
+  GAME="${GAME:-$HOME/circart-game}"
+  [ -d "$GAME/.git" ] || git clone -q --depth 1 https://github.com/nambatu/circart "$GAME"
+  cp -r "$GAME/docs/." "$S/site/"
   cp "$BE"/app/*.js "$BE"/app/*.css "$BE"/app/index.html "$S/site/" 2>/dev/null
   [ -d "$BE/app/vendor" ] && cp -r "$BE/app/vendor" "$S/site/"
   mkdir -p "$S/site/packs" && for f in "$BE"/packs/*.json; do [ -f "$f" ] && cp "$f" "$S/site/packs/"; done
