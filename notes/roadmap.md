@@ -150,6 +150,7 @@ D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets L
 - 2026-11-08 (17:10) · evening build (Sun) · 36 tap a painting to enlarge · deployed: NO (no push access)
 - 2026-11-08 (18:10) · story-daily run · D2 "Half a cloak" live for Wed 11 Nov; new draft "Monet's life in eight pictures" for Sat 14 Nov (approved by Julian that evening)
 - 2026-11-09 (18:00) · story-daily run · nothing due for 10/11 Nov (St Martin already live); new draft "Bad luck, good luck" (art thefts) for Fri 13 Nov, approved by Julian the same evening (D4)
+- 2026-11-10 (18:00) · story-daily run · nothing due for 11/12 Nov (St Martin is live for Wed 11, checked in the preview database); new draft "The skull on the table" (vanitas) for Sun 15 Nov, waiting for Julian. D4 (thefts, Fri 13) is next to build in the Wed 11 run
 - 2026-11-09 · manual session · moved development into this repo (src/, CLAUDE.md, notes/), evening build switched off, story task pointed here; 35 + 36 deployed · next: 37 (style check) or 31
 - 2026-11-09 (evening build, Mon) · 31 countdown bar fix · tests green · deployed yes · next: 37 (style check, needs splitting) or 32a
 - 2026-11-10 · manual session · daily history export + never-twice check · deployed yes (Action only, no app change) · next: 37a
