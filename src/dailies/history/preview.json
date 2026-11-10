@@ -1,0 +1,403 @@
+[
+    {
+        "date": "2026-11-05",
+        "cards": [
+            {
+                "id": "x9qzfzfcgs",
+                "year": 1912,
+                "title": "Nude Descending a Staircase, No. 2",
+                "artist": "Marcel Duchamp",
+                "position": 0
+            },
+            {
+                "id": "s9ktetuzgy",
+                "year": 1875,
+                "title": "The Gross Clinic",
+                "artist": "Thomas Eakins",
+                "position": 1
+            },
+            {
+                "id": "mb57kfq4ud",
+                "year": 1942,
+                "title": "Nighthawks",
+                "artist": "Edward Hopper",
+                "position": 2
+            },
+            {
+                "id": "vjm26zges4",
+                "year": 1897,
+                "title": "Where Do We Come From? What Are We? Where Are We Going?",
+                "artist": "Paul Gauguin",
+                "position": 3
+            },
+            {
+                "id": "wmxdspqb5h",
+                "year": 1824,
+                "title": "The Sea of Ice",
+                "artist": "Caspar David Friedrich",
+                "position": 4
+            },
+            {
+                "id": "awwyrhgtu6",
+                "year": 2007,
+                "title": "For the Love of God",
+                "artist": "Damien Hirst",
+                "position": 5
+            },
+            {
+                "id": "aa4sbjjjav",
+                "year": 1427,
+                "title": "Holy Trinity",
+                "artist": "Masaccio",
+                "position": 6
+            },
+            {
+                "id": "xeuemqczex",
+                "year": 1981,
+                "title": "Irony of a Negro Policeman",
+                "artist": "Jean-Michel Basquiat",
+                "position": 7
+            },
+            {
+                "id": "42a8tgqmmq",
+                "year": 1937,
+                "title": "Guernica",
+                "artist": "Pablo Picasso",
+                "position": 8
+            },
+            {
+                "id": "dswvfr9nsd",
+                "year": 1964,
+                "title": "The Problem We All Live With",
+                "artist": "Norman Rockwell",
+                "position": 9
+            },
+            {
+                "id": "dbwmt65c5f",
+                "year": 1563,
+                "title": "The Tower of Babel",
+                "artist": "Pieter Bruegel the Elder",
+                "position": 10
+            }
+        ],
+        "story": null
+    },
+    {
+        "date": "2026-11-06",
+        "cards": [
+            {
+                "id": "67qyextf2w",
+                "year": 1838,
+                "title": "The Fighting Temeraire",
+                "artist": "J.M.W. Turner",
+                "position": 0
+            },
+            {
+                "id": "m6n6jpwwm3",
+                "year": 1948,
+                "title": "Christina's World",
+                "artist": "Andrew Wyeth",
+                "position": 1
+            },
+            {
+                "id": "tw7y877p67",
+                "year": 1443,
+                "title": "The Annunciation",
+                "artist": "Fra Angelico",
+                "position": 2
+            },
+            {
+                "id": "dztbe4mmgb",
+                "year": 1932,
+                "title": "Henry Ford Hospital",
+                "artist": "Frida Kahlo",
+                "position": 3
+            },
+            {
+                "id": "qfss9crjpx",
+                "year": 1503,
+                "title": "Mona Lisa",
+                "artist": "Leonardo da Vinci",
+                "position": 4
+            },
+            {
+                "id": "mjv66fpt2v",
+                "year": 1889,
+                "title": "Self-Portrait with Bandaged Ear",
+                "artist": "Vincent van Gogh",
+                "position": 5
+            },
+            {
+                "id": "srmmpmmznw",
+                "year": 1520,
+                "title": "The Transfiguration",
+                "artist": "Raphael",
+                "position": 6
+            },
+            {
+                "id": "xpwajjqect",
+                "year": 1432,
+                "title": "The Ghent Altarpiece",
+                "artist": "Jan van Eyck",
+                "position": 7
+            },
+            {
+                "id": "4vjpkhaquu",
+                "year": 1907,
+                "title": "Portrait of Adele Bloch-Bauer I",
+                "artist": "Gustav Klimt",
+                "position": 8
+            },
+            {
+                "id": "cdvc8fpjv5",
+                "year": 1880,
+                "title": "Isle of the Dead",
+                "artist": "Arnold Böcklin",
+                "position": 9
+            },
+            {
+                "id": "prccd36zca",
+                "year": 1474,
+                "title": "Diptych of Federico da Montefeltro and Battista Sforza",
+                "artist": "Piero della Francesca",
+                "position": 10
+            }
+        ],
+        "story": null
+    },
+    {
+        "date": "2026-11-07",
+        "cards": [
+            {
+                "id": "f8d8bwnmba",
+                "year": 1610,
+                "title": "Pulpit of Würzburg Cathedral",
+                "artist": "Michael Kern the Younger",
+                "position": 0
+            },
+            {
+                "id": "unmv9rqja6",
+                "year": 1981,
+                "title": "Menorah",
+                "artist": "Andreas Moritz",
+                "position": 1
+            },
+            {
+                "id": "2hat3rgzjg",
+                "year": 1499,
+                "title": "Tomb of Prince-Bishop Rudolf von Scherenberg",
+                "artist": "Tilman Riemenschneider",
+                "position": 2
+            },
+            {
+                "id": "38up9vv29h",
+                "year": 1623,
+                "title": "Tomb of Jakob Baur von Eiseneck",
+                "artist": "Michael Kern (attributed)",
+                "position": 3
+            },
+            {
+                "id": "d8dw8kcehs",
+                "year": 1279,
+                "title": "Baptismal font",
+                "artist": "Master Eckart of Worms",
+                "position": 4
+            },
+            {
+                "id": "hs4nuryjuw",
+                "year": 1706,
+                "title": "Stucco ceiling of the crossing",
+                "artist": "Giovanni Pietro Magni",
+                "position": 5
+            },
+            {
+                "id": "smb836nzqh",
+                "year": 1420,
+                "title": "Pietà",
+                "artist": "Unknown master",
+                "position": 6
+            },
+            {
+                "id": "u8kyytsg6y",
+                "year": 1967,
+                "title": "Kilian Portal",
+                "artist": "Otto Sonnleitner",
+                "position": 7
+            },
+            {
+                "id": "esdap5vn63",
+                "year": 1736,
+                "title": "Schönborn Chapel",
+                "artist": "Balthasar Neumann",
+                "position": 8
+            },
+            {
+                "id": "7acmeaj58r",
+                "year": 1075,
+                "title": "Würzburg Cathedral",
+                "artist": "Bishops Bruno and Adalbero",
+                "position": 9
+            }
+        ],
+        "story": "wuerzburg-dom"
+    },
+    {
+        "date": "2026-11-08",
+        "cards": [
+            {
+                "id": "7drh4hwm49",
+                "year": 1705,
+                "title": "Spiders, ants and a hummingbird on a guava branch (Metamorphosis insectorum Surinamensium)",
+                "artist": "Maria Sibylla Merian",
+                "position": 0
+            },
+            {
+                "id": "4uwrrhee7q",
+                "year": 1555,
+                "title": "The Chess Game",
+                "artist": "Sofonisba Anguissola",
+                "position": 1
+            },
+            {
+                "id": "mj9ubupv5k",
+                "year": 1907,
+                "title": "The Ten Largest, No. 7, Adulthood",
+                "artist": "Hilma af Klint",
+                "position": 2
+            },
+            {
+                "id": "g9dab98dr3",
+                "year": 1630,
+                "title": "Self-Portrait",
+                "artist": "Judith Leyster",
+                "position": 3
+            },
+            {
+                "id": "7a5wukj2sf",
+                "year": 1855,
+                "title": "The Horse Fair",
+                "artist": "Rosa Bonheur",
+                "position": 4
+            },
+            {
+                "id": "rh87rnegar",
+                "year": 1577,
+                "title": "Self-Portrait at the Clavichord with a Servant",
+                "artist": "Lavinia Fontana",
+                "position": 5
+            },
+            {
+                "id": "ra4mnf79wu",
+                "year": 1772,
+                "title": "The Academicians of the Royal Academy",
+                "artist": "Johan Zoffany",
+                "position": 6
+            },
+            {
+                "id": "dm8kz25pp6",
+                "year": 1639,
+                "title": "Self-Portrait as the Allegory of Painting",
+                "artist": "Artemisia Gentileschi",
+                "position": 7
+            },
+            {
+                "id": "tk34mfb7dj",
+                "year": 1872,
+                "title": "The Cradle",
+                "artist": "Berthe Morisot",
+                "position": 8
+            },
+            {
+                "id": "8cyrccbgzw",
+                "year": 1782,
+                "title": "Self-Portrait in a Straw Hat",
+                "artist": "Élisabeth Vigée Le Brun",
+                "position": 9
+            }
+        ],
+        "story": "written-out"
+    },
+    {
+        "date": "2026-11-09",
+        "cards": [
+            {
+                "id": "aq838qeegb",
+                "year": 1784,
+                "title": "Oath of the Horatii",
+                "artist": "Jacques-Louis David",
+                "position": 0
+            },
+            {
+                "id": "fygc6kywxe",
+                "year": 1311,
+                "title": "Maestà",
+                "artist": "Duccio di Buoninsegna",
+                "position": 1
+            },
+            {
+                "id": "3t7cgm4kug",
+                "year": 1959,
+                "title": "Monogram",
+                "artist": "Robert Rauschenberg",
+                "position": 2
+            },
+            {
+                "id": "pc7zgku5uw",
+                "year": 1993,
+                "title": "House",
+                "artist": "Rachel Whiteread",
+                "position": 3
+            },
+            {
+                "id": "7n4cevm34h",
+                "year": 1929,
+                "title": "The Treachery of Images",
+                "artist": "René Magritte",
+                "position": 4
+            },
+            {
+                "id": "z6jf8qy775",
+                "year": 1793,
+                "title": "The Death of Marat",
+                "artist": "Jacques-Louis David",
+                "position": 5
+            },
+            {
+                "id": "znkdn2d4s7",
+                "year": 1943,
+                "title": "Freedom from Want",
+                "artist": "Norman Rockwell",
+                "position": 6
+            },
+            {
+                "id": "8f7esd2uqj",
+                "year": 1666,
+                "title": "The Art of Painting",
+                "artist": "Johannes Vermeer",
+                "position": 7
+            },
+            {
+                "id": "zcuzgngaaa",
+                "year": 1416,
+                "title": "Très Riches Heures: February",
+                "artist": "Limbourg Brothers",
+                "position": 8
+            },
+            {
+                "id": "cvspfbzzg9",
+                "year": 1964,
+                "title": "The Son of Man",
+                "artist": "René Magritte",
+                "position": 9
+            },
+            {
+                "id": "6zh6n7fd44",
+                "year": 1983,
+                "title": "Hollywood Africans",
+                "artist": "Jean-Michel Basquiat",
+                "position": 10
+            }
+        ],
+        "story": null
+    }
+]
