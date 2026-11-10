@@ -1,0 +1,54 @@
+# CIRCArt Preview — saves every finished daily challenge into the repo, so the
+# list survives when the preview database is reset or replaced at release.
+# Result: src/dailies/history/preview.json (date, story slug or null for a
+# random daily, and the cards in order). Only days BEFORE today are written,
+# so today's cards are never visible in this public repo.
+# No player data: only the cards of each day.
+#
+# Runs every night after midnight (Berlin) and by hand from the Actions tab.
+# Needs the repository secret SUPABASE_DB_URL (same as preview-db).
+name: daily-history
+on:
+  schedule:
+    - cron: "37 23 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: daily-history
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    env:
+      DB: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export finished dailies
+        run: |
+          set -e
+          mkdir -p src/dailies/history
+          psql "$DB" -v ON_ERROR_STOP=1 -tAq -c "
+            select coalesce(jsonb_pretty(jsonb_agg(d order by d->>'date')), '[]') from (
+              select jsonb_build_object(
+                'date', g.challenge_date,
+                'story', t.slug,
+                'cards', (select jsonb_agg(jsonb_build_object(
+                            'position', gc.position, 'id', c.id, 'title', c.title,
+                            'artist', c.artist, 'year', c.year) order by gc.position)
+                            from public.game_cards gc join public.cards c on c.id = gc.card_id
+                           where gc.game_id = g.id)) d
+                from public.games g
+                left join public.daily_themes t on t.day = g.challenge_date
+               where g.kind = 'daily' and g.challenge_date < public._today()) x" \
+            > src/dailies/history/preview.json
+          echo "$(grep -c '"date"' src/dailies/history/preview.json) dailies exported"
+      - name: Commit if changed
+        run: |
+          git config user.name "circart-preview-bot"
+          git config user.email "circart-preview-bot@users.noreply.github.com"
+          git add src/dailies/history/preview.json
+          git diff --cached --quiet && { echo "no change"; exit 0; }
+          git commit -q -m "Daily history: save finished dailies"
+          for i in 1 2 3 4; do git pull -q --rebase && git push -q && exit 0; sleep $((i * 5)); done
+          exit 1

@@ -37,7 +37,8 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - Pick photos ≥ 1200 px wide that show the whole work, straight on, well lit, no people in front. Use the lookup's `thumb` (without the `?utm…` part) as `image_source`, `https://commons.wikimedia.org/wiki/Special:FilePath/<File_name>` as `image_source_original`, the same with `?width=1280` as `image_source_fallback`.
 
 ## 5. Verify (before anything goes live)
-1. `python3 src/tools/check_story.py src/dailies/<story>.json` → fix every ERROR (spoilers, order, missing fields); read every WARN.
+1. `python3 src/tools/check_story.py src/dailies/<story>.json` → fix every ERROR (spoilers, order, missing fields, repeats); read every WARN.
+   **Never the same daily twice** (Julian, 10 Nov): every daily ever played is saved in `src/dailies/history/` (nightly `daily-history` Action), and the check refuses a story with the same slug, the same title or more than half the same cards as any earlier daily. Never delete old story files or history. Reusing an old daily (e.g. a preview one after release) only when Julian asks, with `"reuse_of": "<its date>"` in the theme; each old daily can be reused once.
 2. Publish once (step 6) so the pack-images Action downloads the photos, `git pull`, then:
    `python3 src/tools/check_story.py src/dailies/<story>.json --art pack-art --keys pack_images.json --sheet /tmp/sheet.jpg` (sheet outside the repo)
 3. **Look at sheet.jpg** (Read tool) card by card: is it the right work (compare with the Commons description and the work's Wikipedia image)? Whole work visible? Not a detail, frame, room or wrong version? Replace any wrong photo and repeat.

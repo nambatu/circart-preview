@@ -54,6 +54,7 @@ Cloud sessions can't reach Wikimedia directly; GitHub Actions can. To find artwo
 - **"CIRCArt story daily"**, every evening at 17:52 Berlin time: builds approved story dailies for the next 1–2 days, writes one new draft and sends Julian a short report. It follows `src/dailies/SKILL.md` and pushes to this repo. Work sessions leave story work (`D…` items, `src/dailies/`) to it unless Julian asks otherwise.
 - **"CIRCArt evening build"**, every day at 16:41 Berlin time (recreated 9 Nov 2026 from a Claude Code session): one roadmap task per day (up to three on Thursdays), tested and deployed to the preview, then a short report. It runs in the "CircART" cloud environment, which has this repo attached, and pushes to `main`. It has the Supabase connector for feedback.
 - Both tasks run in the cloud; Julian's PC doesn't need to be on.
+- **Every daily is kept, none repeats** (Julian, 10 Nov): the `daily-history` Action saves each finished daily (story or random) to `src/dailies/history/` every night; story files in `src/dailies/` are never deleted. `check_story.py` refuses a story that repeats an earlier daily unless it says `"reuse_of"` (each old daily once; see `src/dailies/SKILL.md`). The server's random daily already skips cards used in the last 60 days. At release, `src/ship/SHIP.md` step 5.4 carries this over to the real game.
 - This is a dev repo: pushing and merging to `main` here is fine without asking (Julian, 9 Nov). The rules above about nambatu/circart still apply.
 
 ## Supabase

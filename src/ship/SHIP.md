@@ -56,6 +56,8 @@ Who does what:
 2. **Open the PR:** open a pull request on `nambatu/circart` with a plain-English summary.
 3. **Merge:** you merge it. GitHub Pages redeploys in about a minute.
 
+4. **Daily history for the real game:** before the preview database is reset or retired, run the `daily-history` Action in nambatu/circart-preview by hand once, so `src/dailies/history/preview.json` holds every preview-era daily. These may be reused in the real game, each one once, with `"reuse_of": "<old date>"` in the story's theme. Then set up the same nightly export for production (a copy of `src/preview/daily-history.yml` writing `src/dailies/history/production.json`, with a production secret Julian adds himself), so the real game never repeats a daily.
+
 ## 6. Phone smoke test (you, about 10 minutes)
 
 Open circart.langschwerts.de and pull to refresh twice so the new version loads.

@@ -28,6 +28,55 @@ REQ_CARD = ["title", "artist", "year", "trivia", "trivia_de", "image_source", "i
             "commons_page", "sources", "credit", "visual_type"]
 
 
+def _norm(c):
+    return (re.sub(r"\W+", " ", (c.get("title") or "").lower()).strip(),
+            re.sub(r"\W+", " ", (c.get("artist") or "").lower()).strip())
+
+
+def never_twice(path, th, cards, errors):
+    """Never the same daily twice (Julian, 10 Nov). A story must not repeat an earlier
+    daily: same slug, same title, or more than half of the same cards. Earlier dailies are
+    the other story files next to this one and src/dailies/history/*.json (every daily that
+    was played, saved each night by the daily-history Action). The one way to reuse an
+    old daily (e.g. a preview-era one after release) is "reuse_of": "<its date>" in the
+    theme, and each old daily may be reused only once."""
+    folder = os.path.dirname(os.path.abspath(path))
+    me = os.path.abspath(path)
+    past = []                                   # (date, slug, title, set of cards, reuse_of)
+    for f in sorted(os.listdir(folder)):
+        p = os.path.join(folder, f)
+        if f.endswith(".json") and p != me:
+            try: o = json.load(open(p, encoding="utf-8"))
+            except Exception: continue
+            t = o.get("theme", {})
+            past.append((t.get("date"), t.get("slug"), (t.get("title") or "").lower(),
+                         {_norm(c) for c in o.get("cards", [])}, t.get("reuse_of")))
+    hist = os.path.join(folder, "history")
+    if os.path.isdir(hist):
+        for f in sorted(os.listdir(hist)):
+            if f.endswith(".json"):
+                for o in json.load(open(os.path.join(hist, f), encoding="utf-8")):
+                    past.append((o.get("date"), o.get("story"), "",
+                                 {_norm(c) for c in o.get("cards") or []}, None))
+    mine = {_norm(c) for c in cards}
+    reuse = th.get("reuse_of")
+    for date, slug, title, cs, _ in past:
+        if date == th.get("date") or date == reuse:
+            continue
+        same = len(mine & cs)
+        if (slug and slug == th.get("slug")) or (title and title == (th.get("title") or "").lower()) \
+                or (cs and same * 2 > len(mine)):
+            errors.append(f"repeats the daily of {date} ({slug or 'random'}, {same} same cards): "
+                          f"never the same daily twice. To reuse an old daily on purpose, "
+                          f"set theme.reuse_of to its date")
+    if reuse:
+        if not any(d == reuse for d, *_ in past):
+            errors.append(f"reuse_of {reuse}: no daily on that date")
+        others = [d for d, *_, r in past if r == reuse]
+        if others:
+            errors.append(f"reuse_of {reuse}: already reused on {others[0]} (each old daily only once)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("file")
@@ -77,6 +126,8 @@ def main():
         for j, o in enumerate(cards):
             if j > 0 and str(o.get("year")) in (th.get(k) or ""):
                 errors.append(f"theme.{k} mentions {o['year']} (card {j})")
+
+    never_twice(a.file, th, cards, errors)
 
     if a.art and a.keys:
         imgs = json.load(open(a.keys))

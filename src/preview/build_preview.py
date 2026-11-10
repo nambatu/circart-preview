@@ -166,8 +166,9 @@ def main():
     wf = out / ".github" / "workflows"
     wf.mkdir(parents=True, exist_ok=True)
     shutil.copy2(claude / "preview" / "preview-db.yml", wf / "preview-db.yml")
-    if (claude / "preview" / "pack-images.yml").exists():
-        shutil.copy2(claude / "preview" / "pack-images.yml", wf / "pack-images.yml")
+    for name in ("pack-images.yml", "commons-lookup.yml", "daily-history.yml"):
+        if (claude / "preview" / name).exists():
+            shutil.copy2(claude / "preview" / name, wf / name)
     print(f"\nPreview built in {docs}. Commit and push {out} to deploy.")
 
 
