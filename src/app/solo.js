@@ -71,6 +71,11 @@
         await load();
         pick = { artist: null, movement: null };
         q = currentCard ? { artist: artistOptions(currentCard), movement: movementOptions(currentCard) } : null;
+        // the info page shows the same style the question uses (the group)
+        if (currentCard && $('active-movement')) {
+            const g = GROUPS[currentCard.movement];
+            $('active-movement').textContent = g ? g[0] : t('card.unknown');
+        }
         render();
     }
 

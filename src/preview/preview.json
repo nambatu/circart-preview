@@ -1,14 +1,13 @@
 {
- "site": "https://nambatu.github.io/circart-preview",
- "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
- "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
- "label": "Mon 9 Nov, 17:00",
- "changes": [
-  "The countdown bar no longer jumps back to full in the middle of a card. It now always shows the time that is really left."
- ],
- "test": [
-  "Start the daily or a timed game with friends and watch the bar for a whole card: it should shrink smoothly and never jump back.",
-  "While the bar runs, switch to another app and back: it should be at the right spot straight away."
- ],
- "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
+  "site": "https://nambatu.github.io/circart-preview",
+  "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
+  "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
+  "label": "Tue 10 Nov, 17:00",
+  "changes": [
+    "In solo play, the card info page now shows the same style as the style question, so the two never disagree."
+  ],
+  "test": [
+    "Play a solo card, place it, and compare the style on the info page with the style answer shown after the question."
+  ],
+  "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
