@@ -72,6 +72,20 @@ D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets L
       - 37b [ ] Check the rest of the base deck (artists N–Z), apply it the same way.
       - 37c [ ] Check all pack cards (`src/packs/*.json`) and story cards (`src/dailies/*.json`), apply it, then the final test: info page and question agree for every card, no style question for a null style.
 38. [ ] **Countdown bar always stays on top** (Julian, 9 Nov): the countdown bar must stay visible at the top of the screen the whole time a card is on and never scroll out of view or vanish. Check every place it appears (daily, run, games with friends, solo). Screenshots at 390×844 light and dark, scrolled down, before deploying.
+39. [ ] **"How to spot a style" guide** (Julian, 10 Nov) — only after 37 is done (every card's style checked). For each style group the style question uses: a short explanation of what to look for (EN + DE, plain full sentences, writing rules) and 2–3 example cards from the deck as pictures. Reachable from the style question (a small "?" / "How do I spot this?") and from the Gallery. Size: probably 2 evening builds (texts + layout).
+40. [ ] **More badges** (Julian, 10 Nov: "monthly challenge winner, bug reporter etc. Think of new ones yourself, with art puns"). Today only `badges()` from 010 (top 3 of a finished month). Show Julian the list first, then build. Each badge: name EN + DE, one line on how to earn it, at most one pun per badge. Ideas to propose:
+    - *Monthly Run winner / podium* — "Old Master of the Month" / "Alter Meister des Monats".
+    - *Bug reporter* (feedback Julian marked as a real bug, set by hand) — "Restorer" / "Restaurator*in": you found a crack in the varnish.
+    - *Daily streak* 7 / 30 / 100 days — "Daily Brushstroke", "Fresco Habit" (it sets every day).
+    - *Perfect daily* (every card right) — "Masterpiece" / "Meisterwerk".
+    - *All story dailies of a month* — "Storyteller" / "Erzähler*in".
+    - *Artist named right 100 times* — "Signature Spotter" / "Signaturen-Sammler*in".
+    - *Style question right 100 times* — "Movement Maker" / "Stil-Sicher".
+    - *Every pack finished* — "Full Gallery" / "Volle Galerie".
+    - *Won a game with friends by under 100 points* — "Photo Finish" / "Fotofinish".
+    - *Placed a card within the exact year* 50 times — "Dead Ringer for Dating" / "Jahrgenau".
+    - *First player / early tester* — "Vernissage Guest" / "Vernissage-Gast".
+    - Server: a new migration with a `player_badges` table (or computed in `badges()`), tests that nobody can award themselves a badge. Profile shows them; friends' profiles too (33).
 32. [ ] **See what the others did (games with friends)** (Julian, 6 Nov):
     - After each round (live) / turn (async): per player where they placed the card (right/wrong), their artist/style picks and the points they got that round. Live: on the reveal screen ("Ana ✓ +940 · Ben ✗ 0"). Async: on the turn summary once everyone has played that turn (never before, so nobody gains an advantage).
     - Small visual feedback when another player locks in their guess (live: their name/avatar pulses or gets a ✓ "locked in" mark, without showing the answer). The server already knows `done_this_turn`; reveal per-player results only after the round closes (keep 008's rule: no scores/answers before the reveal).
@@ -101,7 +115,9 @@ D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets L
 26. [ ] ⏸ **Julian's own to-dos** (account and dashboard settings only he can change) are kept in the private claude.ai project "Circart" as `claude/julian-todos.md`, not in this public repo. Remind him before shipping.
 18. [ ] ⏳ **Run tuning from real play** (runs in `games where kind='run'`).
 17b. [ ] ⏳ **iPhone push check.**
+41. [ ] **App store roadmap (Google Play + Apple App Store)** (Julian, 10 Nov) — write `notes/app-stores.md`: steps, time Julian must invest, money and legal requirements, checked against the official Google and Apple pages at the time. Starting points to verify: the game repo already has Capacitor (`android/`, `ios/`, appId `com.circ.art`); Google Play $25 once, and new personal accounts need a closed test with 12 testers for 14 days before going public; Apple $99 per year, an iOS build needs a Mac or a cloud build service, and Apple may reject plain web wrappers (guideline 4.2), so native extras (push, offline, share) matter; both stores require an EU "trader" declaration that shows an address and phone number publicly; privacy policy, data-safety / privacy labels, in-app account deletion, age rating, Impressum; Sign in with Apple if Google login is offered. Only a plan, no store accounts created (Julian does that himself).
 15. [ ] **Ship to the real game** — only when Julian says "ship it": `src/ship/SHIP.md` (migrations 001–020 — NOT zz_preview_*, + `src/ship/prod_cron.sql` incl. privacy clean-up and the signed push call; Edge Function; fresh VAPID keys; packs.sql + pack images (task 28); legal pages filled in; `src/ship/stage.py`; PR on nambatu/circart).
+42. [ ] ⏸ **Social media strategy** (Julian, 10 Nov) — only once all the building work above is done. Then plan it together with Julian.
 
 ## Done
 - [x] 2026-11-10 — **Every daily kept, none repeats** (Julian, 10 Nov). New `daily-history` Action saves each finished daily (story or random, only days before today) to `src/dailies/history/preview.json` every night. `check_story.py` now refuses a story that repeats an earlier daily (same slug, title or more than half the same cards) unless `reuse_of` is set; each old daily can be reused once. Release step added to `src/ship/SHIP.md` (5.4).
