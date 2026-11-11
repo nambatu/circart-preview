@@ -44,6 +44,7 @@ The next 1–2 days come first: build approved drafts for tomorrow / the day aft
 11. **Week arcs** — Monday to Sunday as seven chapters of one bigger story. Good for streaks.
 12. **Players' places** (later) — suggestions through the feedback form, via the injection guard and Julian's review.
 13. **Julian's own visits** — when Julian mentions a place he visited, turn it into a story soon after, while it's fresh.
+14. **Record prices at auction** (Julian, 11 Nov — wanted: 2–3 stories, a little series). Source: Wikipedia "List of most expensive paintings" (and "…sculptures"), which gives the price at sale AND the price in today's money, the date of sale and the auction house; Julian accepts Wikipedia as the source for prices (the year of the WORK still needs two sources as always). Public auctions only, no private sales (their prices are guesses). Players still place each work by the year it was made; the chapters tell the sale stories (who bought, how fast the bidding went, records broken), always with the price in today's money. Possible split: (a) Old Masters and the 19th century — Salvator Mundi, Rubens, Rembrandt, Monet, Cézanne, van Gogh; (b) the modern record breakers — Klimt, Modigliani, Picasso, Munch's Scream; (c) maybe later: sculptures (Giacometti, Brâncuși). Many 20th-century works are still under copyright and lack free photos: Julian decides on copyright, but pick works with a good photo. A good fit for a Mon–Wed or Fri–Sun arc.
 
 ## Evening review format (one draft per evening, short)
 | | |
