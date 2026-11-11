@@ -150,7 +150,7 @@
         'game.placedRight': 'richtig gelegt',
         'game.pointsLabel': 'Punkte',
         'game.yourTurn': 'Du bist dran',
-        'game.readyText': 'Gleich kommen {n} Karten hintereinander, mit je 20 Sekunden. Starte, wenn du zwei Minuten Zeit hast.',
+        'game.readyText': 'Gleich kommen {n} Karten hintereinander, mit je 45 Sekunden. Starte, wenn du zwei Minuten Zeit hast.',
         'game.startTurn': 'Runde {n} starten',
 
         'game.daily': 'Tages-Challenge · Nr. {no}',
@@ -246,7 +246,7 @@
         'run.none': 'Noch kein Run diesen Monat. Die Leinwand ist noch leer.',
         'run.above': 'Schlag {name}: {score} Karten',
         'run.daysLeft': 'noch {days} Tage',
-        'run.startText': 'Die Karten kommen, bis du dich zum dritten Mal irrst, und jede richtig gelegte Karte ist ein Punkt. Pro Karte hast du 20 Sekunden. Spiel so oft du willst, denn nur dein bester Run zählt.',
+        'run.startText': 'Die Karten kommen, bis du dich zum dritten Mal irrst, und jede richtig gelegte Karte ist ein Punkt. Pro Karte hast du 45 Sekunden. Spiel so oft du willst, denn nur dein bester Run zählt.',
         'run.go': 'Los',
         'run.lives': 'Leben',
         'run.lifeLost': 'Ein Leben weg',

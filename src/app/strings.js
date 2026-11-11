@@ -154,7 +154,7 @@
             'game.placedRight': 'placed right',
             'game.pointsLabel': 'points',
             'game.yourTurn': 'Your turn',
-            'game.readyText': 'Up next are {n} cards in a row, with 20 seconds for each. Start when you have two minutes to spare.',
+            'game.readyText': 'Up next are {n} cards in a row, with 45 seconds for each. Start when you have two minutes to spare.',
             'game.startTurn': 'Start turn {n}',
 
             'game.daily': 'Daily challenge · No. {no}',
@@ -186,7 +186,7 @@
             'run.none': 'No run yet this month. The canvas is still blank.',
             'run.above': 'Beat {name}: {score} cards',
             'run.daysLeft': '{days} days left',
-            'run.startText': 'Cards keep coming until your third mistake, and every card you place right is one point. You get 20 seconds per card. Play as often as you like, because only your best run counts.',
+            'run.startText': 'Cards keep coming until your third mistake, and every card you place right is one point. You get 45 seconds per card. Play as often as you like, because only your best run counts.',
             'run.go': 'Go',
             'run.lives': 'Lives',
             'run.lifeLost': 'One life lost',

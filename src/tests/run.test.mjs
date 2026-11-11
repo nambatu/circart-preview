@@ -87,12 +87,13 @@ ok(s.runs === 3 && s.best === st2.me.score && s.rank === 1, "best run counts, no
 console.log("timeouts, continuing, limits");
 let g = await call("ben", "start_run");
 let c = await call("ben", "next_card", g.id);
-await advance(30);                                   // app closed: card times out
+ok(c.seconds === 45, "run: 45 seconds per card");
+await advance(50);                                   // app closed: card times out
 c = await call("ben", "next_card", g.id);
 ok(c.position === 2, "a timed-out card costs a life and the run goes on");
 const again = await call("ben", "start_run");
 ok(again.id === g.id, "opening the run again continues the unfinished one");
-await advance(30); await call("ben", "next_card", g.id); await advance(30);
+await advance(50); await call("ben", "next_card", g.id); await advance(50);
 const w = await call("ben", "next_card", g.id);
 ok(w.wait === "finished", "three timeouts end the run");
 st = await playRun("ben", { wrongAt: [20, 21, 22] , secs: 2});

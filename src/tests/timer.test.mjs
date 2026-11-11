@@ -134,4 +134,25 @@ const rmo = await call("ana", "game_options", rm.id);
 ok(rmo.timer === true, "a rematch keeps the timer setting");
 
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");
+// 021: daily = 45 s per card, placing and questions together
+console.log("daily 45 s");
+await setClock("2026-11-20T10:00:00+01:00");
+const dg = await call("ana", "play_daily");
+const d1 = await call("ana", "next_card", dg.id);
+ok(d1.seconds === 45, "daily: 45 seconds per card");
+await advance(3);
+const dr1 = await call("ana", "answer", dg.id, d1.position, (await rightSlot(dg.id, d1.position)).slot);
+if (dr1.artist_options && dr1.artist_options.length) {
+  await advance(35);                                  // 38 s after the card was shown: still open
+  await call("ana", "pick_bonus", dg.id, d1.position, null, null);
+  ok(true, "daily: question still open at 38 s");
+}
+const d2 = await call("ana", "next_card", dg.id);
+await advance(3);
+const dr2 = await call("ana", "answer", dg.id, d2.position, (await rightSlot(dg.id, d2.position)).slot);
+if (dr2.artist_options && dr2.artist_options.length) {
+  await advance(46);                                  // 49 s after shown: closed
+  ok((await err(() => call("ana", "pick_bonus", dg.id, d2.position, null, null))).includes("artist_closed"), "daily: question closes after 45 s in total");
+}
+
 process.exit(failures ? 1 : 0);

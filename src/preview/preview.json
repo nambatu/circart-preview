@@ -2,14 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Wed 11 Nov, 17:00",
+  "label": "Wed 11 Nov, 17:30",
   "changes": [
-    "Style check, first half of the deck: 14 cards whose style could not be confirmed by two sources (e.g. Chardin, Modigliani, Escher, two Hogarths) now show no style and get no style question.",
-    "A broken artist name (Abramović) is fixed in the solo game too."
+    "Daily and Monthly Run now give you 45 seconds per card (was 20). In the daily, the 45 seconds cover placing the card and the artist and style questions together.",
+    "The texts that mention the time are updated in English and German. Games already running keep their old timer."
   ],
   "test": [
-    "Play solo until a card such as Escher or Hogarth appears: the info page should say Unknown for the style and no style question appears.",
-    "Check a normal card (e.g. Monet): the style on the info page matches the style answer."
+    "Start the Monthly Run: the countdown bar should last about 45 seconds per card.",
+    "Open the daily: place a card, then answer the questions; the countdown keeps running from the card start, not from placing."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

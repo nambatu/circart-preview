@@ -579,7 +579,7 @@
         try {
             const res = await O().answer(G.id, G.card.position, slot);
             G.answer = { position: G.card.position, turn: G.st.current_turn, res,
-                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? O().serverNow() + 19000 : null };
+                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? (G.st.kind === 'daily' && G.card.ends_at ? new Date(G.card.ends_at).getTime() : O().serverNow() + 19000) : null };
             G.picked = !hasBonus(res);
             G.sel = {}; G.bonusRes = null;
             if (G.st.kind !== 'live') feel(!!res.correct && !res.timed_out);
