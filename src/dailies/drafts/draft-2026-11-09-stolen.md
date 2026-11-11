@@ -1,6 +1,6 @@
 # Draft (9 Nov 2026, story-daily run): Bad luck, good luck / Pech und Glück
 
-Status: **approved by Julian 9 Nov evening: Fri 13 Nov, all seven cards as suggested (deck repeats OK), mention the IRA link in the Vermeer chapter** → build in the Wed 11 run, live before Thu 12 Nov 24:00
+Status: **approved by Julian 9 Nov evening: Fri 13 Nov, all seven cards as suggested (deck repeats OK), mention the IRA link in the Vermeer chapter** → **built and live 11 Nov** as `src/dailies/2026-11-13-stolen.json` (Vermeer and van Gogh swapped places)
 
 | | |
 |---|---|

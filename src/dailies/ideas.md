@@ -26,13 +26,17 @@ The next 1–2 days come first: build approved drafts for tomorrow / the day aft
 - In scheduled runs the web reader may be blocked (permission prompts nobody answers). Then use Commons descriptions from `commons-lookup` (they carry dates + museums) as one of the two sources.
 - (8 Nov) In scheduled runs WebFetch worked for URLs that had come up in a WebSearch result first; other URLs failed with PROVENANCE_REQUIRED. So: search first, then fetch the result URLs.
 
+- (11 Nov) A story card that matches a base-deck card (Mona Lisa, The Scream, Ghent Altarpiece) shares its key too. Copy the deck card's fields, English trivia and Commons photo exactly, so nothing changes for normal games.
+- (11 Nov) `check_story.py` counts cards in a rising run: 1432 → 1814 → 1882 is already an error. Check the order of a draft with the tool before sending it to Julian.
+- (11 Nov) `gh` can't start workflows in scheduled runs; start `commons-lookup` with the GitHub connector (run workflow, input `category`).
+
 ## Idea bank (pick from here, add new ones)
 1. **A place and its centuries** — ✅ done: Würzburg Cathedral (7 Nov). Same pattern: Cologne Cathedral, Aachen, Bamberg, Naumburg, Strasbourg, the Residenz Würzburg. Idea: ask the Museum am Dom / diocese for a partnership.
 2. **One museum in a handful of works** — open-access collections: Rijksmuseum, the Met, Cleveland Museum of Art, SMK Copenhagen, National Gallery of Art (Washington), Städel (check licences). Red thread: the museum's own history.
 3. **One artist's life** — Dürer, Rembrandt, van Gogh, Artemisia Gentileschi, Hokusai, Monet (approved for his birthday, 14 Nov). Chapters follow the biography. Harder (years close together) → good for a "hard Sunday".
 4. **One subject through time** — the Annunciation, the self-portrait, the sea, the city at night, cats, vanitas. ✅ St Martin's cloak → live for Wed 11 Nov.
 5. **Teacher and pupil chains** — Verrocchio → Leonardo; Perugino → Raphael; Rubens → van Dyck.
-6. **Art crime and lucky escapes** — the Mona Lisa 1911, the Ghent Altarpiece, wartime evacuations. Approved 9 Nov for Fri 13 Nov. Spare thefts: Turner "Shade and Darkness" (Frankfurt 1994), Rembrandt "Jacob de Gheyn III" (stolen four times), Vermeer "The Concert" (Gardner 1990).
+6. **Art crime and lucky escapes** — the Mona Lisa 1911, the Ghent Altarpiece, wartime evacuations. ✅ live for Fri 13 Nov. Spare thefts: Turner "Shade and Darkness" (Frankfurt 1994), Rembrandt "Jacob de Gheyn III" (stolen four times), Vermeer "The Concert" (Gardner 1990).
 7. **Lost and rebuilt** — works destroyed in wars or fires and what came back (Dresden, Würzburg 1945).
 8. **One city across 500 years** — Venice, Paris, Amsterdam, Nuremberg.
 9. **Women who were written out** — ✅ live for Sun 8 Nov. Another round for International Women's Day (8 Mar): Angelica Kauffman, Mary Moser, Clara Peeters, Rachel Ruysch, Marie-Guillemine Benoist.
@@ -60,5 +64,5 @@ Julian answers "approve", "change …" or "drop". Approved drafts are built into
 - 2026-11-07 (story-daily run) · "Half a cloak / Ein halber Mantel" (St Martin) · **Julian 7 Nov evening: change — add one more modern painting; Bassenheim Rider OK if no card within ±30 years; date Wed 11 Nov confirmed** → changed · built early and **live 8 Nov** for **Wed 11 Nov** (`2026-11-11-saint-martin.json`). Wilfred Thompson (1918) had only one source, so the modern card is Gebhard Fugel's ceiling painting in Wangen im Allgäu (1900).
 - 2026-11-08 (story-daily run) · "Monet's life in eight pictures / Monets Leben in acht Bildern" (full draft in `drafts/draft-2026-11-08-monet.md`) · **Julian 8 Nov evening: approved as suggested (8 cards) for Sat 14 Nov; repeats from packs are fine in general** → build in the Wed 11 / Thu 12 / Fri 13 run, live before Fri 24:00
 - Mon 9 + Tue 10 Nov: no story, normal random daily.
-- 2026-11-09 (story-daily run) · "Bad luck, good luck / Pech und Glück" (famous art thefts, 7 cards, suggested Fri 13 Nov; full draft in `drafts/draft-2026-11-09-stolen.md`) · **Julian 9 Nov evening: approved for Fri 13 Nov as suggested; mention the IRA link in the Vermeer chapter** → build in the Wed 11 run (earliest deadline first), live before Thu 24:00; Monet then in the Thu 12 run
+- 2026-11-09 (story-daily run) · "Bad luck, good luck / Pech und Glück" (famous art thefts, 7 cards, suggested Fri 13 Nov; full draft in `drafts/draft-2026-11-09-stolen.md`) · **Julian 9 Nov evening: approved for Fri 13 Nov as suggested; mention the IRA link in the Vermeer chapter** → built and **live 11 Nov** for **Fri 13 Nov** (`2026-11-13-stolen.json`). Vermeer and van Gogh swapped places (the draft order had three rising years in a row), Goya counts as 1814. Monet is next, in the Thu 12 run
 - 2026-11-10 (story-daily run) · "The skull on the table / Der Schädel auf dem Tisch" (vanitas and memento mori, 7 cards, suggested Sun 15 Nov; full draft in `drafts/draft-2026-11-10-skull.md`) · **Julian 11 Nov: approved as suggested (7 cards) for Sun 15 Nov** → build in the Fri 13 run (after the thefts and Monet), live before Sat 14 Nov 24:00
