@@ -93,7 +93,11 @@ def main():
     import card_keys                                       # noqa: E402
     import sync_deck                                       # noqa: E402
     card_keys.KEY_FILE = out / "card_keys.json"
-    cards = [c for c in json.loads((docs / "artline.json").read_text(encoding="utf-8")) if c.get("id")]
+    import deck_fixes                                      # noqa: E402  (corrections to the base deck)
+    all_cards = json.loads((docs / "artline.json").read_text(encoding="utf-8"))
+    log(f"deck fixes: {deck_fixes.apply(all_cards, sync_deck.fix_mojibake)} cards lost their style")
+    (docs / "artline.json").write_text(json.dumps(all_cards, ensure_ascii=False, indent=2), encoding="utf-8")
+    cards = [c for c in all_cards if c.get("id")]
     keys, added, _ = card_keys.load_keys(cards)
     (docs / "art").mkdir(exist_ok=True)
     n = 0
