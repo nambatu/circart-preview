@@ -38,7 +38,12 @@ Every day you play the daily, you clean one more part of a hidden **painting of 
 - **45b** The painting card on home with the cleaning animation, the Sunday reveal, the collection in the Gallery. First painting chosen.
 - **45c** Push reminder (opt-in), the "Sharp Eye" guess badge (with 40), polish after Julian has played a week.
 
-## For Julian to decide (before 45a)
+## Julian's decisions (11 Nov)
+- One painting per **week** (7 patches). ✅
+- **One free day per week.** ✅ (A free day doesn't add to the 🔥 count, it only keeps it alive.)
+- **Restoration look**: mockup in `notes/streak-mockup.png` — waiting for his OK.
+
+## Original questions
 1. Painting per **week** (7 patches) as proposed, or per **month** (bigger picture, ~30 patches, slower)?
 2. **Restoration** look (varnish being cleaned) as proposed, or classic **puzzle pieces**?
 3. **One free day per week** OK, or strict like Snapchat (miss a day → 0)?
