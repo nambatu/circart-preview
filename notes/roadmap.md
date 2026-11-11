@@ -58,6 +58,7 @@ Built by the separate scheduled task "CIRCArt story daily" (every evening 17:52 
 **Planning horizon (Julian, 6 Nov):** the next day(s) matter most, not next week or month. Not every day needs a story; a normal random daily is fine when nothing is approved.
 
 ## Queue (top = next)
+D5. [ ] **Story daily for Sun 15 Nov: "The skull on the table / Der Schädel auf dem Tisch"** (vanitas, one subject through time) — approved by Julian 11 Nov (7 cards as in the draft). Build from `src/dailies/drafts/draft-2026-11-10-skull.md` in the Fri 13 run (Thu 12 if there is room after Monet); live before Sat 14 Nov 24:00.
 D4. [ ] **Story daily for Fri 13 Nov: "Bad luck, good luck / Pech und Glück"** (famous art thefts) — approved by Julian 9 Nov (7 cards as in the draft; mention the IRA link in the Vermeer chapter). Build from `src/dailies/drafts/draft-2026-11-09-stolen.md` in the Wed 11 run (its deadline comes before Monet's); live before Thu 12 Nov 24:00.
 D3. [ ] **Story daily for Sat 14 Nov: "Monet's life in eight pictures / Monets Leben in acht Bildern"** — approved by Julian 8 Nov (8 cards; pack repeats are fine). Build from `src/dailies/drafts/draft-2026-11-08-monet.md` in the Wed 11 / Thu 12 / Fri 13 run; live before Fri 13 Nov 24:00.
 37. [ ] **Check the style (Stilrichtung / movement) of every card** (Julian, 7 Nov). Correction from Julian: the trivia is fine; the problem is the **card information page** (the one with location, artist, medium …) — its style sometimes differs from the style question, and is sometimes plain wrong.

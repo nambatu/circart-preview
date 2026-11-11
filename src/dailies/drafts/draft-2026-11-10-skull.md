@@ -1,6 +1,6 @@
 # Draft (10 Nov 2026, story-daily run): The skull on the table / Der Schädel auf dem Tisch
 
-Status: **waiting for Julian** (approve / change … / drop)
+Status: **approved by Julian 11 Nov: Sun 15 Nov, all seven cards as suggested** → build in the Fri 13 run, live before Sat 14 Nov 24:00
 
 | | |
 |---|---|
