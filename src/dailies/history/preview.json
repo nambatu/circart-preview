@@ -399,5 +399,88 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-10",
+        "cards": [
+            {
+                "id": "kaxb6jvdbz",
+                "year": 1642,
+                "title": "The Night Watch",
+                "artist": "Rembrandt",
+                "position": 0
+            },
+            {
+                "id": "6zphx7n7ya",
+                "year": 1989,
+                "title": "Untitled (Your body is a battleground)",
+                "artist": "Barbara Kruger",
+                "position": 1
+            },
+            {
+                "id": "hhp7ves5ds",
+                "year": 1897,
+                "title": "The Sleeping Gypsy",
+                "artist": "Henri Rousseau",
+                "position": 2
+            },
+            {
+                "id": "ppbkbcr8kb",
+                "year": 1478,
+                "title": "Primavera",
+                "artist": "Sandro Botticelli",
+                "position": 3
+            },
+            {
+                "id": "vauvyrmb5s",
+                "year": 1591,
+                "title": "Vertumnus",
+                "artist": "Giuseppe Arcimboldo",
+                "position": 4
+            },
+            {
+                "id": "vh8b5s3hwx",
+                "year": 1623,
+                "title": "Apollo and Daphne",
+                "artist": "Gian Lorenzo Bernini",
+                "position": 5
+            },
+            {
+                "id": "m7aadvvfkt",
+                "year": 1983,
+                "title": "Shulamite",
+                "artist": "Anselm Kiefer",
+                "position": 6
+            },
+            {
+                "id": "gy54p5r8ru",
+                "year": 1768,
+                "title": "An Experiment on a Bird in the Air Pump",
+                "artist": "Joseph Wright of Derby",
+                "position": 7
+            },
+            {
+                "id": "gjhzvptnwx",
+                "year": 1863,
+                "title": "Le Déjeuner sur l'herbe",
+                "artist": "Édouard Manet",
+                "position": 8
+            },
+            {
+                "id": "sakkk7m5dv",
+                "year": 1920,
+                "title": "Cut with the Kitchen Knife",
+                "artist": "Hannah Höch",
+                "position": 9
+            },
+            {
+                "id": "r5nwn4ak57",
+                "year": 1986,
+                "title": "Rabbit",
+                "artist": "Jeff Koons",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
