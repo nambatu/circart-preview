@@ -116,7 +116,8 @@
                 const ms = left(due);
                 document.querySelectorAll('[data-countdown]').forEach(el => { el.textContent = Math.ceil(ms / 1000); });
                 const bar = $('go-bar');
-                if (bar && G.card && G.card.seconds) bar.style.width = (100 * ms / (G.card.seconds * 1000)) + '%';
+                const total = bonusDue ? G.answer.bonusTotal : (G.card && G.card.seconds ? G.card.seconds * 1000 : 0);
+                if (bar && total) bar.style.width = Math.max(0, Math.min(100, 100 * ms / total)) + '%';
                 if (ms <= 0) { clearInterval(tick); if (bonusDue) pick(); else setTimeout(refresh, 400); }   // bonus time up: send what's picked
             }, 200);
         }
@@ -284,11 +285,13 @@
         if (!c || c.wait) return viewWaiting();
         const total = G.st.card_count;
         return `<div class="page">
+          <div class="go-sticky">
           <div class="row" style="justify-content:space-between">
             <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
             ${timed() ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>` : ''}
           </div>
           ${timed() ? `<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${c.seconds && c.ends_at ? Math.max(0, Math.min(100, 100 * left(c.ends_at) / (c.seconds * 1000))) : 100}%"></div></div>` : ''}
+          </div>
           <div class="go-art">${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(t('game.artAlt'))}">` : `<div class="go-typo serif">${esc(c.title || '?')}</div>`}</div>
           <div class="row" style="justify-content:space-between"><b>${esc(t('game.tap'))}</b>
             ${G.st.kind === 'live' ? `<span class="note">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}</span>` : ''}</div>
@@ -325,7 +328,9 @@
         const res = G.bonusRes;
         const showArt = !G.picked && G.card && G.card.image_url;   // look at the painting again while you decide
         const ends = !G.picked && G.answer.bonusEnds && G.st.kind !== 'live';
+        const total = G.answer.bonusTotal || 19000;
         return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:14px">
+          ${ends ? `<div class="go-sticky"><div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${Math.max(0, Math.min(100, 100 * (G.answer.bonusEnds - O().serverNow()) / total))}%"></div></div></div>` : ''}
           ${showArt || ends ? `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
               ${showArt ? `<img class="go-bonus-art zoomable-img" src="${esc(G.card.image_url)}" alt="${esc(t('game.artAlt'))}">` : '<span></span>'}
               ${ends ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.max(0, Math.ceil((G.answer.bonusEnds - O().serverNow()) / 1000))}</span>s</span>` : ''}</div>` : ''}
@@ -579,7 +584,8 @@
         try {
             const res = await O().answer(G.id, G.card.position, slot);
             G.answer = { position: G.card.position, turn: G.st.current_turn, res,
-                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? (G.st.kind === 'daily' && G.card.ends_at ? new Date(G.card.ends_at).getTime() : O().serverNow() + 19000) : null };
+                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? (G.st.kind === 'daily' && G.card.ends_at ? new Date(G.card.ends_at).getTime() : O().serverNow() + 19000) : null,
+                         bonusTotal: G.st.kind === 'daily' && G.card.seconds ? G.card.seconds * 1000 : 19000 };
             G.picked = !hasBonus(res);
             G.sel = {}; G.bonusRes = null;
             if (G.st.kind !== 'live') feel(!!res.correct && !res.timed_out);

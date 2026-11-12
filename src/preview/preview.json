@@ -2,13 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 12 Nov, 18:00",
+  "label": "Thu 12 Nov, 19:00",
   "changes": [
-    "Solo games now deal cards fairly: famous paintings like the Mona Lisa and The Last Supper come up about as often as every other card, instead of about half as often.",
-    "Only cards you actually play count as seen, so the rest stay available for your next game."
+    "The countdown bar now stays pinned at the top of the screen while a card is on, also when you scroll down.",
+    "It also stays visible during the artist and style questions, where before only a small circle showed the time."
   ],
   "test": [
-    "Play a few solo games: you should now meet famous works more often, and not the same few cards again and again."
+    "Start a Monthly Run card, scroll down a little: the bar stays at the top.",
+    "In the daily, place a card and look at the questions: the bar is still running above them."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

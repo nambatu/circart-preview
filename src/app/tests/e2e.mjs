@@ -92,6 +92,7 @@ try {
   for (let pos = 1; pos <= 3; pos++) {
     await waitText(ana, 'Tap where it belongs'); await waitText(ben, 'Tap where it belongs', 8000);
     if (pos === 1) { ok(/Card 1 \/ 3/.test(await text(ana)), "both see card 1 with a timer"); await shot(ana, '2-round'); }
+    if (pos === 1) ok(await ana.evaluate(() => { const e = document.querySelector('.go-sticky #go-bar'); return !!e && getComputedStyle(e.closest('.go-sticky')).position === 'sticky'; }), "countdown bar sits in a sticky header");
     const r = await right(gid, pos);
     await ana.click(`[data-gap="${r.slot}"]`);
     await ben.click(`[data-gap="${r.slot === 0 ? r.n : 0}"]`);
@@ -159,6 +160,7 @@ try {
     if (k === 0) {
       ok((await text(ana)).includes('Correct!'), "async: own result straight away");
       ok(!(await ana.$('.go-timer')) || !(await ana.isVisible('.go-timer')), "timer off: no countdown");
+      ok(await ana.evaluate(() => { const e = document.querySelector('.go-sticky'); return !e || getComputedStyle(e).position === 'sticky'; }), "countdown bar (when there is one) is sticky");
       ok(await ana.isVisible('.go-bonus-art'), "the painting stays visible next to the questions");
       const names = await ana.$$eval('[data-artist]', bs => bs.map(b => b.dataset.artist));
       const realA = await run(async () => (await db.query(`select c.artist from game_cards gc join cards c on c.id=gc.card_id where gc.game_id=$1 and gc.position=$2`, [gid2, pos])).rows[0].artist);
