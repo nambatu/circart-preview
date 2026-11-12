@@ -14,6 +14,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 type Job = { id: number; endpoint: string; p256dh: string; auth: string; title: string; body: string; url: string; tag: string };
 
+// Only the real push services (same rule as _push_host_ok() in migration 022).
+const PUSH_HOST = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)*push\.apple\.com|([a-z0-9-]+\.)*notify\.windows\.com)\//;
+
 Deno.serve(async (req: Request) => {
   const secret = req.headers.get("x-cron-secret");
   if (!secret) return new Response("unauthorized", { status: 401 });
@@ -31,6 +34,7 @@ Deno.serve(async (req: Request) => {
   const gone: string[] = [];
   const failed: string[] = [];
   await Promise.all(jobs.map(async (j) => {
+    if (!PUSH_HOST.test(j.endpoint)) { done.add(j.id); return; }   // never call anything else
     const payload = JSON.stringify({ title: j.title, body: j.body, url: (b.site || "") + "/" + j.url, tag: j.tag });
     try {
       await webpush.sendNotification({ endpoint: j.endpoint, keys: { p256dh: j.p256dh, auth: j.auth } }, payload,

@@ -59,20 +59,25 @@ const out = async () => (await db.query(`select o.kind, o.turn, o.title, o.body,
    from push_outbox o join game_players p on p.player_id = o.player_id and p.game_id = o.game_id order by o.id`)).rows;
 
 console.log("subscriptions");
-await call("ana", "save_push_subscription", "https://push.example/ana1", "k".repeat(80), "a".repeat(20), "Phone");
-await call("ben", "save_push_subscription", "https://push.example/ben1", "k".repeat(80), "a".repeat(20), null);
+await call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ana1", "k".repeat(80), "a".repeat(20), "Phone");
+await call("ben", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ben1", "k".repeat(80), "a".repeat(20), null);
 ok(await call("ana", "push_enabled") === true && await call("cy", "push_enabled") === false, "push_enabled per player");
 ok((await err(() => call("ana", "save_push_subscription", "http://evil", "k", "a", null))).includes("bad_settings"), "only https endpoints");
+ok((await err(() => call("ana", "save_push_subscription", "https://evil.example/x", "k", "a", null))).includes("bad_settings"), "022: only real push services");
+ok((await err(() => call("ana", "save_push_subscription", "https://fcm.googleapis.com.evil.example/x", "k", "a", null))).includes("bad_settings"), "022: look-alike host refused");
+await call("ana", "save_push_subscription", "https://web.push.apple.com/abc", "k", "a", null);
+ok((await db.query(`select count(*)::int n from push_subscriptions where endpoint = 'https://web.push.apple.com/abc'`)).rows[0].n === 1, "022: Apple push host accepted");
+await call("ana", "remove_push_subscription", "https://web.push.apple.com/abc");   // keep the later counts as they were
 ok((await err(() => as("ana", "select * from push_subscriptions"))).includes("permission denied"), "subscriptions aren't readable from the app");
 ok((await err(() => call("ana", "push_batch", "x"))).includes("permission denied"), "push_batch is server-only");
 const SECRET = (await db.query(`select value from private.settings where key = 'push_cron_secret'`)).rows[0].value;
 ok(SECRET && SECRET.length >= 60, "017: a long random cron secret exists");
 ok((await err(() => db.query(`select push_batch('wrong')`))).includes("push_forbidden"), "017: wrong secret → push_forbidden");
 ok((await err(() => db.query(`select push_batch(null)`))).includes("push_forbidden"), "017: no secret → push_forbidden");
-await call("ben", "save_push_subscription", "https://push.example/ana1", "k".repeat(80), "a".repeat(20), null);
-ok((await db.query(`select player_id from push_subscriptions where endpoint='https://push.example/ana1'`)).rows[0].player_id === users.ana,
+await call("ben", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ana1", "k".repeat(80), "a".repeat(20), null);
+ok((await db.query(`select player_id from push_subscriptions where endpoint='https://fcm.googleapis.com/fcm/send/ana1'`)).rows[0].player_id === users.ana,
    "someone else can't take over a saved device");
-await call("ana", "save_push_subscription", "https://push.example/ana1", "k".repeat(80), "a".repeat(20), null);
+await call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ana1", "k".repeat(80), "a".repeat(20), null);
 
 console.log("async game");
 const g = await call("ana", "create_game", "async", 6, 3, "Ana");
@@ -114,14 +119,14 @@ console.log("sending");
 await db.exec(`insert into private.settings values ('vapid_public','PUB'),('vapid_private','PRIV'),('vapid_subject','https://x'),('site','https://s')`);
 const b = (await db.query(`select push_batch($1) b`, [SECRET])).rows[0].b;
 ok(b.vapid_private === "PRIV" && b.jobs.length === o.length, `batch: ${b.jobs.length} jobs with keys`);
-await db.query(`select push_done($1::bigint[], $2::text[])`, [b.jobs.slice(0, 2).map(j => j.id), ["https://push.example/ben1"]]);
+await db.query(`select push_done($1::bigint[], $2::text[])`, [b.jobs.slice(0, 2).map(j => j.id), ["https://fcm.googleapis.com/fcm/send/ben1"]]);
 ok((await db.query(`select push_batch($1) b`, [SECRET])).rows[0].b.jobs.length === 0, "a second, overlapping run gets nothing (messages are claimed)");
 await db.query(`update push_outbox set claimed_at = null`);
 const b2 = (await db.query(`select push_batch($1) b`, [SECRET])).rows[0].b;
 ok(b2.jobs.length === b.jobs.length - 2 - b.jobs.slice(2).filter(j => j.endpoint.endsWith("ben1")).length, "done ids leave the queue, dead devices are removed");
 await db.query(`update push_outbox set created_at = now() - interval '2 days', claimed_at = null`);
 ok((await db.query(`select push_batch($1) b`, [SECRET])).rows[0].b.jobs.length === 0, "messages older than a day are dropped, not sent late");
-await call("ana", "remove_push_subscription", "https://push.example/ana1");
+await call("ana", "remove_push_subscription", "https://fcm.googleapis.com/fcm/send/ana1");
 ok(await call("ana", "push_enabled") === false, "turning it off removes the device");
 
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");

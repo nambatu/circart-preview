@@ -499,7 +499,7 @@
         if (!o || code.length !== 4) return;
         const go = async name => {
             try { const id = await o.joinGame(code, name); cachedProfile = null; window.CircGame.open(id); }
-            catch (e) { toast(e.message || t('common.error')); }
+            catch (e) { toast(errText(e)); }
         };
         if (await o.user()) return go(null);
         // first time: ask for a name before joining

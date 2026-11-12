@@ -86,7 +86,7 @@ console.log("export_my_data");
 const anaRun = await playRun("ana", { wrongAt: [2, 3, 4] });
 const daily = await playDaily("ana"); await playDaily("ben");
 await call("ana", "submit_solo_game", soloGame());
-await call("ana", "save_push_subscription", "https://push.example/ana-phone", "p256dh-key", "auth-secret", "Mozilla/5.0 test");
+await call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ana-phone", "p256dh-key", "auth-secret", "Mozilla/5.0 test");
 await call("ana", "submit_feedback", "Bug", "The timer froze", deckIds[1], { round: 3, page: "https://x.test/app/?game=1#access_token=SECRET", ua: "UA-ana", evil: "x".repeat(5000) });
 const ex = await call("ana", "export_my_data");
 ok(ex.format === "circart-export-1" && ex.account.email === "ana@example.org" && ex.profile.username === "ana", "account + profile included");
@@ -141,8 +141,8 @@ await realClock();
 await signUp("old_guest", true); await signUp("new_guest", true); await signUp("old_member", false, "m@example.org");
 await signUp("busy_guest", true);
 for (const n of ["old_guest", "new_guest", "old_member", "busy_guest"]) await call(n, "get_my_profile");
-await call("old_member", "save_push_subscription", "https://push.example/old", "k", "a", null);
-await call("ben", "save_push_subscription", "https://push.example/ben", "k", "a", null);
+await call("old_member", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/old", "k", "a", null);
+await call("ben", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ben", "k", "a", null);
 await call("busy_guest", "submit_solo_game", soloGame());
 await q(`update profiles set last_seen_at = now() - interval '200 days', created_at = now() - interval '300 days'
           where id = any($1)`, [[users.old_guest, users.old_member, users.busy_guest]]);
@@ -162,8 +162,8 @@ ok(await count(`select count(*) from auth.users where id = $1`, [users.old_guest
 ok(await count(`select count(*) from auth.users where id = $1`, [users.new_guest]) === 1, "active guest kept");
 ok(await count(`select count(*) from auth.users where id = $1`, [users.busy_guest]) === 1, "guest who played recently (solo save) kept");
 ok(await count(`select count(*) from auth.users where id = $1`, [users.old_member]) === 1, "idle account with email kept");
-ok(await count(`select count(*) from push_subscriptions where endpoint = 'https://push.example/old'`) === 0
-   && await count(`select count(*) from push_subscriptions where endpoint = 'https://push.example/ben'`) === 1, "push device of idle player removed, active kept");
+ok(await count(`select count(*) from push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/old'`) === 0
+   && await count(`select count(*) from push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/ben'`) === 1, "push device of idle player removed, active kept");
 const titles = (await q(`select title from push_outbox where player_id = $1`, [users.ben])).map(x => x.title);
 ok(titles.length === 1 && titles[0] === "fresh", `old + stuck push messages deleted (${titles})`);
 ok(await count(`select count(*) from games where id = $1`, [oldLobby]) === 0, "week-old lobby deleted");

@@ -222,6 +222,8 @@
             'err.display_name_invalid': 'Your name can be up to 24 characters long.',
             'err.username_invalid': 'Use 3 to 20 letters or numbers, without spaces. Dots and underscores are fine too.',
             'err.username_taken': 'Someone already has that name. Try another one.',
+            'err.too_many_tries': 'Too many wrong codes. Please wait ten minutes and try again.',
+            'err.too_many_games': 'That is a lot of games at once. Please finish or close some first.',
             'profile.nameHintGuest': 'Other players see this name in your games. Sign in to appear on the leaderboards too.',
             'profile.nameHintNew': 'Pick a name to appear on the leaderboards. Use 3 to 20 letters or numbers, without spaces.',
             'profile.nameHint': 'Other players see this name in games and on the leaderboards.',

@@ -14,7 +14,7 @@
     soloStats: () => rpc('my_solo_stats'), recentlySeen: async () => [], saveSoloGame: () => {}, sendFeedback: () => rpc('submit_feedback',{p_topic:'x',p_message:'y'}),
     serverNow: () => Date.now() + offset,
     createGame: async (kind,{cardCount=null,cardsPerTurn=null,displayName=null}={}) => { await rpc('_test_signup'); return rpc('create_game',{p_kind:kind,p_card_count:cardCount,p_cards_per_turn:cardsPerTurn,p_display_name:displayName}); },
-    joinGame: async (code,name) => { await rpc('_test_signup'); return rpc('join_game',{p_code:code,p_display_name:name||null}); },
+    joinGame: async (code,name) => { await rpc('_test_signup'); const id = await rpc('join_game',{p_code:code,p_display_name:name||null}); if (id == null) { const e = new Error('game_not_found'); e.code = 'game_not_found'; throw e; } return id; },
     startGame: id => rpc('start_game',{p_game:id}), leaveGame: id => rpc('leave_game',{p_game:id}),
     getGame: id => rpc('get_game',{p_game:id}), nextCard: id => rpc('next_card',{p_game:id}),
     answer: (id,p,s) => rpc('answer',{p_game:id,p_position:p,p_slot:s}), pickArtist: (id,p,c) => rpc('pick_artist',{p_game:id,p_position:p,p_choice:c}),

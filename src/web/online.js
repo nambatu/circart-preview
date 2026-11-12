@@ -35,6 +35,8 @@
         game_not_found: 'No game with that code.',
         game_started: 'That game has already started.',
         game_full: 'That game is full.',
+        too_many_tries: 'Too many wrong codes. Please wait ten minutes and try again.',
+        too_many_games: 'That is a lot of games at once. Please finish or close some first.',
         not_host: 'Only the host can do that.',
         need_two_players: 'You need at least two players.',
         bad_settings: 'Those game settings don\'t work.',
@@ -150,6 +152,7 @@
         rpc('update_profile', { p_display_name: displayName, p_username: username });
     const usernameAvailable = name => rpc('username_available', { p_username: name });
     async function deleteAccount() {
+        try { await disablePush(); } catch (e) {}   // don't leave the browser's push subscription behind
         await rpc('delete_my_account');
         storage(() => localStorage.removeItem(QUEUE_KEY));
         await sb.auth.signOut();
@@ -238,7 +241,9 @@
     }
     async function joinGame(code, displayName) {
         await ensureGuest();
-        return rpc('join_game', { p_code: code, p_display_name: displayName || null });
+        const id = await rpc('join_game', { p_code: code, p_display_name: displayName || null });
+        if (id == null) throw fail('game_not_found');   // the server answers null for an unknown code
+        return id;
     }
     const startGame  = id => rpc('start_game', { p_game: id });
     const leaveGame  = id => rpc('leave_game', { p_game: id });

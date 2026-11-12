@@ -9,7 +9,7 @@
     <!-- Content-Security-Policy: only our own files, the database and the analytics may run or be
          contacted (limits the damage of any injected script). The sha256 is the theme script below:
          if you change that script, update the hash. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NwmDhXOz/67qPRji5leHMUkIdowVCa5mjzhS7BJI1gM=' gc.zgo.at; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://circart.goatcounter.com https://collectionapi.metmuseum.org https://openaccess-api.clevelandart.org https://api.europeana.eu; worker-src 'self' blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NwmDhXOz/67qPRji5leHMUkIdowVCa5mjzhS7BJI1gM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://collectionapi.metmuseum.org https://openaccess-api.clevelandart.org https://api.europeana.eu; worker-src 'self' blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="no-referrer">
     <meta name="description" content="Place masterpieces of art history in the correct chronological order on the timeline.">
     <title>CIRCArt Preview</title>
@@ -316,10 +316,6 @@
         </div>
     </div>
 
-    <!-- Anonymous, cookieless analytics. No cookies, no personal data.
-         Dashboard: https://circart.goatcounter.com -->
-    <script data-goatcounter="https://circart.goatcounter.com/count"
-            async src="//gc.zgo.at/count.js"></script>
 
     <script src="strings.js"></script>
     <script src="strings-de.js"></script>

@@ -278,6 +278,8 @@
         'err.display_name_invalid': 'Dein Name darf bis zu 24 Zeichen lang sein.',
         'err.username_invalid': '3 bis 20 Buchstaben oder Ziffern, ohne Leerzeichen. Punkte und Unterstriche gehen auch.',
         'err.username_taken': 'Den Namen hat schon jemand. Versuch einen anderen.',
+        'err.too_many_tries': 'Zu viele falsche Codes. Bitte warte zehn Minuten und versuch es dann noch einmal.',
+        'err.too_many_games': 'Das sind viele Spiele auf einmal. Bitte beende oder schließe erst ein paar.',
         'profile.nameHintGuest': 'Diesen Namen sehen andere in deinen Spielen. Melde dich an, um auch in den Ranglisten zu erscheinen.',
         'profile.nameHintNew': 'Such dir einen Namen aus, um in den Ranglisten zu erscheinen. 3 bis 20 Buchstaben oder Ziffern, ohne Leerzeichen.',
         'profile.nameHint': 'Diesen Namen sehen andere in Spielen und in den Ranglisten.',

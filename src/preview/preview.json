@@ -2,14 +2,16 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 12 Nov, 19:00",
+  "label": "Fri 13 Nov, 00:30",
   "changes": [
-    "The countdown bar now stays pinned at the top of the screen while a card is on, also when you scroll down.",
-    "It also stays visible during the artist and style questions, where before only a small circle showed the time."
+    "Security: after 8 wrong game codes you have to wait ten minutes, so nobody can guess their way into a lobby.",
+    "Security: limits on how many lobbies and solo games one player can create, and notifications only go to the real push services.",
+    "Privacy: the visitor counter (GoatCounter) is gone. The privacy page says so, and deleting your account now also switches off notifications in the browser."
   ],
   "test": [
-    "Start a Monthly Run card, scroll down a little: the bar stays at the top.",
-    "In the daily, place a card and look at the questions: the bar is still running above them."
+    "Join a game with a friend's code: it still works as before.",
+    "Type a wrong code: you get \"No game with that code.\"",
+    "Switch notifications off and on again in your profile, then use \"Test notification\"."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
