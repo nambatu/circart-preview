@@ -1,6 +1,6 @@
 # Draft (12 Nov 2026, story-daily run): Under the hammer / Unter dem Hammer
 
-Status: **waiting for Julian** (first story of the "record prices" series, idea 14)
+Status: **approved by Julian 12 Nov evening (6 cards, Monet stays) for Mon 16 Nov** → build in the Sat 14 run, live before Sun 15 Nov 24:00. Part two whenever it fits (planned: Wed 18 Nov)
 
 | | |
 |---|---|
