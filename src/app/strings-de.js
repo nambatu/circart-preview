@@ -128,6 +128,7 @@
         'game.tap': 'Tipp dorthin, wo es hingehört',
         'game.answered': '{n} von {total} haben geantwortet',
         'game.whoPainted': 'Wer hat es gemacht?',
+        'game.lockIn': 'Antworten festlegen',
         'game.skip': 'Überspringen',
         'game.tooSlow': 'Zu langsam',
         'game.locked': 'Antwort fixiert!',

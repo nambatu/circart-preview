@@ -311,11 +311,11 @@
                : n === real ? 'right' : n === sel ? (res.closed ? 'chosen' : 'wrong') : '')
             : (n === sel ? 'chosen' : '');
         const mark = c => c === 'right' ? ' ✓' : c === 'wrong' ? ' ✗' : '';
-        const locked = G.picked || !!sel;                   // one tap per question, no changing your mind
+        const locked = G.picked;                            // until lock-in you can change your mind freely
         return `<div style="display:flex;flex-direction:column;gap:8px"><b>${esc(title)} <span class="note">+${pts}</span></b>
           <div class="two">${list.map(n => locked
-              ? `<span class="go-pick ${cls(n)}${G.picked ? '' : ' locked'}">${esc(n)}${mark(cls(n))}</span>`
-              : `<button class="go-pick ${cls(n)}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
+              ? `<span class="go-pick ${cls(n)}">${esc(n)}${mark(cls(n))}</span>`
+              : `<button class="go-pick ${cls(n)}" aria-pressed="${n === sel}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
     }
 
     function artistPicker() {
@@ -332,7 +332,7 @@
           ${res && res.closed ? `<p class="note">${esc(t('game.bonusClosed'))}</p>` : ''}
           ${a ? bonusRow('artist', t('game.whoPainted'), 200, a) : ''}
           ${m ? bonusRow('movement', t('game.whichMovement'), 100, m) : ''}
-          ${G.picked ? '' : `<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
+          ${G.picked ? '' : `${(!a || G.sel.artist) && (!m || G.sel.movement) ? `<button class="btn primary block" data-act="lock">${esc(t('game.lockIn'))}</button>` : ''}<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
     }
 
     // live: you answered; the result comes when the round closes
@@ -592,10 +592,8 @@
     }
 
     function choose(kind, name) {
-        if (!G.answer || G.picked || G.sel[kind]) return;   // first tap counts
+        if (!G.answer || G.picked) return;                  // nothing is revealed until lock-in, so changing is fine
         G.sel[kind] = name;
-        const r = G.answer.res;
-        if ((!opts(r, 'artist') || G.sel.artist) && (!opts(r, 'movement') || G.sel.movement)) return pick();
         draw();
     }
 
@@ -620,7 +618,7 @@
 
     async function act(a) {
         try {
-            if (a === 'skip') return pick();
+            if (a === 'skip' || a === 'lock') return pick();
             if (a === 'next' || a === 'ready') { G.answer = null; G.card = null; G.rev = null; G.wantCard = true; return refresh(); }
             if (a === 'start') { await O().startGame(G.id); return refresh(); }
             if (a === 'leave') { await O().leaveGame(G.id); return close(); }

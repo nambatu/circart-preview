@@ -2,14 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Wed 11 Nov, 17:30",
+  "label": "Thu 12 Nov, 17:00",
   "changes": [
-    "Daily and Monthly Run now give you 45 seconds per card (was 20). In the daily, the 45 seconds cover placing the card and the artist and style questions together.",
-    "The texts that mention the time are updated in English and German. Games already running keep their old timer."
+    "After placing a card you can now change your artist and style answers as often as you like. Nothing shows as right or wrong until you press \"Lock in my answers\" (or the timer runs out, then your current picks count).",
+    "This also removes the short flash of green or red that sometimes appeared while picking."
   ],
   "test": [
-    "Start the Monthly Run: the countdown bar should last about 45 seconds per card.",
-    "Open the daily: place a card, then answer the questions; the countdown keeps running from the card start, not from placing."
+    "Play the daily: place a card, tap an artist, change it, pick a style, then press Lock in. Both answers should be revealed together.",
+    "While picking, nothing should ever turn green or red."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

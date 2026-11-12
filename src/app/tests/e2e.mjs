@@ -163,10 +163,22 @@ try {
       const names = await ana.$$eval('[data-artist]', bs => bs.map(b => b.dataset.artist));
       const realA = await run(async () => (await db.query(`select c.artist from game_cards gc join cards c on c.id=gc.card_id where gc.game_id=$1 and gc.position=$2`, [gid2, pos])).rows[0].artist);
       const wrongA = names.find(n => n !== realA);
-      await ana.click(`[data-artist="${wrongA.replace(/"/g, '\\"')}"]`); await ana.waitForTimeout(300);
-      ok((await ana.$$('[data-artist]')).length === 0, "after the first tap the artist answers are locked");
-      if (await ana.$('[data-movement]')) await ana.click('[data-movement]');
-      else await ana.click('[data-act="skip"]');
+      // watch the whole picking time: no right/wrong marker may appear, not even for a frame
+      await ana.evaluate(() => { window.__flash = 0; const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong')) window.__flash++; };
+        new MutationObserver(chk).observe(document.body, { subtree: true, childList: true, attributes: true }); });
+      const other = names.find(n => n !== realA && n !== wrongA);
+      await ana.click(`[data-artist="${wrongA.replace(/"/g, '\\"')}"]`); await ana.waitForTimeout(150);
+      ok((await ana.$$('[data-artist]')).length === names.length, "artist answers stay changeable after the first tap");
+      await ana.click(`[data-artist="${other.replace(/"/g, '\\"')}"]`); await ana.waitForTimeout(150);
+      ok(!(await ana.$('.go-pick.right, .go-pick.wrong')), "nothing shown as right or wrong while picking");
+      await ana.click(`[data-artist="${wrongA.replace(/"/g, '\\"')}"]`);
+      if (await ana.$('[data-movement]')) {
+        ok(!(await ana.$('[data-act="lock"]')), "no lock-in button until both are picked");
+        const mv = await ana.$$('[data-movement]'); await mv[0].click(); await ana.waitForTimeout(100); await (await ana.$$('[data-movement]'))[1].click();
+        ok(!!(await ana.$('[data-act="lock"]')), "lock-in button appears once both are picked");
+        await ana.click('[data-act="lock"]');
+      } else await ana.click('[data-act="skip"]');
+      ok(await ana.evaluate(() => window.__flash) === 0, "no right/wrong flash at any moment before lock-in");
       await waitText(ana, 'Next');
       ok(!!(await ana.$('.go-pick.right')) && !!(await ana.$('.go-pick.wrong')), "the right answer shows green and my wrong pick red");
       await shot(ana, '7b-async-bonus');

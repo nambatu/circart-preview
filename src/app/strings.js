@@ -132,6 +132,7 @@
             'game.tap': 'Tap where it belongs',
             'game.answered': '{n} of {total} answered',
             'game.whoPainted': 'Who made it?',
+            'game.lockIn': 'Lock in my answers',
             'game.skip': 'Skip',
             'game.tooSlow': 'Too slow',
             'game.locked': 'Locked in!',
