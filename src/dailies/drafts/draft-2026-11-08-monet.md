@@ -1,6 +1,6 @@
 # Draft (8 Nov 2026, story-daily run): Monet's life in eight pictures / Monets Leben in acht Bildern
 
-Status: **approved by Julian 8 Nov evening (8 cards, Sat 14 Nov; pack repeats are fine)** → build in the Wed–Fri run, live before Fri 13 Nov 24:00
+Status: **built and live 12 Nov for Sat 14 Nov** (`src/dailies/2026-11-14-monet.json`); approved by Julian 8 Nov evening
 
 | | |
 |---|---|
