@@ -2,14 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 12 Nov, 17:00",
+  "label": "Thu 12 Nov, 18:00",
   "changes": [
-    "After placing a card you can now change your artist and style answers as often as you like. Nothing shows as right or wrong until you press \"Lock in my answers\" (or the timer runs out, then your current picks count).",
-    "This also removes the short flash of green or red that sometimes appeared while picking."
+    "Solo games now deal cards fairly: famous paintings like the Mona Lisa and The Last Supper come up about as often as every other card, instead of about half as often.",
+    "Only cards you actually play count as seen, so the rest stay available for your next game."
   ],
   "test": [
-    "Play the daily: place a card, tap an artist, change it, pick a style, then press Lock in. Both answers should be revealed together.",
-    "While picking, nothing should ever turn green or red."
+    "Play a few solo games: you should now meet famous works more often, and not the same few cards again and again."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

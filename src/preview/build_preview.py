@@ -35,7 +35,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css"]
+NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css", "dealer.js"]
 OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "solo-i18n.js", "packs.js"]          # copied when present
 
 
@@ -123,7 +123,7 @@ def main():
     if sw.exists():
         s = sw.read_text(encoding="utf-8")
         s = re.sub(r"const CACHE_VERSION = '[^']*';", f"const CACHE_VERSION = 'preview-{stamp}';", s, count=1)
-        extra = "".join(f"\n    './{f}'," for f in ["shell.css", "shell.js", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css", "solo-i18n.js", "onboarding.js", "onboarding.css", "packs.js", "online.js", "preview.js"]
+        extra = "".join(f"\n    './{f}'," for f in ["shell.css", "shell.js", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css", "dealer.js", "solo-i18n.js", "onboarding.js", "onboarding.css", "packs.js", "online.js", "preview.js"]
                         if f"'./{f}'" not in s)
         s = s.replace("const SHELL_ASSETS = [", "const SHELL_ASSETS = [" + extra, 1)
         # a preview must never serve yesterday's build: shell files network-first

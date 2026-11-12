@@ -4,6 +4,7 @@ const fs=require('fs');const src=fs.readFileSync(process.argv[2],'utf8');
 const start=src.indexOf('const SEEN_KEY');const end=src.indexOf('let hitsterDeck');
 let store={};global.localStorage={getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=v}};
 eval(src.slice(start,end).replace('class Dealer','global.Dealer=class Dealer'));
+if(process.argv[6]){const fix=fs.readFileSync(process.argv[6],'utf8').replace("typeof Dealer === 'undefined'",'false');eval(fix.replace('(function () {','(function () { const Dealer=global.Dealer;'))}
 const deck=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
 const N=+process.argv[4], mode=process.argv[5], SHOWN=11;
 const shown={}, dealt={}; deck.forEach(c=>{shown[c.id]=0;dealt[c.id]=0});

@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 WWW_FROM_APP = ["index.html", "shell.js", "shell.css", "strings.js", "game.js", "sw-push.js",
-                "strings-de.js", "solo.js", "solo.css", "solo-i18n.js", "solo-i18n.css", "onboarding.js", "onboarding.css", "packs.js"]
+                "strings-de.js", "solo.js", "dealer.js", "solo.css", "solo-i18n.js", "solo-i18n.css", "onboarding.js", "onboarding.css", "packs.js"]
 ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py"]
 
 

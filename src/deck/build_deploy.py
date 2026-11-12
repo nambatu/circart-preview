@@ -85,6 +85,7 @@ STATIC_FILES = [
     # added 2026-11-05 (copied when present in www/)
     "strings-de.js",
     "solo.js",
+    "dealer.js",
     "solo.css",
     "solo-i18n.js",
     "solo-i18n.css",
@@ -100,7 +101,7 @@ STATIC_FILES = [
 STATIC_DIRS = ["icons", "vendor", "packs"]   # vendor: self-hosted fonts + libraries; packs: card pack json
 
 # Added to the service worker's offline list (if present in docs/).
-SW_EXTRA_ASSETS = ["strings.js", "shell.css", "shell.js", "game.js", "online.js"] + ['strings-de.js', 'solo.js', 'solo.css', 'solo-i18n.js', 'solo-i18n.css', 'onboarding.js', 'onboarding.css', 'packs.js', 'vendor/fonts.css', 'vendor/supabase.js', 'vendor/lottie-player.js']
+SW_EXTRA_ASSETS = ["strings.js", "shell.css", "shell.js", "game.js", "online.js"] + ['strings-de.js', 'solo.js', 'dealer.js', 'solo.css', 'solo-i18n.js', 'solo-i18n.css', 'onboarding.js', 'onboarding.css', 'packs.js', 'vendor/fonts.css', 'vendor/supabase.js', 'vendor/lottie-player.js']
 # Push-notification handlers, appended to docs/sw.js (not published on its own).
 SW_PUSH = "sw-push.js"
 CONFIG_FILE = ROOT / "deploy_config.json"
