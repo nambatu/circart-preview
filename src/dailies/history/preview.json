@@ -482,5 +482,60 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-11",
+        "cards": [
+            {
+                "id": "wwgwkshzxs",
+                "year": 1567,
+                "title": "The Wine of Saint Martin's Day",
+                "artist": "Pieter Bruegel the Elder",
+                "position": 0
+            },
+            {
+                "id": "uxjczc23qj",
+                "year": 1317,
+                "title": "Saint Martin Shares His Cloak with a Beggar",
+                "artist": "Simone Martini",
+                "position": 1
+            },
+            {
+                "id": "8267g92wvy",
+                "year": 1599,
+                "title": "Saint Martin and the Beggar",
+                "artist": "El Greco",
+                "position": 2
+            },
+            {
+                "id": "t3n2tp76g6",
+                "year": 1240,
+                "title": "Bassenheim Rider",
+                "artist": "Naumburg Master (attributed)",
+                "position": 3
+            },
+            {
+                "id": "f6xavxx6wj",
+                "year": 1900,
+                "title": "Saint Martin and the Beggar",
+                "artist": "Gebhard Fugel",
+                "position": 4
+            },
+            {
+                "id": "gnznszywvc",
+                "year": 1475,
+                "title": "Saint Martin Dividing His Cloak",
+                "artist": "Martin Schongauer",
+                "position": 5
+            },
+            {
+                "id": "2vezsr9kp2",
+                "year": 1620,
+                "title": "Saint Martin Dividing his Cloak",
+                "artist": "Anthony van Dyck",
+                "position": 6
+            }
+        ],
+        "story": "saint-martin"
     }
 ]
