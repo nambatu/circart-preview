@@ -41,7 +41,7 @@ git commit -q -m "$MSG
 Co-Authored-By: Claude <noreply@anthropic.com>"
 for i in 1 2 3 4; do
   git pull -q --rebase origin main || true
-  if git push -q origin main 2>/dev/null; then echo "pushed"; break; fi
+  if git push -q origin HEAD:main 2>/dev/null; then echo "pushed"; break; fi
   [ $i = 4 ] && { echo "push failed"; exit 1; }
   sleep 15
 done
