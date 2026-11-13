@@ -12,7 +12,7 @@ Checked on 13 Nov 2026 with Wikidata (property "movement", P135, on the work and
 | Sargent — Portrait of Madame X (1884) | Realism | no source found for any style |
 | Wyeth — Christina's World (1948) | Magic Realism | Wikidata says Contemporary Realism, nothing says Magic Realism |
 
-## Only one source — stays for now, your call
+## Only one source — Julian decided on 13 Nov: keep them (nothing changes)
 
 | Card | Style | The one source |
 |---|---|---|
