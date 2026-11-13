@@ -81,6 +81,13 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
     - `pick_artist` (replaced by `pick_bonus`): remove the client references, revoke execute.
     - send-push Edge Function: 10 s timeout per device and a 25 s overall cap so `push_done()` always runs.
     - New error texts EN + DE; `SHIP.md` / `prod_cron.sql` still say "migrations 001–007, 3 jobs" → all migrations, 4 jobs.
+52. [ ] **Gallery as a collection** (Julian, 13 Nov: "the gallery greyed out, only pictures that have been played appear clearly"). Proposal, show Julian before building:
+    - Every card you have **played** (seen in any mode: solo, daily, run, friends, packs, stories) appears in full colour with its details. Cards you haven't met yet are greyed out and blurred, without title, artist or year, plus a counter "87 of 230 discovered".
+    - Cards you have **placed correctly** at least once get a small gold frame or mark, so there are two levels: discovered and mastered.
+    - Why "played" and not only "placed correctly": beginners would otherwise see almost nothing for a long time, and the famous works you got wrong would stay hidden, which feels like a punishment. The gold mark still rewards getting it right.
+    - Side effect: the gallery no longer works as a year cheat sheet for cards you haven't seen.
+    - Data: online games are already stored on the server (answers). Solo games are saved to the server only when signed in (`solo_game_cards`); offline / guests need a lasting list on the device (today's `seenCards` only lasts 6 hours). A small server function `my_collection()` returns seen + correct card ids; the app merges it with the local list. Packs: same rule inside each pack.
+    - Probably 2 evening builds: (a) data + server function + tests, (b) gallery look (grey/blur, gold mark, counter) with screenshots light/dark.
 37. [ ] **Check the style (Stilrichtung / movement) of every card** (Julian, 7 Nov). Correction from Julian: the trivia is fine; the problem is the **card information page** (the one with location, artist, medium …) — its style sometimes differs from the style question, and is sometimes plain wrong.
     - Likely cause: the info page shows the card's raw `movement` from the deck (e.g. "Mannerism", "Early Netherlandish"), while the style question and its answer use `movement_group` (the mapped group from migration `007_movement.sql` / `GROUPS` in `solo.js`). So the two can disagree even when both are "right", and the raw value itself may be wrong.
     - Scope: all 230 base cards, all pack cards (`src/packs/*.json`) and story cards (`src/dailies/*.json`).
