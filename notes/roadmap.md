@@ -81,8 +81,6 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
     - `pick_artist` (replaced by `pick_bonus`): remove the client references, revoke execute.
     - send-push Edge Function: 10 s timeout per device and a 25 s overall cap so `push_done()` always runs.
     - New error texts EN + DE; `SHIP.md` / `prod_cron.sql` still say "migrations 001–007, 3 jobs" → all migrations, 4 jobs.
-50. [ ] **Card years must not be findable from image names** (review of 13 Nov). `card_keys.json` in this public repo maps each image key to a card id that starts with the year, and most `docs/art/<key>.jpg` files are byte-identical to `docs/images/<year>-….jpg`. Fix: new random keys for every card (keys file no longer committed, or without the year), re-encode the online images so they don't match the base game's files, then rebuild and deploy. Together with 49's 2-second floor this stops simple lookup bots. About one evening build.
-51. [ ] **Fair all-time board** (review of 13 Nov, Julian decides): today it adds up points from games with friends too, so someone with a second account can pile up points. Proposal: the all-time board counts only dailies plus each month's best run; friend games stay in "Your stats".
 37. [ ] **Check the style (Stilrichtung / movement) of every card** (Julian, 7 Nov). Correction from Julian: the trivia is fine; the problem is the **card information page** (the one with location, artist, medium …) — its style sometimes differs from the style question, and is sometimes plain wrong.
     - Likely cause: the info page shows the card's raw `movement` from the deck (e.g. "Mannerism", "Early Netherlandish"), while the style question and its answer use `movement_group` (the mapped group from migration `007_movement.sql` / `GROUPS` in `solo.js`). So the two can disagree even when both are "right", and the raw value itself may be wrong.
     - Scope: all 230 base cards, all pack cards (`src/packs/*.json`) and story cards (`src/dailies/*.json`).
@@ -150,6 +148,7 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
 42. [ ] ⏸ **Social media strategy** (Julian, 10 Nov) — only once all the building work above is done. Then plan it together with Julian.
 
 ## Done
+- [x] 2026-11-13 — **Decided, not doing (Julian):** hiding card years from image names (anyone determined can cheat, and the Gallery shows years anyway) and changing the all-time board (friend games and solo players should keep earning points).
 - 2026-11-12 · 38 countdown bar pinned (sticky) on the placing screen and the artist/style questions (daily, run, async, live); e2e checks it's sticky. Solo (Julian's original game) has no bar to pin.
 - 2026-11-12 · 48 solo dealer made fair: new `src/app/dealer.js` (pile = rounds + 4, tier mix follows the deck, only played cards marked seen). Simulation 20,000 games: every card now 0.87–1.1× the average (before: Mona Lisa 0.8×, obscure cards up to 1.5×). Sim tool takes the patch file as 6th argument.
 - 2026-11-12 · 47 artist + style reveal only at lock-in: picks stay changeable, new "Lock in my answers" button, nothing right/wrong before it (also removes the flash); e2e checks it with a MutationObserver. Solo unchanged (it already reveals only after the card). Not done: a separate test for timer-with-one-pick (covered by the existing skip path).
