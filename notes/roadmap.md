@@ -81,7 +81,7 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
     - `pick_artist` (replaced by `pick_bonus`): remove the client references, revoke execute.
     - send-push Edge Function: 10 s timeout per device and a 25 s overall cap so `push_done()` always runs.
     - New error texts EN + DE; `SHIP.md` / `prod_cron.sql` still say "migrations 001–007, 3 jobs" → all migrations, 4 jobs.
-52. [ ] **Gallery as a collection** (Julian, 13 Nov: "the gallery greyed out, only pictures that have been played appear clearly"). Proposal, show Julian before building:
+52. [ ] **Gallery as a collection** (Julian, 13 Nov: "the gallery greyed out, only pictures that have been played appear clearly"). **Approved by Julian 13 Nov** (played = colour, placed correctly = gold mark):
     - Every card you have **played** (seen in any mode: solo, daily, run, friends, packs, stories) appears in full colour with its details. Cards you haven't met yet are greyed out and blurred, without title, artist or year, plus a counter "87 of 230 discovered".
     - Cards you have **placed correctly** at least once get a small gold frame or mark, so there are two levels: discovered and mastered.
     - Why "played" and not only "placed correctly": beginners would otherwise see almost nothing for a long time, and the famous works you got wrong would stay hidden, which feels like a punishment. The gold mark still rewards getting it right.
