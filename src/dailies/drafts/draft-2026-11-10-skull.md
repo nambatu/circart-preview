@@ -1,6 +1,6 @@
 # Draft (10 Nov 2026, story-daily run): The skull on the table / Der Schädel auf dem Tisch
 
-Status: **approved by Julian 11 Nov: Sun 15 Nov, all seven cards as suggested** → build in the Fri 13 run, live before Sat 14 Nov 24:00
+Status: **approved by Julian 11 Nov: Sun 15 Nov, all seven cards as suggested** → **built and live 13 Nov** (`src/dailies/2026-11-15-skull.json`). Changed at build: card 6 is David Bailly (1651) instead of Champaigne (no reliable year), and Böcklin and Dürer swapped places
 
 | | |
 |---|---|
