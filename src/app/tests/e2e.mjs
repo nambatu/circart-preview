@@ -220,6 +220,7 @@ try {
     await waitText(cleo, k === 9 ? 'See results' : 'Next');
     if (k === 0) {
       ok((await text(cleo)).includes('chapter 2') && (await text(cleo)).includes('CC BY-SA'), "after the first card: its chapter and the photo credit");
+      ok((await cleo.locator('.go-trivia').count()) === 0 && (await cleo.locator('.go-chapter').count()) > 0, "story daily reveal: chapter shown, no card trivia");
       await shot(cleo, '11b-story-chapter');
     }
     await cleo.click('[data-act="next"]');

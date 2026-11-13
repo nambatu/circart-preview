@@ -2,14 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 13 Nov, 09:00",
+  "label": "Fri 13 Nov, 17:30",
   "changes": [
-    "Style check for artists N–Z: three cards (Whistler, Sargent, Wyeth) had a style no source confirms, so they now show no style and get no style question.",
-    "Seven more cards have only one source for their style; they stay as they are until Julian decides."
+    "Story dailies: after each card you now see the story chapter and the photo credit, without the usual card trivia."
   ],
   "test": [
-    "Open the info page of Christina's World in solo: it shows no style.",
-    "Play a few cards: a card with no style never asks the style question."
+    "Play a story daily (or open it from Home): after a card, check the reveal shows the chapter and no trivia line.",
+    "Play a normal daily: the trivia is still there."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
