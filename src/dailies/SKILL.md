@@ -28,7 +28,7 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 ## 3. The game mechanic (most important)
 - **Order is NOT chronological.** The red thread is a walk, a story, a theme. No more than 2 rising years in a row. Avoid two cards with the same year. The start card (position 0) should have a mid-range year.
 - **No spoilers.** A chapter is shown after card N and leads to card N+1. It must never tell or hint at the date of any later card: no "oldest", "newest", "older than", "centuries later", "the oldest treasure", no years of later cards. Trivia talks only about the card itself. The intro never names a card's year.
-- **No double information (Julian, 13 Nov, after the thefts story):** a card's info text (trivia) and its chapter must not tell the same thing twice. The trivia is about the picture itself; the chapter tells the next step of the story and leads to the next card. Read each pair side by side before publishing.
+- **The chapter is the only text players read after a card (Julian, 13 Nov):** story dailies hide the card trivia (roadmap task 53), so each chapter carries the story on its own. Make it red-lined and interesting: what happened, why it mattered, a surprising turn, and a lead into the next card. Leave out mundane facts (sizes, materials, which room it hangs in) unless they are part of the story. Still fill `trivia`/`trivia_de` (the Gallery and other modes show them), but never repeat it in the chapter.
 - At least six cards to place (Julian, 12 Nov): fewer is generally not much fun.
 - Length: whatever the story needs, 3–30 cards ("sometimes shortness is the sweetest").
 
@@ -44,7 +44,7 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 2. Publish once (step 6) so the pack-images Action downloads the photos, `git pull`, then:
    `python3 src/tools/check_story.py src/dailies/<story>.json --art pack-art --keys pack_images.json --sheet /tmp/sheet.jpg` (sheet outside the repo)
 3. **Look at sheet.jpg** (Read tool) card by card: is it the right work (compare with the Commons description and the work's Wikipedia image)? Whole work visible? Not a detail, frame, room or wrong version? Replace any wrong photo and repeat.
-4. Read each card's trivia next to its chapter: nothing may be told twice.
+4. Read the chapters on their own, in order: do they tell one gripping story without the trivia? Nothing from the trivia repeated, nothing mundane.
 5. Re-read intro, chapters, outro in EN and DE as a player who doesn't know the years: does any sentence give away an order? Does each chapter really lead to the next card?
 
 ## 6. Publish

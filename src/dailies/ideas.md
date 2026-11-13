@@ -10,7 +10,7 @@ Julian (6 Nov 2026, later): "if you have the time you can plan days ahead but th
 - **Outro** on the results screen: how the story ends.
 - **The order must not be chronological** (otherwise every card goes to the right end of the timeline): the red thread is a walk, a story or a theme, and the years jump. At most two rising years in a row.
 - **At least six cards to place (Julian, 12 Nov):** fewer than six is generally not much fun.
-- **No double information (Julian, 13 Nov, after the thefts story):** a card's info text (trivia) and its chapter must not tell the same thing twice. The trivia is about the picture itself; the chapter tells the next step of the story and leads to the next card. Read each pair side by side before publishing.
+- **The chapter is the only text players read after a card (Julian, 13 Nov):** story dailies hide the card trivia (roadmap task 53), so each chapter carries the story on its own. Make it red-lined and interesting: what happened, why it mattered, a surprising turn, and a lead into the next card. Leave out mundane facts (sizes, materials, which room it hangs in) unless they are part of the story. Still fill `trivia`/`trivia_de` (the Gallery and other modes show them), but never repeat it in the chapter.
 - **Uncertain dates need room (Julian, 7 Nov):** a card whose year is only approximate or attributed ("about 1240") is fine, but no other card in the story may be within about ±30 years of it.
 - Writing style: the roadmap rules (plain sentences, no comma lists, at most one art pun per screen). EN + DE.
 
