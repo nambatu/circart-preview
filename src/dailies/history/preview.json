@@ -537,5 +537,88 @@
             }
         ],
         "story": "saint-martin"
+    },
+    {
+        "date": "2026-11-12",
+        "cards": [
+            {
+                "id": "k6tt9v9yvp",
+                "year": 1930,
+                "title": "American Gothic",
+                "artist": "Grant Wood",
+                "position": 0
+            },
+            {
+                "id": "kwa8ybxp53",
+                "year": 1928,
+                "title": "The Lovers",
+                "artist": "René Magritte",
+                "position": 1
+            },
+            {
+                "id": "zbzwd4ba6b",
+                "year": 1455,
+                "title": "The Descent from the Cross",
+                "artist": "Rogier van der Weyden",
+                "position": 2
+            },
+            {
+                "id": "pfzj7qfvkv",
+                "year": 1884,
+                "title": "Bathers at Asnières",
+                "artist": "Georges Seurat",
+                "position": 3
+            },
+            {
+                "id": "ystbdcxdmc",
+                "year": 1850,
+                "title": "A Burial at Ornans",
+                "artist": "Gustave Courbet",
+                "position": 4
+            },
+            {
+                "id": "fq79un2nqa",
+                "year": 2019,
+                "title": "Comedian",
+                "artist": "Maurizio Cattelan",
+                "position": 5
+            },
+            {
+                "id": "n7435ev7v3",
+                "year": 1906,
+                "title": "The Large Bathers",
+                "artist": "Paul Cézanne",
+                "position": 6
+            },
+            {
+                "id": "ty9mhfzgzx",
+                "year": 1899,
+                "title": "The Gulf Stream",
+                "artist": "Winslow Homer",
+                "position": 7
+            },
+            {
+                "id": "uc9m3sdx2z",
+                "year": 1881,
+                "title": "Luncheon of the Boating Party",
+                "artist": "Pierre-Auguste Renoir",
+                "position": 8
+            },
+            {
+                "id": "tn7t6tjpp2",
+                "year": 1891,
+                "title": "Moulin Rouge: La Goulue",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 9
+            },
+            {
+                "id": "2h57p6dwww",
+                "year": 1955,
+                "title": "Flag",
+                "artist": "Jasper Johns",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
