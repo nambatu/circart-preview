@@ -2,16 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 13 Nov, 00:30",
+  "label": "Fri 13 Nov, 09:00",
   "changes": [
-    "Security: after 8 wrong game codes you have to wait ten minutes, so nobody can guess their way into a lobby.",
-    "Security: limits on how many lobbies and solo games one player can create, and notifications only go to the real push services.",
-    "Privacy: the visitor counter (GoatCounter) is gone. The privacy page says so, and deleting your account now also switches off notifications in the browser."
+    "Style check for artists N–Z: three cards (Whistler, Sargent, Wyeth) had a style no source confirms, so they now show no style and get no style question.",
+    "Seven more cards have only one source for their style; they stay as they are until Julian decides."
   ],
   "test": [
-    "Join a game with a friend's code: it still works as before.",
-    "Type a wrong code: you get \"No game with that code.\"",
-    "Switch notifications off and on again in your profile, then use \"Test notification\"."
+    "Open the info page of Christina's World in solo: it shows no style.",
+    "Play a few cards: a card with no style never asks the style question."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

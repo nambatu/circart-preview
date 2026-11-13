@@ -21,6 +21,10 @@ STYLE_NONE = [
     "1948-m-c-escher-drawing-hands",
     "1953-m-c-escher-relativity",
     "1930-elias-garcia-martinez-ecce-homo-borja",
+    # artists N-Z (37b, 13 Nov 2026, see movement-review-nz.md)
+    "1871-james-mcneill-whistler-arrangement-in-grey-and-black-no",
+    "1884-john-singer-sargent-portrait-of-madame-x",
+    "1948-andrew-wyeth-christina-s-world",
 ]
 
 def apply(cards, fix_text=lambda s: s):
