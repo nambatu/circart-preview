@@ -620,5 +620,60 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-13",
+        "cards": [
+            {
+                "id": "rp9jsftwzf",
+                "year": 1633,
+                "title": "The Storm on the Sea of Galilee",
+                "artist": "Rembrandt",
+                "position": 0
+            },
+            {
+                "id": "qfss9crjpx",
+                "year": 1503,
+                "title": "Mona Lisa",
+                "artist": "Leonardo da Vinci",
+                "position": 1
+            },
+            {
+                "id": "g6vx5k7rdm",
+                "year": 1893,
+                "title": "The Scream",
+                "artist": "Edvard Munch",
+                "position": 2
+            },
+            {
+                "id": "xpwajjqect",
+                "year": 1432,
+                "title": "The Ghent Altarpiece",
+                "artist": "Jan van Eyck",
+                "position": 3
+            },
+            {
+                "id": "3w2qrw53zx",
+                "year": 1814,
+                "title": "Portrait of the Duke of Wellington",
+                "artist": "Francisco Goya",
+                "position": 4
+            },
+            {
+                "id": "cxftepb2uu",
+                "year": 1672,
+                "title": "The Guitar Player",
+                "artist": "Johannes Vermeer",
+                "position": 5
+            },
+            {
+                "id": "cfsqjq6a52",
+                "year": 1882,
+                "title": "View of the Sea at Scheveningen",
+                "artist": "Vincent van Gogh",
+                "position": 6
+            }
+        ],
+        "story": "stolen"
     }
 ]
