@@ -33,12 +33,14 @@ Deno.serve(async (req: Request) => {
   const done = new Set<number>();
   const gone: string[] = [];
   const failed: string[] = [];
-  await Promise.all(jobs.map(async (j) => {
+  const withTimeout = <T>(pr: Promise<T>, ms: number) =>
+    Promise.race([pr, new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+  const sendAll = Promise.all(jobs.map(async (j) => {
     if (!PUSH_HOST.test(j.endpoint)) { done.add(j.id); return; }   // never call anything else
     const payload = JSON.stringify({ title: j.title, body: j.body, url: (b.site || "") + "/" + j.url, tag: j.tag });
     try {
-      await webpush.sendNotification({ endpoint: j.endpoint, keys: { p256dh: j.p256dh, auth: j.auth } }, payload,
-        { TTL: 12 * 3600, urgency: "high" });
+      await withTimeout(webpush.sendNotification({ endpoint: j.endpoint, keys: { p256dh: j.p256dh, auth: j.auth } }, payload,
+        { TTL: 12 * 3600, urgency: "high" }), 10_000);   // 10 s per device
       done.add(j.id);
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode || 0;
@@ -47,6 +49,8 @@ Deno.serve(async (req: Request) => {
       else failed.push(code + " " + String((e as Error).message).slice(0, 120));
     }
   }));
+  // 25 s overall: whatever isn't finished by then is retried next time, and push_done() always runs
+  await Promise.race([sendAll, new Promise((res) => setTimeout(res, 25_000))]);
   const r = await sb.rpc("push_done", { p_ids: [...done], p_gone: gone });
   return Response.json({ jobs: jobs.length, done: done.size, gone: gone.length, failed, error: r.error?.message });
 });

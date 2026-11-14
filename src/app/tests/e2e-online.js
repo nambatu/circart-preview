@@ -17,7 +17,7 @@
     joinGame: async (code,name) => { await rpc('_test_signup'); const id = await rpc('join_game',{p_code:code,p_display_name:name||null}); if (id == null) { const e = new Error('game_not_found'); e.code = 'game_not_found'; throw e; } return id; },
     startGame: id => rpc('start_game',{p_game:id}), leaveGame: id => rpc('leave_game',{p_game:id}),
     getGame: id => rpc('get_game',{p_game:id}), nextCard: id => rpc('next_card',{p_game:id}),
-    answer: (id,p,s) => rpc('answer',{p_game:id,p_position:p,p_slot:s}), pickArtist: (id,p,c) => rpc('pick_artist',{p_game:id,p_position:p,p_choice:c}),
+    answer: (id,p,s) => rpc('answer',{p_game:id,p_position:p,p_slot:s}),
     reveal: (id,p) => rpc('reveal',{p_game:id,p_position:p}), myGames: () => rpc('my_games'), watchGame: () => () => {},
     playDaily: async (name) => { await rpc('_test_signup'); return rpc('play_daily',{p_display_name:name||null}); },
     dailySummary: () => rpc('daily_summary'), dailyLeaderboard: d => rpc('daily_leaderboard',{p_date:d||null}),

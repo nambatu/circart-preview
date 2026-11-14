@@ -34,6 +34,7 @@ const call = async (who, fn, ...args) => {
   const ph = args.map((_, i) => `$${i + 1}`).join(",");
   return Object.values((await as(who, `select public.${fn}(${ph}) r`, args))[0])[0];
 };
+const pb = (who, g, pos, a) => as(who, "select public.pick_bonus($1::uuid,$2::int,$3::text,$4::text) r", [g, pos, a, null]).then(r => r[0].r);
 const err = async f => { try { await f(); return ""; } catch (e) { return e.message; } };
 async function rightSlot(game, pos) {
   const r = (await db.query(`select c.year, _years_before($1,$2) ys from game_cards gc join cards c on c.id=gc.card_id
@@ -126,7 +127,7 @@ for (let pos = 1; pos <= 3; pos++) {
   await advance(2);
   await call("ana", "answer", live.id, pos, rs.slot);
   await call("ben", "answer", live.id, pos, rs.slot === 0 ? rs.n : 0);
-  for (const p of ["ana", "ben"]) await call(p, "pick_artist", live.id, pos, null);
+  for (const p of ["ana", "ben"]) await pb(p, live.id, pos, null);
   await advance(9); await call("ana", "get_game", live.id);
 }
 const at = await call("ben", "alltime_leaderboard");

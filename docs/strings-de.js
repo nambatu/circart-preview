@@ -277,6 +277,8 @@
         'install.title': 'App installieren',
         'err.display_name_invalid': 'Dein Name darf bis zu 24 Zeichen lang sein.',
         'err.username_invalid': '3 bis 20 Buchstaben oder Ziffern, ohne Leerzeichen. Punkte und Unterstriche gehen auch.',
+        'err.username_needs_account': 'Melde dich zuerst mit deiner E-Mail an, dann kannst du einen Benutzernamen wählen.',
+        'err.try_again': 'Das hat diesmal nicht geklappt. Versuch es gleich nochmal.',
         'err.username_taken': 'Den Namen hat schon jemand. Versuch einen anderen.',
         'err.too_many_tries': 'Zu viele falsche Codes. Bitte warte zehn Minuten und versuch es dann noch einmal.',
         'err.too_many_games': 'Das sind viele Spiele auf einmal. Bitte beende oder schließe erst ein paar.',

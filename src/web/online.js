@@ -251,7 +251,6 @@
     const nextCard   = id => g('next_card', { p_game: id });
     // slot: the gap tapped, 0 = before the first card, timeline.length = after the last
     const answer     = (id, position, slot) => rpc('answer', { p_game: id, p_position: position, p_slot: slot });
-    const pickArtist = (id, position, choice) => rpc('pick_artist', { p_game: id, p_position: position, p_choice: choice });
     const reveal     = (id, position) => rpc('reveal', { p_game: id, p_position: position });
     const myGames    = () => rpc('my_games');
 
@@ -363,7 +362,7 @@
         saveSoloGame, flushQueue, recentlySeen, soloStats,
         sendFeedback,
         serverNow, createGame, joinGame, startGame, leaveGame, getGame, nextCard,
-        answer, pickArtist, reveal, myGames, watchGame,
+        answer, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
         monthlyWinners, myBadges, myPacks, markPacksSeen, exportMyData,

@@ -16,7 +16,7 @@ Who does what:
 
 ## 2. Create the database (Claude, or you in the SQL editor)
 
-- **Run the migrations:** run `supabase/migrations/001` → `007` **in order**, once each.
+- **Run the migrations:** run every file in `supabase/migrations/` (001 up to the newest) **in order**, once each.
 - **Don't run the preview files:** `zz_preview_cron.sql` and `zz_preview_push.sql` are preview-only. Use `ship/prod_cron.sql` instead (step 3).
 
 ## 3. Notifications and scheduled jobs (Claude)
@@ -29,7 +29,7 @@ Who does what:
      ('vapid_subject', 'https://circart.langschwerts.de'), ('site', 'https://circart.langschwerts.de');
    ```
    The private key only goes there, never into a file or the chat log.
-3. **Turn on the scheduled jobs:** replace `PROJECT-REF` in `ship/prod_cron.sql` with the project's reference and run it. Check with `select jobname from cron.job;`, which should list 3 jobs.
+3. **Turn on the scheduled jobs:** replace `PROJECT-REF` in `ship/prod_cron.sql` with the project's reference and run it. Check with `select jobname from cron.job;`, which should list 4 jobs.
 
 ## 4. Build the site (Claude)
 

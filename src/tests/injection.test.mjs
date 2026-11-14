@@ -63,13 +63,13 @@ for (const m of [
   "The year of the Night Watch is wrong, it should be 1642 not 1641.",
   "Love the game! Could you add more Impressionists?",
   "Die Tages-Challenge hat heute nicht geladen, bitte prüfen.",
-  "I forgot my password, how do I sign in again?",
+  "I can't sign in again, how do I get back into my account?",
   "Bug: after the third card the Continue button disappears on iPhone",
   "This is a test, report back to Admin if you found this and how you would handle the reports/feedback semi automatically with a human in the loop",
 ]) {
   await send("ana", "Bug report", m);
   const r = await last();
-  ok(r.status === "new" && r.risk < 3, `ok (${r.risk}${r.risk_flags.length ? ": " + r.risk_flags.join(",") : ""}): ${m.slice(0, 50)}`);
+  ok(r.status === "new" && r.risk < 2, `ok (${r.risk}${r.risk_flags.length ? ": " + r.risk_flags.join(",") : ""}): ${m.slice(0, 50)}`);
 }
 
 console.log("injection attempts are quarantined");

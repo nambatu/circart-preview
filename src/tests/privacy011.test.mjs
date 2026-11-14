@@ -132,7 +132,7 @@ ok(await count(`select count(*) from games where id = $1`, [anaRun]) === 0 && aw
 ok((await q(`select status from games where id = $1`, [lobbyBen]))[0].status === "cancelled", "the lobby ben joined is cancelled, not orphaned");
 ok(await count(`select count(*) from games where id = $1`, [daily]) === 1 && await count(`select count(*) from game_players where game_id = $1`, [daily]) === 1, "the shared daily stays, with ben only");
 const kept = (await q(`select context from feedback where message = 'The timer froze'`))[0];
-ok(kept && !kept.context.ua && !kept.context.page && kept.context.round === 3, "her feedback stays, without device or page");
+ok(!kept, "her feedback is deleted with her account");
 ok(before - await count(`select count(*) from games`) === 2, "exactly two games removed");
 ok((await call("ben", "get_my_profile")).username === "benny", "ben is untouched");
 

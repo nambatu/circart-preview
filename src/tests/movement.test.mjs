@@ -81,7 +81,7 @@ if (right) {
   const res = await call("ana", "pick_bonus", g.id, c.position, await realArtist(g.id, c.position), right);
   ok(res.artist_correct && res.movement_correct && res.movement === right, "both right");
   ok((await call("ana", "get_game", g.id)).me.score === before + 300, "+200 artist +100 movement");
-  ok((await err(() => call("ana", "pick_artist", g.id, c.position, null))).includes("artist_closed"), "can't answer the bonus twice (old pick_artist)");
+  ok((await err(() => as("ana", "select public.pick_bonus($1::uuid,$2::int,null::text,null::text)", [g.id, c.position]))).includes("artist_closed"), "can't answer the bonus twice ");
   ok((await err(() => call("ana", "pick_bonus", g.id, c.position, null, right))).includes("artist_closed"), "…or pick_bonus again");
   const rev = await call("ana", "reveal", g.id, c.position);
   ok((await call("ana", "get_game", g.id)).timeline.some(x => x.position === c.position), "after the bonus it joins your timeline");
