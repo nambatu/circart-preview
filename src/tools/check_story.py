@@ -104,6 +104,11 @@ def main():
         best = max(best, run)
     if best > 2: errors.append(f"years rise {best} times in a row {ys}: the order must not be chronological")
     if len(set(ys)) != len(ys): warns.append(f"two cards share a year {ys}: placing them is a coin toss")
+    # the questions after each card (Julian, 14 Nov): one painter → "who painted it?" makes no sense
+    if len({c.get("artist") for c in cards[1:]}) == 1 and th.get("artist_bonus", True) is not False:
+        errors.append('every card is by the same artist: set "artist_bonus": false (and usually "movement_bonus": false) in the theme')
+    if len({c.get("movement") for c in cards[1:] if c.get("movement")}) <= 1 and th.get("movement_bonus", True) is not False:
+        warns.append('the cards share one style (or have none): think about "movement_bonus": false in the theme')
 
     for i, c in enumerate(cards):
         for k in ("chapter", "chapter_de", "trivia", "trivia_de"):

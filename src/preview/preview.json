@@ -2,13 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 13 Nov, 17:30",
+  "label": "Sat 14 Nov, 09:45",
   "changes": [
-    "Story dailies: after each card you now see the story chapter and the photo credit, without the usual card trivia."
+    "Story dailies can switch off the questions after each card (who painted it, which style). Today's Monet story no longer asks them, because every card is by Monet."
   ],
   "test": [
-    "Play a story daily (or open it from Home): after a card, check the reveal shows the chapter and no trivia line.",
-    "Play a normal daily: the trivia is still there."
+    "Today's Monet daily: your score stays as it is. Anyone who plays it from now on gets no questions after a card (try it in a private browser window as a guest if you like).",
+    "Tomorrow's skull story still asks who painted each card."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

@@ -30,6 +30,7 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - **No spoilers.** A chapter is shown after card N and leads to card N+1. It must never tell or hint at the date of any later card: no "oldest", "newest", "older than", "centuries later", "the oldest treasure", no years of later cards. Trivia talks only about the card itself. The intro never names a card's year.
 - **The chapter is the only text players read after a card (Julian, 13 Nov):** story dailies hide the card trivia (roadmap task 53), so each chapter carries the story on its own. Make it red-lined and interesting: what happened, why it mattered, a surprising turn, and a lead into the next card. Leave out mundane facts (sizes, materials, which room it hangs in) unless they are part of the story. Still fill `trivia`/`trivia_de` (the Gallery and other modes show them), but never repeat it in the chapter.
 - At least six cards to place (Julian, 12 Nov): fewer is generally not much fun.
+- **Questions after each card (Julian, 14 Nov):** normally the player is asked who painted the card and which style it is. When every card is by the same painter (an artist's life), set `"artist_bonus": false` and `"movement_bonus": false` in the theme; when all cards share one style, set `"movement_bonus": false`. `check_story.py` stops a one-painter story without it.
 - Length: whatever the story needs, 3–30 cards ("sometimes shortness is the sweetest").
 
 ## 4. Photos: download our own

@@ -282,11 +282,15 @@ def build_dailies(claude, out, docs, card_keys, site, images):
                          "location = excluded.location, tier = excluded.tier, visual_type = excluded.visual_type, "
                          "image_url = excluded.image_url, trivia = excluded.trivia, updated_at = now();")
         day = th["date"]
-        sql.append("insert into public.daily_themes (day, slug, title, title_de, intro, intro_de, outro, outro_de) values ("
+        # "artist_bonus": false / "movement_bonus": false switch off the questions after each card (023)
+        sql.append("insert into public.daily_themes (day, slug, title, title_de, intro, intro_de, outro, outro_de, "
+                   "artist_bonus, movement_bonus) values ("
                    + ", ".join(sql_q(v) for v in [day, th["slug"], th["title"], th.get("title_de"), th["intro"], th.get("intro_de"),
-                                                  th.get("outro"), th.get("outro_de")])
+                                                  th.get("outro"), th.get("outro_de"),
+                                                  th.get("artist_bonus", True) is not False, th.get("movement_bonus", True) is not False])
                    + ") on conflict (day) do update set slug = excluded.slug, title = excluded.title, title_de = excluded.title_de, "
-                     "intro = excluded.intro, intro_de = excluded.intro_de, outro = excluded.outro, outro_de = excluded.outro_de, updated_at = now();")
+                     "intro = excluded.intro, intro_de = excluded.intro_de, outro = excluded.outro, outro_de = excluded.outro_de, "
+                     "artist_bonus = excluded.artist_bonus, movement_bonus = excluded.movement_bonus, updated_at = now();")
         sql.append(f"delete from public.daily_theme_cards where day = {sql_q(day)};")
         for pos, c in enumerate(cards):
             sql.append("insert into public.daily_theme_cards (day, position, card_id, chapter, chapter_de, credit) values ("

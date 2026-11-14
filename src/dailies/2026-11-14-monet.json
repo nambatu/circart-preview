@@ -7,7 +7,9 @@
   "intro": "Claude Monet was born in Paris on 14 November 1840. Today we follow his life through eight of his own pictures, from a young painter with empty pockets to the gardener of Giverny. Your start card is a railway station full of steam, and the first picture to place shows the woman who would change his life.",
   "intro_de": "Claude Monet kam am 14. November 1840 in Paris zur Welt. Heute folgen wir seinem Leben durch acht seiner eigenen Bilder, vom jungen Maler mit leeren Taschen bis zum Gärtner von Giverny. Deine Startkarte ist ein Bahnhof voller Dampf, und das erste Bild zum Einordnen zeigt die Frau, die sein Leben verändern sollte.",
   "outro": "Monet went on painting his pond until he died in Giverny in 1926, at the age of 86. His house and garden are open to visitors, and the water lilies still bloom there every summer. Happy birthday, Claude.",
-  "outro_de": "Monet malte seinen Teich, bis er 1926 mit 86 Jahren in Giverny starb. Sein Haus und sein Garten stehen Besuchern offen, und die Seerosen blühen dort noch jeden Sommer. Alles Gute zum Geburtstag, Claude."
+  "outro_de": "Monet malte seinen Teich, bis er 1926 mit 86 Jahren in Giverny starb. Sein Haus und sein Garten stehen Besuchern offen, und die Seerosen blühen dort noch jeden Sommer. Alles Gute zum Geburtstag, Claude.",
+  "artist_bonus": false,
+  "movement_bonus": false
  },
  "cards": [
   {

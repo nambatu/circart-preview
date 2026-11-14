@@ -132,5 +132,38 @@ ok(sum.status === "done", "after 4 cards the short daily is done");
 st = await call("ana", "daily_story", null);
 ok(st.outro === "Done" && st.chapters.length === 4, "short story: 4 chapters and the ending");
 
+// 023: a story can switch off the questions after each card (Julian, 14 Nov: one painter → no sense)
+await db.exec(`insert into daily_themes (day, slug, title, intro, artist_bonus, movement_bonus) values ('2026-11-10', 'one-painter', 'One', 'Hi', false, false)`);
+for (let i = 0; i <= 4; i++)
+  await db.query(`insert into daily_theme_cards (day, position, card_id) values ('2026-11-10', $1, $2)`, [i, "th" + (i + 5)]);
+await setClock("2026-11-10T09:00:00+01:00");
+const gq = await call("ben", "play_daily", null);
+let cq = await call("ben", "next_card", gq.id);
+let rq = await rightSlot(gq.id, cq.position);
+await advance(4);
+let aq = await call("ben", "answer", gq.id, cq.position, rq.slot);
+ok(!(aq.artist_options && aq.artist_options.length) && !(aq.movement_options && aq.movement_options.length),
+   "artist_bonus/movement_bonus false: no questions after the card");
+cq = await call("ben", "next_card", gq.id);
+ok(cq && cq.position === 2, "and the next card comes straight away");
+
+// switched off on the day itself (the game is already dealt): the open questions go away
+await db.exec(`insert into daily_themes (day, slug, title, intro) values ('2026-11-11', 'late-off', 'Late off', 'Hi')`);
+for (let i = 0; i <= 4; i++)
+  await db.query(`insert into daily_theme_cards (day, position, card_id) values ('2026-11-11', $1, $2)`, [i, "th" + i]);
+await setClock("2026-11-11T09:00:00+01:00");
+const gl = await call("ana", "play_daily", null);
+cq = await call("ana", "next_card", gl.id);
+rq = await rightSlot(gl.id, cq.position);
+await advance(4);
+aq = await call("ana", "answer", gl.id, cq.position, rq.slot);
+ok(aq.artist_options && aq.artist_options.length === 4, "before the switch: the artist question is there");
+await db.exec(`update daily_themes set artist_bonus = false, movement_bonus = false where day = '2026-11-11'`);
+const left = (await db.query(`select count(*)::int n from game_cards where game_id = $1
+                               and (cardinality(artist_options) > 0 or cardinality(movement_options) > 0)`, [gl.id])).rows[0].n;
+ok(left === 0, "after the switch: no card of that day's game has questions left");
+cq = await call("ana", "next_card", gl.id);
+ok(cq && cq.position === 2, "Ana's open question is closed, so her next card comes");
+
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
