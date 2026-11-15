@@ -205,6 +205,7 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
 - 2026-11-12 (22:30) · story-daily run · D3 "Monet's life in eight pictures" built and live for Sat 14 Nov; new draft "Under the hammer" (record prices, part 1 of D6) for Mon 16 Nov, waiting for Julian. D5 (the skull, Sun 15) is next to build in the Fri 13 run
 - 2026-11-13 (18:00) · story-daily run · D5 "The skull on the table" built and live for Sun 15 Nov (Bailly 1651 instead of Champaigne, no reliable year); no new draft. D7 (Under the hammer, Mon 16) is next to build in the Sat 14 run
 - 2026-11-14 (18:00) · story-daily run · D7 "Under the hammer" (record prices, part 1) built and live for Mon 16 Nov; no new draft (one build per run). Next: draft for part two (modern record breakers, planned Wed 18 Nov) in the Sun 15 run
+- 2026-11-15 (18:00) · story-daily run · nothing due (Mon 16 "Under the hammer" is live, nothing approved for Tue 17); new draft "Going, going, gone" (record prices, part 2 of D6) for Wed 18 Nov, waiting for Julian. If approved, build it in the Mon 16 or Tue 17 run
 - 2026-11-09 · manual session · moved development into this repo (src/, CLAUDE.md, notes/), evening build switched off, story task pointed here; 35 + 36 deployed · next: 37 (style check) or 31
 - 2026-11-09 (evening build, Mon) · 31 countdown bar fix · tests green · deployed yes · next: 37 (style check, needs splitting) or 32a
 - 2026-11-10 · manual session · daily history export + never-twice check · deployed yes (Action only, no app change) · next: 37a
