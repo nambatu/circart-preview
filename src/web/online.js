@@ -275,6 +275,8 @@
     const myBadges           = () => rpc('my_badges');
     // card packs: [{id, title, title_de, description(_de), unlock_text(_de), progress, needed, unlocked, new, cards}]
     const myPacks            = () => rpc('my_packs');
+    // Gallery: {seen: [card ids met], correct: [card ids placed right at least once]}
+    const myCollection       = () => rpc('my_collection');
     const markPacksSeen      = () => rpc('mark_packs_seen');
     // GDPR: everything stored about me, as one JSON document
     const exportMyData       = () => rpc('export_my_data');
@@ -365,7 +367,7 @@
         answer, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
-        monthlyWinners, myBadges, myPacks, markPacksSeen, exportMyData,
+        monthlyWinners, myBadges, myPacks, myCollection, markPacksSeen, exportMyData,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         dailyStory,

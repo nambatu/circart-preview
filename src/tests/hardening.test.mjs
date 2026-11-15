@@ -93,5 +93,20 @@ await call("dee", "delete_my_account");
 ok((await db.query(`select count(*)::int n from public.feedback where message = 'to be deleted'`)).rows[0].n === 0, "feedback deleted with the account");
 ok((await err(() => call("ana", "pick_artist", crypto.randomUUID(), 1, null))).length > 0, "pick_artist can't be called any more");
 
+console.log("025: my_collection");
+{
+  const ids = (await db.query(`select id from cards where pack_id is null order by id limit 4`)).rows.map(r => r.id);
+  await signUp("col");
+  const sg = (await db.query(`insert into solo_games (player_id, client_id, rounds, score, placements_correct, finished_at)
+    values ($1, gen_random_uuid(), 3, 1, 1, now()) returning id`, [users.col])).rows[0].id;
+  await db.query(`insert into solo_game_cards (game_id, position, card_id, correct) values ($1,0,$2,null),($1,1,$3,true),($1,2,$4,false)`, [sg, ids[0], ids[1], ids[2]]);
+  const col = await call("col", "my_collection");
+  ok(col.seen.length === 3 && col.seen.includes(ids[0]) && col.seen.includes(ids[2]), "solo cards count as discovered");
+  ok(col.correct.length === 1 && col.correct[0] === ids[1], "only right placements count as mastered");
+  await signUp("col2");
+  const none = await call("col2", "my_collection");
+  ok(none.seen.length === 0 && none.correct.length === 0, "a new player has nothing, others' games don't leak");
+}
+
 console.log(failures ? `\nFAILED: ${failures}` : "\nall checks passed");
 process.exit(failures ? 1 : 0);
