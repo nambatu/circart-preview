@@ -675,5 +675,67 @@
             }
         ],
         "story": "stolen"
+    },
+    {
+        "date": "2026-11-14",
+        "cards": [
+            {
+                "id": "wz89wq6adr",
+                "year": 1877,
+                "title": "The Saint-Lazare Station",
+                "artist": "Claude Monet",
+                "position": 0
+            },
+            {
+                "id": "wcaxn6rn33",
+                "year": 1866,
+                "title": "Camille (The Woman in the Green Dress)",
+                "artist": "Claude Monet",
+                "position": 1
+            },
+            {
+                "id": "hwsdjchggp",
+                "year": 1899,
+                "title": "The Japanese Footbridge",
+                "artist": "Claude Monet",
+                "position": 2
+            },
+            {
+                "id": "asreeqmju6",
+                "year": 1872,
+                "title": "Impression, Sunrise",
+                "artist": "Claude Monet",
+                "position": 3
+            },
+            {
+                "id": "kb7s7myzru",
+                "year": 1879,
+                "title": "Camille Monet on Her Deathbed",
+                "artist": "Claude Monet",
+                "position": 4
+            },
+            {
+                "id": "kekmxvsqbx",
+                "year": 1875,
+                "title": "Woman with a Parasol – Madame Monet and Her Son",
+                "artist": "Claude Monet",
+                "position": 5
+            },
+            {
+                "id": "vnmb2sh6h7",
+                "year": 1906,
+                "title": "Water Lilies",
+                "artist": "Claude Monet",
+                "position": 6
+            },
+            {
+                "id": "59xxuxm4qg",
+                "year": 1894,
+                "title": "Rouen Cathedral, the Portal in Full Sunlight",
+                "artist": "Claude Monet",
+                "position": 7
+            }
+        ],
+        "story": "monet"
     }
 ]
