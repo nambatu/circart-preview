@@ -20,9 +20,10 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - Everything needed is in the repo: `src/dailies/`, `src/tools/check_story.py`, `src/preview/publish_story.py`, `src/preview/build_preview.py`, `src/deck/`. Use `pip install pillow --break-system-packages` if Pillow is missing.
 
 ## 2. Choose works + facts (reliable sources only)
-- Sources: the museum's own page, Wikipedia (DE + EN), Wikimedia Commons file descriptions, the diocese/foundation. **Every year needs two independent sources**; if they disagree, use the better one and say so in `date_note`. Leave out any fact you can't source.
+- Sources: the museum's own page, Wikipedia (DE + EN), Wikimedia Commons file descriptions, the diocese/foundation. **Every year needs two independent sources**; if they disagree, use the better one and say so in `date_note` ("according to …", Julian 15 Nov). Leave out any fact you can't source.
 - Use the year a work was finished (ranges go in `date_note`).
 - Card fields: exactly like `src/dailies/2026-11-07-wuerzburg-dom.json` (id, title, artist, year, date_note, movement, medium, location, tier, tier_label, explicit:false, visual_type, artist_died, trivia, trivia_de, image_source, image_source_original, image_source_fallback, commons_page, license, wiki, sources, image:null, image_local:null, wikidata_qid:null, source:"daily", chapter, chapter_de, credit). `movement` only from the list in migration `src/supabase/migrations/007_movement.sql`, and only if two sources confirm it (else null).
+- Nudes are art, not explicit (Julian 15 Nov): keep `explicit:false`.
 - Copyright is Julian's call (he said: don't worry about it). Still fill `license` and `credit` honestly.
 
 ## 3. The game mechanic (most important)
@@ -37,6 +38,7 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - The workspace can't reach Wikimedia; GitHub Actions can. Find photos with the **commons-lookup** workflow in the preview repo:
   `gh api -X POST repos/nambatu/circart-preview/actions/workflows/commons-lookup.yml/dispatches -f ref=main -f "inputs[category]=search:<words>" -f "inputs[depth]=2"`
   then wait for the run (`gh run list -R nambatu/circart-preview -L 3`), `git pull`, and read `commons-lookup/<name>.json` (file, licence, author, size, 1280px `thumb`, description). A plain category name also works (without "search:").
+- No photo on Commons (works still under copyright, Julian 15 Nov)? Use a good photo from another site (museum, auction house, reliable art site) as `image_source`; the pack-images Action downloads any URL. Credit honestly.
 - Pick photos ≥ 1200 px wide that show the whole work, straight on, well lit, no people in front. Use the lookup's `thumb` (without the `?utm…` part) as `image_source`, `https://commons.wikimedia.org/wiki/Special:FilePath/<File_name>` as `image_source_original`, the same with `?width=1280` as `image_source_fallback`.
 
 ## 5. Verify (before anything goes live)
