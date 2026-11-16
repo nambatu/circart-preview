@@ -737,5 +737,60 @@
             }
         ],
         "story": "monet"
+    },
+    {
+        "date": "2026-11-15",
+        "cards": [
+            {
+                "id": "jz7qdrkayf",
+                "year": 1630,
+                "title": "Vanitas Still Life",
+                "artist": "Pieter Claesz",
+                "position": 0
+            },
+            {
+                "id": "xs8xx9jzr9",
+                "year": 1533,
+                "title": "The Ambassadors",
+                "artist": "Hans Holbein the Younger",
+                "position": 1
+            },
+            {
+                "id": "gh9mkbwkze",
+                "year": 1886,
+                "title": "Head of a Skeleton with a Burning Cigarette",
+                "artist": "Vincent van Gogh",
+                "position": 2
+            },
+            {
+                "id": "aa4sbjjjav",
+                "year": 1427,
+                "title": "Holy Trinity",
+                "artist": "Masaccio",
+                "position": 3
+            },
+            {
+                "id": "drdz63m2fb",
+                "year": 1872,
+                "title": "Self-Portrait with Death Playing the Fiddle",
+                "artist": "Arnold Böcklin",
+                "position": 4
+            },
+            {
+                "id": "veeduuyz53",
+                "year": 1521,
+                "title": "Saint Jerome",
+                "artist": "Albrecht Dürer",
+                "position": 5
+            },
+            {
+                "id": "e54qhj6vnt",
+                "year": 1651,
+                "title": "Vanitas Still Life with Portrait of a Young Painter",
+                "artist": "David Bailly",
+                "position": 6
+            }
+        ],
+        "story": "skull"
     }
 ]
