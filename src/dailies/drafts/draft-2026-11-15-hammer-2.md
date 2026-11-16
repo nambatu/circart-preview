@@ -1,6 +1,6 @@
 # Draft (15 Nov 2026, story-daily run): Going, going, gone / Zum Ersten, zum Zweiten, zum Dritten
 
-Status: **approved by Julian 15 Nov evening, with Kahlo and Beckmann added (9 cards)** → build in the Mon 16 run for **Wed 18 Nov**
+Status: **approved by Julian 15 Nov evening, with Kahlo and Beckmann added (9 cards)** → **built and live 16 Nov** for **Wed 18 Nov** (`src/dailies/2026-11-18-hammer-2.json`)
 
 | | |
 |---|---|
