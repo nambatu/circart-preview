@@ -347,6 +347,14 @@ try {
     await bk.click('[data-x="leave"]'); await bk.waitForTimeout(500);
     ok(await bk.evaluate(() => document.querySelector('.screen.active').id) === 'start-screen', "'Leave the game' → home");
   } else ok(false, "solo game didn't start in the test site");
+  const col = await bk.evaluate(() => {
+    if (typeof currentCard === 'undefined' || !currentCard) return null;
+    const id = currentCard.id; track('round-wrong'); const a = CircCollection.local();
+    const wrongOnly = a.seen.has(id) && !a.correct.has(id);
+    track('round-correct'); const b = CircCollection.local();
+    return { wrongOnly, both: b.seen.has(id) && b.correct.has(id), stored: !!localStorage.getItem('circart-collection') };
+  });
+  ok(col && col.wrongOnly && col.both && col.stored, "collection list: a wrong card is 'seen', a right one is 'correct', and it is stored on the device");
   ok(errs.length === 0, "no script errors" + (errs.length ? ': ' + errs.join(' | ') : ''));
 } catch (e) { console.log("  ✗ " + e.message.split('\n')[0]); fails++; }
 console.log(fails ? `${fails} FAILED` : "all checks passed");

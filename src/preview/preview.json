@@ -2,12 +2,12 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Sun 15 Nov, 17:00",
+  "label": "Mon 16 Nov, 17:10",
   "changes": [
-    "Behind the scenes only: the server can now tell which paintings you have met and which you placed right. The Gallery will use it in the next step."
+    "Behind the scenes only: the app now remembers on your phone which paintings you have met and which you placed right in solo games, even offline. The Gallery will use it in the next step."
   ],
   "test": [
-    "Play a daily as usual: nothing should look different.",
+    "Play a solo game as usual: nothing should look different.",
     "Open the Gallery: it should still show every card as before."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
