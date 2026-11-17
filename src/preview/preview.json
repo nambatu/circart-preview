@@ -2,13 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Mon 16 Nov, 17:10",
+  "label": "Tue 17 Nov, 17:00",
   "changes": [
-    "Behind the scenes only: the app now remembers on your phone which paintings you have met and which you placed right in solo games, even offline. The Gallery will use it in the next step."
+    "The Gallery is now a collection: paintings you have played show in full colour, the ones you haven't met yet are grey and blurred without title or year, and a counter says how many you have discovered. Paintings you placed right at least once get a small gold star."
   ],
   "test": [
-    "Play a solo game as usual: nothing should look different.",
-    "Open the Gallery: it should still show every card as before."
+    "Open the Gallery: most cards should be grey, with a counter like '12 of 230 discovered' on top.",
+    "Play a solo card, then look again: that card should now be in colour, with a gold star if you placed it right."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

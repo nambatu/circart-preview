@@ -355,6 +355,16 @@ try {
     return { wrongOnly, both: b.seen.has(id) && b.correct.has(id), stored: !!localStorage.getItem('circart-collection') };
   });
   ok(col && col.wrongOnly && col.both && col.stored, "collection list: a wrong card is 'seen', a right one is 'correct', and it is stored on the device");
+  await bk.evaluate(() => { localStorage.setItem('circart-collection', JSON.stringify({ seen: ['1305-giotto-the-lamentation-of-christ', '1311-duccio-di-buoninsegna-maesta'], correct: ['1305-giotto-the-lamentation-of-christ'] })); });
+  await bk.click('.tabbar [data-tab="gallery"]'); await bk.waitForTimeout(2500);
+  const gal = await bk.evaluate(() => ({
+    total: document.querySelectorAll('#gallery-grid > .gallery-card').length,
+    open: document.querySelectorAll('#gallery-grid > .gallery-card:not(.undiscovered)').length,
+    gold: document.querySelectorAll('#gallery-grid > .gallery-card.mastered').length,
+    count: (document.getElementById('gallery-count') || {}).textContent || '',
+    hiddenText: [...document.querySelectorAll('#gallery-grid > .undiscovered .gallery-details')].some(d => d.textContent.trim() !== '?')
+  }));
+  ok(gal.total > 100 && gal.open === 2 && gal.gold === 1 && /^2 of \d+ discovered$/.test(gal.count) && !gal.hiddenText, "gallery: 2 cards in colour, 1 gold, the rest hidden, counter '" + gal.count + "'");
   ok(errs.length === 0, "no script errors" + (errs.length ? ': ' + errs.join(' | ') : ''));
 } catch (e) { console.log("  ✗ " + e.message.split('\n')[0]); fails++; }
 console.log(fails ? `${fails} FAILED` : "all checks passed");

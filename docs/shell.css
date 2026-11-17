@@ -448,3 +448,12 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
     font-size: 30px; line-height: 1; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff;
 }
 .zoom-modal .close-zoom:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Gallery as a collection (52b): unmet cards grey and blurred, placed-right cards get a gold mark */
+.gallery-count { margin: 0 0 10px; text-align: center; font-weight: 600; }
+.gallery-card { position: relative; }
+.gallery-card.undiscovered img { filter: grayscale(1) blur(6px); opacity: 0.55; cursor: default; }
+.gallery-card.undiscovered .gallery-details h3 { color: var(--text-secondary); }
+.gallery-card.undiscovered .gallery-details p { display: none; }
+.gallery-card.mastered { box-shadow: 0 0 0 2px #c9a227; }
+.gc-gold { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #c9a227; color: #fff; font-size: 14px; line-height: 24px; text-align: center; }
