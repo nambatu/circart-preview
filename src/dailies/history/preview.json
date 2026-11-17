@@ -792,5 +792,60 @@
             }
         ],
         "story": "skull"
+    },
+    {
+        "date": "2026-11-16",
+        "cards": [
+            {
+                "id": "bg3z6dt752",
+                "year": 1835,
+                "title": "Rome, from Mount Aventine",
+                "artist": "J.M.W. Turner",
+                "position": 0
+            },
+            {
+                "id": "zfefcnhtr4",
+                "year": 1500,
+                "title": "Salvator Mundi",
+                "artist": "Leonardo da Vinci",
+                "position": 1
+            },
+            {
+                "id": "4bz3mnu22k",
+                "year": 1919,
+                "title": "Le Bassin aux Nymphéas",
+                "artist": "Claude Monet",
+                "position": 2
+            },
+            {
+                "id": "e748f3awe3",
+                "year": 1612,
+                "title": "The Massacre of the Innocents",
+                "artist": "Peter Paul Rubens",
+                "position": 3
+            },
+            {
+                "id": "9suhap82pv",
+                "year": 1890,
+                "title": "Portrait of Dr. Gachet",
+                "artist": "Vincent van Gogh",
+                "position": 4
+            },
+            {
+                "id": "5wt496ttp6",
+                "year": 1658,
+                "title": "Portrait of a Man with Arms Akimbo",
+                "artist": "Rembrandt",
+                "position": 5
+            },
+            {
+                "id": "hskfwrfed2",
+                "year": 1881,
+                "title": "Spring (Jeanne)",
+                "artist": "Édouard Manet",
+                "position": 6
+            }
+        ],
+        "story": "hammer"
     }
 ]
