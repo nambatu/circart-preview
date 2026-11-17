@@ -18,7 +18,7 @@ Julian (6 Nov 2026, later): "if you have the time you can plan days ahead but th
 - Writing style: the roadmap rules (plain sentences, no comma lists, at most one art pun per screen). EN + DE.
 
 ## Hard rules for every draft
-- **Images:** public domain for paintings by artists who died before 1956. For **sculptures, tombs and buildings** the *photo* has its own copyright → use photos with a free license (CC0 / CC BY / CC BY-SA from Wikimedia Commons) and show the photographer credit. Modern works: Julian decides himself and handles the rights (6 Nov) — mark them "copyright – artwork by X" so he knows.
+- **Never worry about copyright (Julian, 17 Nov, standing rule):** any work can go in, with any good photo (Commons or another site). Don't flag copyright in drafts or reports; just fill `license` and `credit` with what the source says.
 - Find photos with the `commons-lookup` workflow in this repo (cloud workspaces can't reach Wikimedia). Look at every downloaded image before the story goes live.
 - Every year and fact needs a source (museum page or Wikipedia + one more). Leave out anything you can't source.
 
@@ -57,7 +57,7 @@ The next 1–2 days come first: build approved drafts for tomorrow / the day aft
 11. **Week arcs** — Monday to Sunday as seven chapters of one bigger story. Good for streaks.
 12. **Players' places** (later) — suggestions through the feedback form, via the injection guard and Julian's review.
 13. **Julian's own visits** — when Julian mentions a place he visited, turn it into a story soon after, while it's fresh.
-14. **Record prices at auction** (Julian, 11 Nov — wanted: 2–3 stories, a little series). Source: Wikipedia "List of most expensive paintings" (and "…sculptures"), which gives the price at sale AND the price in today's money, the date of sale and the auction house; Julian accepts Wikipedia as the source for prices (the year of the WORK still needs two sources as always). Public auctions only, no private sales (their prices are guesses). Players still place each work by the year it was made; the chapters tell the sale stories (who bought, how fast the bidding went, records broken), always with the price in today's money. Possible split: (a) Old Masters and the 19th century — Salvator Mundi, Rubens, Rembrandt, Monet, Cézanne, van Gogh; (b) the modern record breakers — Klimt, Modigliani, Picasso, Munch's Scream; (c) maybe later: sculptures (Giacometti, Brâncuși). Many 20th-century works are still under copyright and lack free photos: Julian decides on copyright, but pick works with a good photo. A good fit for a Mon–Wed or Fri–Sun arc.
+14. **Record prices at auction** (Julian, 11 Nov — wanted: 2–3 stories, a little series). Source: Wikipedia "List of most expensive paintings" (and "…sculptures"), which gives the price at sale AND the price in today's money, the date of sale and the auction house; Julian accepts Wikipedia as the source for prices (the year of the WORK still needs two sources as always). Public auctions only, no private sales (their prices are guesses). Players still place each work by the year it was made; the chapters tell the sale stories (who bought, how fast the bidding went, records broken), always with the price in today's money. Possible split: (a) Old Masters and the 19th century — Salvator Mundi, Rubens, Rembrandt, Monet, Cézanne, van Gogh; (b) the modern record breakers — Klimt, Modigliani, Picasso, Munch's Scream; (c) maybe later: sculptures (Giacometti, Brâncuși). Pick works with a good photo (from Commons or another site). A good fit for a Mon–Wed or Fri–Sun arc.
 
 ## Evening review format (one draft per evening, short)
 | | |
@@ -65,7 +65,7 @@ The next 1–2 days come first: build approved drafts for tomorrow / the day aft
 | **Theme** | title EN / DE |
 | **Red thread** | 1 sentence |
 | **Suggested date** | in the next few days (why that day) |
-| **Works** | year · artist · title · image status (✅ PD / ✅ CC BY-SA, credit X / ⚠️ copyright) |
+| **Works** | year · artist · title · photo found (yes / not yet) |
 | **Intro + 2 sample chapters** | to judge the tone |
 | **Open questions** | anything Julian must decide |
 
