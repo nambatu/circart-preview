@@ -847,5 +847,88 @@
             }
         ],
         "story": "hammer"
+    },
+    {
+        "date": "2026-11-17",
+        "cards": [
+            {
+                "id": "9y2zv3e4ug",
+                "year": 1866,
+                "title": "L'Origine du monde",
+                "artist": "Gustave Courbet",
+                "position": 0
+            },
+            {
+                "id": "dkdzvarzge",
+                "year": 1911,
+                "title": "The Portuguese",
+                "artist": "Georges Braque",
+                "position": 1
+            },
+            {
+                "id": "nb57yxnawv",
+                "year": 1950,
+                "title": "White Center (Yellow, Pink and Lavender on Rose)",
+                "artist": "Mark Rothko",
+                "position": 2
+            },
+            {
+                "id": "qwmryj6exu",
+                "year": 1907,
+                "title": "Les Demoiselles d'Avignon",
+                "artist": "Pablo Picasso",
+                "position": 3
+            },
+            {
+                "id": "spbkkhy43a",
+                "year": 1913,
+                "title": "Composition VII",
+                "artist": "Wassily Kandinsky",
+                "position": 4
+            },
+            {
+                "id": "2s8z535chz",
+                "year": 1963,
+                "title": "Drowning Girl",
+                "artist": "Roy Lichtenstein",
+                "position": 5
+            },
+            {
+                "id": "njgjt6au5m",
+                "year": 1915,
+                "title": "Black Square",
+                "artist": "Kazimir Malevich",
+                "position": 6
+            },
+            {
+                "id": "jfhbnufbqh",
+                "year": 1852,
+                "title": "Ophelia",
+                "artist": "John Everett Millais",
+                "position": 7
+            },
+            {
+                "id": "japmnwuwdw",
+                "year": 1425,
+                "title": "The Tribute Money",
+                "artist": "Masaccio",
+                "position": 8
+            },
+            {
+                "id": "7jydhmwhmb",
+                "year": 1917,
+                "title": "Reclining Nude",
+                "artist": "Amedeo Modigliani",
+                "position": 9
+            },
+            {
+                "id": "8n9v75tsyg",
+                "year": 1498,
+                "title": "The Last Supper",
+                "artist": "Leonardo da Vinci",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
