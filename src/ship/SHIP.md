@@ -39,16 +39,18 @@ Who does what:
 3. **Build:**
    ```
    python3 ship/stage.py --game <clone> --backend <folder with app/ web/ deck/ supabase/> \
-       --config prod.json --preview-config preview/config.json --deck-sql /tmp/deck.sql
+       --config prod.json --preview-config preview/config.json --deck-sql /tmp/deck.sql \
+       --preview-repo <clone of circart-preview> --packs-sql /tmp/packs.sql
    ```
    This copies the new app files into `www/` and the build scripts and `supabase/` into the repo. It writes `deploy_config.json` (public values only) and runs `build_deploy.py`, which:
    - fills in `online.js`
    - adds the new files and push handlers to `sw.js`
    - keeps `CNAME`
    - publishes `docs/art/<key>.jpg` with **new** keys in the repo's own `card_keys.json`
+   - with `--preview-repo`: copies the built pack files and the 100 pack photos from `pack-art/` into `docs/` (so pack images come from the real site, not Wikimedia) and writes `packs.sql` for the production database
 
    It stops if anything looks wrong, for example the preview database, a placeholder key, or preview files in `docs/`.
-4. **Load the deck:** paste `deck.sql` into the production SQL editor, or run `sync_deck.py www/artline.json --push` with the service key set on your computer only. Use the `card_keys.json` from this same build, or the images and the database won't match.
+4. **Load the deck:** paste `deck.sql` into the production SQL editor, or run `sync_deck.py www/artline.json --push` with the service key set on your computer only. Use the `card_keys.json` from this same build, or the images and the database won't match. Then paste `packs.sql` (from `--packs-sql`) the same way.
 
 ## 5. Pull request (Claude prepares, you merge)
 

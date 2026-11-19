@@ -25,6 +25,36 @@ WWW_FROM_APP = ["index.html", "shell.js", "shell.css", "strings.js", "game.js", 
 ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py"]
 
 
+PREVIEW_SITE = "https://nambatu.github.io/circart-preview"
+SITE = "https://circart.langschwerts.de"
+
+
+def stage_pack_images(repo, docs, cfg, packs_sql):
+    """Use the preview's built pack files (image_local = art/<key>.jpg) and copy the photos from pack-art/."""
+    built, art = repo / "docs" / "packs", repo / "pack-art"
+    if not built.is_dir() or not art.is_dir():
+        sys.exit(f"{repo} has no docs/packs or pack-art/")
+    (docs / "packs").mkdir(exist_ok=True)
+    (docs / "art").mkdir(exist_ok=True)
+    copied, missing = 0, []
+    for f in sorted(built.glob("*.json")):
+        shutil.copy2(f, docs / "packs" / f.name)
+        for c in json.loads(f.read_text(encoding="utf-8"))["cards"]:
+            name = Path(c["image_local"]).name
+            if (art / name).exists():
+                shutil.copy2(art / name, docs / "art" / name)
+                copied += 1
+            else:
+                missing.append(name)
+    if missing:
+        sys.exit(f"pack photos missing in pack-art/: {len(missing)} (e.g. {missing[0]}). Let the pack-images Action finish first.")
+    print(f"staged: {copied} pack photos in docs/art/")
+    if packs_sql:
+        sql = (repo / "supabase" / "packs.sql").read_text(encoding="utf-8").replace(PREVIEW_SITE, SITE)
+        Path(packs_sql).write_text(sql, encoding="utf-8")
+        print(f"wrote {packs_sql} (run it in the production SQL editor after the deck)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--game", required=True)
@@ -32,6 +62,9 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--preview-config", help="refuse to ship if prod.json points at the preview database")
     ap.add_argument("--deck-sql", help="also write the deck SQL here (keep it out of the repo)")
+    ap.add_argument("--preview-repo", help="clone of circart-preview: its built packs, pack photos (pack-art/) and packs.sql "
+                                           "go into the game, so pack images are served from the real site")
+    ap.add_argument("--packs-sql", help="where to write packs.sql for the production database (with --preview-repo)")
     a = ap.parse_args()
     game, be = Path(a.game).resolve(), Path(a.backend).resolve()
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
@@ -72,8 +105,11 @@ def main():
         subprocess.run([sys.executable, "sync_deck.py", "www/artline.json", "--sql",
                         str(Path(a.deck_sql).resolve())], cwd=game, check=True)
 
-    # last checks on what will be published
     docs = game / "docs"
+    if a.preview_repo:
+        stage_pack_images(Path(a.preview_repo).resolve(), docs, cfg, a.packs_sql)
+
+    # last checks on what will be published
     problems = [f"missing docs/{f}" for f in
                 ["CNAME", "index.html", "online.js", "shell.js", "game.js", "sw.js", "strings.js", "shell.css",
                  "packs.js", "vendor/supabase.js", "vendor/fonts.css", "privacy-en.html"]
