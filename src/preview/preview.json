@@ -2,15 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 17:30",
+  "label": "Thu 19 Nov, 18:30",
   "changes": [
-    "Sign-in fixed: if you played as a guest on a device, you can now sign in to an account you already have. Before, this was refused, which locked people out on a second device.",
-    "Email sign-in now sends a 6-digit code that you type into the app. It works on any device, also when you read the email on your phone and play on your laptop."
+    "When you sign in to an account you already have on a device where you played as a guest, your games from that device now come along: solo games, card packs and games with friends. The daily and the Monthly Run stay behind, so nobody gets a second try.",
+    "Sign-in fixed: a device that played as a guest can now sign in to an existing account. Email sign-in sends a 6-digit code that you type into the app."
   ],
   "test": [
-    "On your laptop: Profile → Use email instead → your Gmail address → Send code, then type the code from the email.",
-    "Play a round as a guest on another device, then sign in there with the same email: you should land in your account with your username.",
-    "Type a wrong code: you get a clear message and can ask for a new one."
+    "On a device where you never signed in: play a solo game as a guest, then Profile → Use email instead → your Gmail address. After the code, the message should say your games came along.",
+    "Check the Ranks tab: your username is back and your games are in your stats."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

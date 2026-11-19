@@ -155,6 +155,7 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
 42. [ ] ⏸ **Social media strategy** (Julian, 10 Nov) — only once all the building work above is done. Then plan it together with Julian.
 
 ## Done
+- [x] 2026-11-19 — **Guest games carry over (026).** Signing in to an existing account from a guest device takes a one-time ticket first (start_guest_transfer, 15 min); after the code the account hands it in (finish_guest_transfer): solo games, packs, games with friends, devices and feedback move, the guest is deleted. Daily and Monthly Run results do not move (no second try on ranked games). Tests: guest_transfer.test.mjs, auth.test.mjs.
 - [x] 2026-11-19 — **Sign-in fix (Julian: locked out on a second device).** A guest entering an email that already had an account got "email already registered" (the app tried to attach the email to the guest). Now it falls back to signing in to the existing account. Email sign-in sends a 6-digit code typed into the app (works across devices; links still work in the same browser); every email now links back to the site. Test `src/tests/auth.test.mjs`. Julian still has to add `{{ .Token }}` to the Supabase email templates.
 - [x] 2026-11-19 — **28: pack images for the real game.** `stage.py` has new options `--preview-repo` and `--packs-sql`: it copies the built pack files and all 100 pack photos into the real site's `docs/` and writes `packs.sql` with real-site image addresses. Tried on a dummy folder (100 photos, 0 preview addresses left). `SHIP.md` updated. No app change.
 - [x] 2026-11-18 — **37c part 1: style check of the 100 pack cards** (review only, no data changed): `src/deck/movement-review-packs.md`.
@@ -233,3 +234,4 @@ D6. [ ] **Story series: record prices at auction** (Julian, 11 Nov) — 2–3 st
 - 2026-11-18 (evening build, Wed) · 37c part 1 pack style review (docs only, no code change) · tests not needed · deployed no · next: Julian's go on the review, then 37d or 40 (badges, show list first)
 - 2026-11-19 (evening build, Thu) · 28 pack images for the real game (stage.py + SHIP.md, no app change) · tests not needed, stage step tried on a dummy folder · deployed no (nothing for the preview) · next: Julian's go on 37c / badge list (40)
 - 2026-11-19 · manual session · sign-in fix (guest → existing account, email code) · tests green · deployed yes · next: Julian edits email templates
+- 2026-11-19 · manual session · guest games carry over to existing accounts (026) · tests green · deployed yes

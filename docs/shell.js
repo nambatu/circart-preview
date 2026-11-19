@@ -779,8 +779,10 @@
             $('pf-code').focus();
         }));
         on('pf-code-send', guard(async () => {
-            await o.verifyEmailCode(emailAddr, $('pf-code').value, emailMode);
-            cachedProfile = null; toast(t('profile.signedIn')); renderProfile();
+            const r = await o.verifyEmailCode(emailAddr, $('pf-code').value, emailMode);
+            cachedProfile = null;
+            toast(t(r && r.moved && r.moved.moved ? 'profile.signedInMoved' : 'profile.signedIn'));
+            renderProfile();
         }));
         const codeInput = $('pf-code');
         if (codeInput) codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('pf-code-send').click(); });

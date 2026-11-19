@@ -46,7 +46,12 @@ function makeWorld() {
   };
   const store = {};
   const window = {
-    supabase: { createClient: () => ({ auth, rpc: async () => ({ data: null, error: null }) }) },
+    supabase: { createClient: () => ({ auth, rpc: async (fn, args) => {
+      calls.push("rpc:" + fn);
+      if (fn === "start_guest_transfer") return { data: session && session.user.is_anonymous ? "TICKET" : null, error: null };
+      if (fn === "finish_guest_transfer") return { data: { moved: args.p_token === "TICKET" && !session.user.is_anonymous }, error: null };
+      return { data: null, error: null };
+    } }) },
     addEventListener() {}, crypto: { randomUUID: () => "u" + (++n) },
   };
   const ctx = {
@@ -80,8 +85,11 @@ const code = async f => { try { await f(); return null; } catch (e) { return e.c
   const mode = await w.o.signInWithEmail("julian@example.com");
   ok(mode === "existing", "guest + existing email: no error, signs in to the existing account");
   ok(w.calls.includes("updateUser") && w.calls.includes("otp"), "tries to attach first, then falls back to a normal sign-in");
-  await w.o.verifyEmailCode("julian@example.com", "123456", mode);
+  ok(w.calls.indexOf("rpc:start_guest_transfer") < w.calls.indexOf("otp"), "a transfer ticket is taken while still the guest");
+  const r = await w.o.verifyEmailCode("julian@example.com", "123456", mode);
   ok(w.me().id === "acct-julian", "after the code: this device is on the existing account");
+  ok(r.moved && r.moved.moved === true, "the guest's games are handed over to the account");
+  ok(w.calls.filter(c => c === "rpc:finish_guest_transfer").length === 1, "the ticket is handed in exactly once");
 }
 
 // 3. signed out, no guest → plain sign-in
@@ -89,7 +97,7 @@ const code = async f => { try { await f(); return null; } catch (e) { return e.c
   const w = makeWorld();
   w.accounts.set("julian@example.com", { id: "acct-julian" });
   const mode = await w.o.signInWithEmail("julian@example.com");
-  ok(mode === "signin" && !w.calls.includes("updateUser"), "signed out: normal sign-in");
+  ok(mode === "signin" && !w.calls.includes("updateUser") && !w.calls.includes("rpc:start_guest_transfer"), "signed out: normal sign-in, no ticket");
   await w.o.verifyEmailCode("julian@example.com", "123456", mode);
   ok(w.me().id === "acct-julian", "signed in to the account");
   await w.o.signOut();

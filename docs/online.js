@@ -22,6 +22,7 @@
 
     const QUEUE_KEY = 'circart-pending-games';
     const QUEUE_MAX = 30;
+    const TRANSFER_KEY = 'circart-guest-transfer';
 
     let sb = null;
 
@@ -96,7 +97,7 @@
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
         });
         sb.auth.onAuthStateChange((event) => {
-            if (event === 'SIGNED_IN') flushQueue();
+            if (event === 'SIGNED_IN') { flushQueue(); setTimeout(() => { finishGuestTransfer().catch(() => {}); }, 0); }
             document.dispatchEvent(new CustomEvent('circart:auth', { detail: { event } }));
         });
         window.addEventListener('online', flushQueue);
@@ -156,9 +157,29 @@
             if (!error) return 'attach';
             if (error.code !== 'email_exists' && !/already been registered/i.test(error.message || '')) throw fail(error);
         }
+        // signing in to an existing account: get a ticket first, so the guest's
+        // games on this device can follow (migration 026)
+        if (u && u.is_anonymous) {
+            try {
+                const tok = await rpc('start_guest_transfer');
+                storage(() => localStorage.setItem(TRANSFER_KEY, JSON.stringify({ tok, at: Date.now() })));
+            } catch (e) { /* no ticket: sign-in still works, the games just stay behind */ }
+        }
         const { error } = await sb.auth.signInWithOtp({ email, options: back });
         if (error) throw fail(error);
         return u && u.is_anonymous ? 'existing' : 'signin';
+    }
+
+    // After signing in to a real account: hand in the guest ticket, if any.
+    // Called after the code, and on any sign-in (the email link reloads the page).
+    async function finishGuestTransfer() {
+        const t = storage(() => JSON.parse(localStorage.getItem(TRANSFER_KEY) || 'null'), null);
+        if (!t || !t.tok) return null;
+        const u = await user();
+        if (!u || u.is_anonymous) return null;
+        storage(() => localStorage.removeItem(TRANSFER_KEY));           // one try only
+        if (Date.now() - (t.at || 0) > 15 * 60 * 1000) return null;
+        try { return await rpc('finish_guest_transfer', { p_token: t.tok }); } catch (e) { return null; }
     }
 
     // The code from the email. Works on any device, unlike the link, which
@@ -170,7 +191,8 @@
         if (token.length < 6) throw fail('otp_expired');
         const { error } = await sb.auth.verifyOtp({ email, token, type: mode === 'attach' ? 'email_change' : 'email' });
         if (error) throw fail(error);
-        return user();
+        const moved = await finishGuestTransfer();
+        return { user: await user(), moved };
     }
 
     async function signOut() {
