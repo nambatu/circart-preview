@@ -2,12 +2,12 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 19:30",
+  "label": "Thu 19 Nov, 20:00",
   "changes": [
-    "Card styles: every pack card's style is now confirmed by two sources. Beckmann's \"The Night\" now shows New Objectivity instead of Expressionism."
+    "Every card's style is now checked against two sources: the base deck, the packs and the story cards. Schongauer's Saint Martin now counts as Late Gothic (style group Gothic), Beckmann's The Night as New Objectivity."
   ],
   "test": [
-    "Gallery → Packs → German Artists → open Beckmann's \"The Night\": the info shows Expressionism (New Objectivity)."
+    "Gallery → open a few cards: the style on the info page matches the style question in games."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
