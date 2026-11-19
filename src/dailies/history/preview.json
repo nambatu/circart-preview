@@ -930,5 +930,74 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-18",
+        "cards": [
+            {
+                "id": "5fcgrjynpv",
+                "year": 1913,
+                "title": "The Foxes",
+                "artist": "Franz Marc",
+                "position": 0
+            },
+            {
+                "id": "br47ny7uks",
+                "year": 1910,
+                "title": "Murnau with Church II",
+                "artist": "Wassily Kandinsky",
+                "position": 1
+            },
+            {
+                "id": "52prx4n878",
+                "year": 1943,
+                "title": "Self-Portrait Yellow-Pink",
+                "artist": "Max Beckmann",
+                "position": 2
+            },
+            {
+                "id": "bdpgfvj5ja",
+                "year": 1930,
+                "title": "Composition No. II",
+                "artist": "Piet Mondrian",
+                "position": 3
+            },
+            {
+                "id": "f4navw42n6",
+                "year": 1888,
+                "title": "Les Poseuses, Ensemble (small version)",
+                "artist": "Georges Seurat",
+                "position": 4
+            },
+            {
+                "id": "kbjurhbw9r",
+                "year": 1940,
+                "title": "The Dream (The Bed)",
+                "artist": "Frida Kahlo",
+                "position": 5
+            },
+            {
+                "id": "v5eds8e7tf",
+                "year": 1918,
+                "title": "Nu couché (Reclining Nude)",
+                "artist": "Amedeo Modigliani",
+                "position": 6
+            },
+            {
+                "id": "5qh5krfaac",
+                "year": 1895,
+                "title": "The Scream (pastel)",
+                "artist": "Edvard Munch",
+                "position": 7
+            },
+            {
+                "id": "j5ef9fakj9",
+                "year": 1916,
+                "title": "Portrait of Elisabeth Lederer",
+                "artist": "Gustav Klimt",
+                "position": 8
+            }
+        ],
+        "story": "hammer-2"
     }
 ]
