@@ -12,7 +12,7 @@ Julian is on **Claude Pro**: a 5-hour limit plus a weekly limit that resets **Th
 
 ## Scheduled tasks (they run on their own in the cloud)
 - **"CIRCArt story daily"**, every evening at 17:52 Vienna time: builds approved story dailies for the next 1–2 days, writes one new draft and sends Julian a short report. It follows `src/dailies/SKILL.md` and pushes to this repo. Work sessions leave story work (`D…` items, `src/dailies/`) to it unless Julian asks otherwise.
-- **"CIRCArt evening build"**, every day at 16:41 Vienna time: one roadmap task per day (up to three on Thursdays), tested and deployed to the preview, then a short report. It runs in the "CircART" cloud environment, which has this repo attached, pushes to `main` and has the Supabase connector for feedback. It must respect task claims by other agents (`🔧` marks in the roadmap, see AGENTS.md).
+- **"CIRCArt evening build"** — **switched off (19 Nov 2026, Julian)**; the work sessions do the to-do list. When on: every day at 16:41 Vienna time: one roadmap task per day (up to three on Thursdays), tested and deployed to the preview, then a short report. It runs in the "CircART" cloud environment, which has this repo attached, pushes to `main` and has the Supabase connector for feedback. It must respect task claims by other agents (`🔧` marks in the roadmap, see AGENTS.md).
 - Both run in the cloud; Julian's PC doesn't need to be on.
 
 ## Supabase connector

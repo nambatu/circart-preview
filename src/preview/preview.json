@@ -2,14 +2,12 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 18:30",
+  "label": "Thu 19 Nov, 19:30",
   "changes": [
-    "When you sign in to an account you already have on a device where you played as a guest, your games from that device now come along: solo games, card packs and games with friends. The daily and the Monthly Run stay behind, so nobody gets a second try.",
-    "Sign-in fixed: a device that played as a guest can now sign in to an existing account. Email sign-in sends a 6-digit code that you type into the app."
+    "Card styles: every pack card's style is now confirmed by two sources. Beckmann's \"The Night\" now shows New Objectivity instead of Expressionism."
   ],
   "test": [
-    "On a device where you never signed in: play a solo game as a guest, then Profile → Use email instead → your Gmail address. After the code, the message should say your games came along.",
-    "Check the Ranks tab: your username is back and your games are in your stats."
+    "Gallery → Packs → German Artists → open Beckmann's \"The Night\": the info shows Expressionism (New Objectivity)."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

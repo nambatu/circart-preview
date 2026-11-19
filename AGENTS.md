@@ -20,7 +20,7 @@ CIRCArt is "Hitster for art": a phone web app (PWA) where you place artworks on 
 9. **Decisions Julian already made — don't re-propose them:** no extra protection against card-year lookups (anyone determined can cheat, and the Gallery shows years anyway); the all-time board keeps counting games with friends and solo play; no analytics/tracking service (usage is read from the game's own database).
 
 ## Working together (several agents push to this repo)
-- **Always `git pull --rebase` first, and again right before every push.** The story-daily task, the evening build and other agents push to `main`.
+- **Always `git pull --rebase` first, and again right before every push.** The story-daily task and other agents push to `main`.
 - **Claim a task before you start:** in `notes/roadmap.md`, add `🔧 <agent> <date>` at the start of the task line, commit + push right away. Skip tasks someone else has claimed. Remove the mark when done (tick it) or if you give up (say why in the Run log).
 - **Story dailies** (`D…` items, `src/dailies/`, `supabase/dailies.sql`, story images) belong to the Claude "story daily" task. Don't touch them unless Julian asks.
 - Keep commits focused; never commit unrelated changes from other sessions; never rewrite history on `main`.
@@ -65,6 +65,6 @@ Cloud machines often can't reach Wikimedia directly; GitHub Actions can. To find
 
 ## Things that run on their own
 - **GitHub Actions** (sources in `src/preview/*.yml`): `preview-db` (applies migrations, deck, packs, dailies), `pack-images` (downloads card photos), `daily-history` (saves finished dailies nightly to `src/dailies/history/`), `commons-lookup` (Wikimedia search, by hand), `pages-unstick`.
-- **Claude scheduled tasks** (see `CLAUDE.md`): "CIRCArt story daily" (17:52 Vienna) and "CIRCArt evening build" (16:41 Vienna). Both push to `main`.
+- **Claude scheduled tasks** (see `CLAUDE.md`): "CIRCArt story daily" (17:52 Vienna, pushes to `main`); the "CIRCArt evening build" is switched off since 19 Nov.
 - **Database cron jobs** (preview: `src/preview/zz_preview_*.sql`, production: `src/ship/prod_cron.sql`): close turns, send pushes, turn reminders, nightly privacy clean-up.
 - **Every daily is kept, none repeats** (Julian, 10 Nov): `check_story.py` refuses a story that repeats an earlier daily unless it says `"reuse_of"`. The server's random daily skips cards used in the last 60 days.

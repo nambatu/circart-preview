@@ -4,7 +4,7 @@
 
 @./AGENTS.md
 
-- **Claim every task in `notes/roadmap.md` before you start** (`🔧 Gemini <date>` at the start of the task line, commit + push right away). Claude's evening build (16:41 Vienna) and story-daily task (17:52) push to the same `main` branch; `git pull --rebase` before every push.
+- **Claim every task in `notes/roadmap.md` before you start** (`🔧 Gemini <date>` at the start of the task line, commit + push right away). Claude's story-daily task (17:52 Vienna) and Claude work sessions push to the same `main` branch; `git pull --rebase` before every push.
 - **Leave story dailies alone** (`D…` items, `src/dailies/`, `supabase/dailies.sql`, story images): they belong to Claude's story-daily task.
 - **No database access needed.** New migrations reach the preview database through the `preview-db` GitHub Action when you deploy. You can't read player feedback (it needs the Supabase connection Claude has) — skip feedback tasks or leave them to Claude.
 - **Edge Function changes** (`src/supabase/functions/send-push/`) can't be deployed through Git. If you change it, note "send-push needs deploying" in the roadmap Run log so Claude or Julian deploys it.
