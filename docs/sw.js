@@ -9,7 +9,7 @@
    for you, so you normally never touch this file.
    ============================================================ */
 
-const CACHE_VERSION = 'preview-20261119-163134';
+const CACHE_VERSION = 'preview-20261119-163825';
 
 const SHELL_CACHE  = `circart-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE  = `circart-images-${CACHE_VERSION}`;
@@ -26,6 +26,7 @@ const SHELL_ASSETS = [
     './solo.css',
     './dealer.js',
     './collection.js',
+    './styles.js',
     './solo-i18n.js',
     './onboarding.js',
     './onboarding.css',

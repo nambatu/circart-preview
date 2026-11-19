@@ -2,12 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 20:00",
+  "label": "Thu 19 Nov, 21:00",
   "changes": [
-    "Every card's style is now checked against two sources: the base deck, the packs and the story cards. Schongauer's Saint Martin now counts as Late Gothic (style group Gothic), Beckmann's The Night as New Objectivity."
+    "New: Gallery → Styles explains every style in two plain sentences, with famous examples from the game.",
+    "New: a small \"?\" next to the style question shows what to look for in the four styles you can pick from."
   ],
   "test": [
-    "Gallery → open a few cards: the style on the info page matches the style question in games."
+    "Gallery → Styles: scroll through, check the texts in English and German (Profile → language).",
+    "In a solo game or the daily, tap the \"?\" next to \"Which movement?\"."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

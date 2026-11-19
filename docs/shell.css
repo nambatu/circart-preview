@@ -457,3 +457,15 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
 .gallery-card.undiscovered .gallery-details p { display: none; }
 .gallery-card.mastered { box-shadow: 0 0 0 2px #c9a227; }
 .gc-gold { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #c9a227; color: #fff; font-size: 14px; line-height: 24px; text-align: center; }
+
+/* how to spot a style (styles.js, task 39) */
+.gallery-styles { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 24px; }
+.gallery-styles .st-intro { margin: 0 0 4px; }
+.st-card { padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.st-card h3 { font-size: 20px; margin: 0; color: var(--accent-text); }
+.st-card p { margin: 0; font-size: 15px; line-height: 1.45; }
+.st-ex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.st-ex figure { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.st-ex img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: rgba(127,127,127,.15); }
+.st-ex figcaption { font-size: 12px; line-height: 1.3; opacity: .75; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.st-help { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-left: 6px; border-radius: 50%; border: 1px solid currentColor; background: transparent; color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; vertical-align: middle; }

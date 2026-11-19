@@ -285,7 +285,9 @@
         document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gview === v)));
         $('gallery-grid').classList.toggle('hidden', v !== 'works');
         $('gallery-packs').classList.toggle('hidden', v !== 'packs');
+        if ($('gallery-styles')) $('gallery-styles').classList.toggle('hidden', v !== 'styles');
         if (v === 'packs') renderGalleryPacks();
+        if (v === 'styles' && window.CircStyles) window.CircStyles.renderGuide($('gallery-styles'));
     }
 
     async function renderGalleryPacks() {

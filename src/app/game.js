@@ -315,7 +315,8 @@
             : (n === sel ? 'chosen' : '');
         const mark = c => c === 'right' ? ' ✓' : c === 'wrong' ? ' ✗' : '';
         const locked = G.picked;                            // until lock-in you can change your mind freely
-        return `<div style="display:flex;flex-direction:column;gap:8px"><b>${esc(title)} <span class="note">+${pts}</span></b>
+        const help = kind === 'movement' && window.CircStyles ? ' ' + window.CircStyles.helpButton(list) : '';
+        return `<div style="display:flex;flex-direction:column;gap:8px"><b>${esc(title)} <span class="note">+${pts}</span>${help}</b>
           <div class="two">${list.map(n => locked
               ? `<span class="go-pick ${cls(n)}">${esc(n)}${mark(cls(n))}</span>`
               : `<button class="go-pick ${cls(n)}" aria-pressed="${n === sel}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
