@@ -725,7 +725,8 @@
 
     function wireProfile(o) {
         const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', fn); };
-        const guard = fn => async () => { try { await fn(); } catch (e) { toast(errText(e)); } };
+        // one tap at a time: a second tap while the first is still busy is ignored (no double emails or saves)
+        const guard = fn => { let busy = false; return async () => { if (busy) return; busy = true; try { await fn(); } catch (e) { toast(errText(e)); } finally { busy = false; } }; };
 
         document.querySelectorAll('#profile-body [data-lang]').forEach(b => b.addEventListener('click', () => {
             window.CircI18n.setLanguage(b.dataset.lang);

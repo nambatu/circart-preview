@@ -122,8 +122,9 @@
             }, 200);
         }
         // realtime is primary; this catches a dropped connection
-        if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(refresh, live ? 4000 : 30000);
-        else if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') poll = setInterval(refresh, 10000);   // a rematch may appear
+        const pollIfVisible = () => { if (!document.hidden) refresh(); };    // no requests while the app is in the background
+        if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(pollIfVisible, live ? 4000 : 30000);
+        else if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') poll = setInterval(pollIfVisible, 10000);   // a rematch may appear
     }
 
     // ─── drawing ──────────────────────────────────────────────────────────
@@ -689,5 +690,7 @@
 
     // the ✕ in the game header (no inline onclick: the Content-Security-Policy forbids it)
     document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.go-close')) leaveAsk(); });
+    // back from the background (phone locked, other app): catch up at once instead of waiting for the next poll
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && G) refresh(); });
     window.CircGame = { open, close, refresh, leaveAsk };
 })();
