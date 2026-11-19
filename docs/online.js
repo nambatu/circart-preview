@@ -51,10 +51,14 @@
         not_answered: 'Place the card first.',
         bad_slot: 'Pick a spot on the timeline.',
         deck_too_small: 'Not enough cards in the deck.',
+        over_email_send_rate_limit: 'Too many emails in a short time. Please wait a few minutes and try again.',
+        otp_expired: 'That code is wrong or has expired. Ask for a new one.',
+        email_address_invalid: 'That email address doesn\'t look right.',
+        validation_failed: 'That email address doesn\'t look right.',
     };
 
     function fail(error) {
-        const msg = (error && error.message) || String(error);
+        const msg = ((error && error.code) ? error.code + ' ' : '') + ((error && error.message) || String(error));
         const code = Object.keys(MESSAGES).find(k => msg.includes(k)) || 'unknown';
         const e = new Error(MESSAGES[code] || 'Something went wrong. Please try again.');
         e.code = code;
@@ -132,15 +136,41 @@
         if (error) throw fail(error);
     }
 
-    // Email: a sign-in link is sent. For a guest the email is attached to the
-    // existing account instead, so nothing is lost.
+    // Email: a message with a 6-digit code (and a link) is sent.
+    // · A guest with a NEW email: the email is attached to the guest account,
+    //   so games played so far stay ('attach').
+    // · A guest whose email already has an account: we sign in to that account
+    //   instead ('existing'). Guest games on this device don't carry over.
+    //   (Before 19 Nov this case failed with "email already registered" and
+    //   locked people out on any device that had played as a guest.)
+    // · Signed out: normal sign-in ('signin'); a new email creates an account.
+    // Returns the mode; verifyEmailCode() needs it.
     async function signInWithEmail(email) {
         if (!sb) throw fail('offline');
+        email = String(email || '').trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw fail('email_address_invalid');
+        const back = { emailRedirectTo: location.origin + location.pathname };
         const u = await user();
-        const { error } = u && u.is_anonymous
-            ? await sb.auth.updateUser({ email })
-            : await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+        if (u && u.is_anonymous) {
+            const { error } = await sb.auth.updateUser({ email }, back);
+            if (!error) return 'attach';
+            if (error.code !== 'email_exists' && !/already been registered/i.test(error.message || '')) throw fail(error);
+        }
+        const { error } = await sb.auth.signInWithOtp({ email, options: back });
         if (error) throw fail(error);
+        return u && u.is_anonymous ? 'existing' : 'signin';
+    }
+
+    // The code from the email. Works on any device, unlike the link, which
+    // only works in the browser that asked for it.
+    async function verifyEmailCode(email, code, mode) {
+        if (!sb) throw fail('offline');
+        email = String(email || '').trim().toLowerCase();
+        const token = String(code || '').replace(/\D/g, '');
+        if (token.length < 6) throw fail('otp_expired');
+        const { error } = await sb.auth.verifyOtp({ email, token, type: mode === 'attach' ? 'email_change' : 'email' });
+        if (error) throw fail(error);
+        return user();
     }
 
     async function signOut() {
@@ -359,7 +389,7 @@
 
     window.CircOnline = {
         init, available, user, ensureGuest,
-        signInWithGoogle, signInWithEmail, signOut,
+        signInWithGoogle, signInWithEmail, verifyEmailCode, signOut,
         getProfile, updateProfile, usernameAvailable, deleteAccount,
         saveSoloGame, flushQueue, recentlySeen, soloStats,
         sendFeedback,

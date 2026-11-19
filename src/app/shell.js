@@ -709,6 +709,12 @@
             <label class="note" for="pf-email">${esc(t('profile.email'))}</label>
             <div class="row"><input id="pf-email" class="input" type="email" autocomplete="email" placeholder="${esc(t('profile.emailPlaceholder'))}">
               <button class="btn quiet" id="pf-email-send">${esc(t('profile.emailSend'))}</button></div>
+            <div id="pf-code-box" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+              <p class="note" id="pf-code-note" role="status"></p>
+              <label class="note" for="pf-code">${esc(t('profile.code'))}</label>
+              <div class="row"><input id="pf-code" class="input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456">
+                <button class="btn quiet" id="pf-code-send">${esc(t('profile.codeSend'))}</button></div>
+            </div>
           </div>
           <button class="btn link" id="pf-email-toggle">${esc(t('profile.email'))}</button>`;
     }
@@ -762,7 +768,22 @@
         if (!o) return;
         on('pf-google', guard(() => o.signInWithGoogle()));
         on('pf-email-toggle', () => { $('pf-email-box').classList.remove('hidden'); $('pf-email-toggle').classList.add('hidden'); $('pf-email').focus(); });
-        on('pf-email-send', guard(async () => { await o.signInWithEmail($('pf-email').value.trim()); toast(t('profile.emailSent')); }));
+        // email sign-in: send a code (and link), then type the code here
+        let emailMode = null, emailAddr = '';
+        on('pf-email-send', guard(async () => {
+            emailAddr = $('pf-email').value.trim();
+            emailMode = await o.signInWithEmail(emailAddr);
+            $('pf-code-note').textContent = t(emailMode === 'existing' ? 'profile.codeSentExisting' : 'profile.codeSent');
+            $('pf-code-box').classList.remove('hidden');
+            $('pf-email-send').textContent = t('profile.emailResend');
+            $('pf-code').focus();
+        }));
+        on('pf-code-send', guard(async () => {
+            await o.verifyEmailCode(emailAddr, $('pf-code').value, emailMode);
+            cachedProfile = null; toast(t('profile.signedIn')); renderProfile();
+        }));
+        const codeInput = $('pf-code');
+        if (codeInput) codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('pf-code-send').click(); });
         // one name for everything: for accounts it is the username (leaderboards) and the name in games
         on('pf-name-save', guard(async () => {
             const v = $('pf-name').value.trim();
