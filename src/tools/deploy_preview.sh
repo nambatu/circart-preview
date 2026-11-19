@@ -6,7 +6,7 @@
 # 2. runs build_preview.py with src/preview/preview.json (edit label/changes/test first)
 # 3. commits EVERYTHING (your src/ changes + the build output) and pushes, with retries
 # 4. waits for preview-db + Pages; re-runs a Pages deploy that failed with a server error
-# The base game (images, artline.json) comes from Julian's game repo nambatu/circart,
+# The base game (images, artline.json) comes from Admin's game repo nambatu/circart,
 # cloned read-only into $GAME if it isn't there yet. Never push to that repo.
 set -eu
 SRC="$(cd "$(dirname "$0")/.." && pwd)"          # …/circart-preview/src
@@ -36,7 +36,7 @@ python3 "$PV/preview/build_preview.py" --game "$GAME" --claude "$PV" --out "$OUT
 for f in docs/*.js; do node --check "$f" || { echo "syntax error in $f"; exit 1; }; done
 git add -A
 git diff --cached --quiet && { echo "nothing to deploy"; exit 0; }
-git commit -q -m "$MSG
+git -c user.name="circart-bot" -c user.email="circart-preview-bot@users.noreply.github.com" commit -q -m "$MSG
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 for i in 1 2 3 4; do

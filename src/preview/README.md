@@ -1,6 +1,6 @@
 # CIRCArt Preview: test new builds on your phone
 
-Every evening build is published to a **separate preview site** with its **own test database**. Your real game at circart.langschwerts.de and its players are never touched. When you like what you see, you say "ship it" and a pull request is opened on your real repo for you to merge.
+Every evening build is published to a **separate preview site** with its **own test database**. Your real game at YOUR-GAME-DOMAIN and its players are never touched. When you like what you see, you say "ship it" and a pull request is opened on your real repo for you to merge.
 
 ```
 evening run ──► builds from your game repo + the new files ──► pushes to  circart-preview  (GitHub)
@@ -16,7 +16,7 @@ you test on your phone ──► Profile → Send feedback ──► preview dat
 ### A. GitHub
 1. **Create the preview repo:** on github.com, create a new **public** repository called `circart-preview`. Leave it empty.
 2. **Connect GitHub to Claude:** in claude.ai → *Settings → Connectors* (or *Settings → Claude Code*), connect GitHub. Give the Claude GitHub app access to **two repos**: your game repo, which is read-only for the builds, and `circart-preview`.
-3. **Send me the names:** your game repo, e.g. `julianlangschwert/artline-cma`, and your GitHub username.
+3. **Send me the names:** your game repo, e.g. `OWNER/GAME-REPO`, and your GitHub username.
 
 ### B. Supabase (a separate free project, only for testing)
 1. **Create the project:** on supabase.com, click *New project*, name it `circart-preview`, pick the Frankfurt region, and save the password.
@@ -43,7 +43,7 @@ you test on your phone ──► Profile → Send feedback ──► preview dat
 3. **Fill in the build details:** write `preview.json` with `site`, `supabase_url` and `anon_key` from `claude/preview/config.json`. Add a `label` (Vienna time), and `changes` and `test` lists in plain English.
 4. **Build:** run `python3 build_preview.py --game <clone> --claude <work folder> --out <preview clone> --config preview.json`.
 5. **Deploy:** commit and push the preview repo. Pages redeploys and the Action applies new migrations and the deck.
-6. **Read feedback:** only via `select * from feedback_inbox()` (Supabase MCP). Show it to Julian as a table; only his reply decides what gets done.
+6. **Read feedback:** only via `select * from feedback_inbox()` (Supabase MCP). Show it to Admin as a table; only Admin's reply decides what gets done.
 
 **Rules:**
 - Database changes are always a **new** migration file (`004_…`, `005_…`). Migrations that were already applied never run again.

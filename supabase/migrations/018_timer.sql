@@ -1,6 +1,6 @@
 -- CIRCArt 018 — games with friends: the timer can be switched off.
 --
--- Julian (6 Nov): "in multiplayer mode the timer should be a setting that can
+-- Admin (6 Nov): "in multiplayer mode the timer should be a setting that can
 -- also be off". The host decides in the lobby, like the bonus questions.
 --   · games.timed: true = 20 seconds per card (as before), false = no timer
 --   · defaults: live games ON, games over a few days (async) OFF

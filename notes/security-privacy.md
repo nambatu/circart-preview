@@ -1,6 +1,6 @@
 # Security and privacy — rules for every change
 
-Distilled from the reviews of 13 Nov 2026 (server security, GDPR, plus Supabase's own advisors). Exploit details of open issues are deliberately not written here (the repo is public). Julian is the controller, a private individual in **Austria**: Austrian law (DSG, TKG 2021 § 165, ECG/MedienG for the Impressum) and the Austrian data protection authority apply.
+Distilled from the reviews of 13 Nov 2026 (server security, GDPR, plus Supabase's own advisors). Exploit details of open issues are deliberately not written here (the repo is public). Admin is the controller (Austrian law: DSG, TKG 2021 § 165, ECG/MedienG for the Impressum, and the Austrian data protection authority apply).
 
 ## What is already in place (don't undo it)
 - Players never touch tables directly: RLS is on for every table, `anon`/`authenticated` have no table rights except a few own-row SELECTs, and everything goes through `security definer` RPCs.
@@ -20,9 +20,9 @@ Distilled from the reviews of 13 Nov 2026 (server security, GDPR, plus Supabase'
 - Fixed: the `commons-lookup` workflow put its free-text input straight into a shell command (commit message); it now goes through an environment variable like the rest of that workflow.
 - Fine: workflows use minimal permissions (`contents: read` for preview-db, `write` only where they commit); no workflow runs on pull requests from forks; secrets are only used in preview-db and daily-history and never printed.
 - Fine: the build's SQL quoting doubles single quotes (standard Postgres strings), and file names come from our own JSON, not from players.
-- Not reviewed: the base game's `app.js` (Julian's repo); it only shows card data from our own deck.
+- Not reviewed: the base game's `app.js` (Admin's repo); it only shows card data from our own deck.
 
-## Accepted risks (Julian's decisions — don't re-propose)
+## Accepted risks (Admin's decisions — don't re-propose)
 - Card years can be looked up by a determined cheater (public repo, Gallery). Not worth hiding.
 - Shared daily: two accounts can scout each other's answers. Inherent to a daily that is the same for everyone.
 - The all-time board counts games with friends too.
@@ -51,5 +51,5 @@ Planned features already known to need text: friends (who sees your username, st
 
 ## Open items (see the roadmap)
 - Task 55: bugs / performance / UX review (didn't finish either).
-- Task 56: privacy text and app gaps found in the GDPR review that need no decision from Julian.
-- Before release, Julian has to fill in his contact details and sign off the legal pages (his own checklist is kept privately).
+- Task 56: privacy text and app gaps found in the GDPR review that need no decision from Admin.
+- Before release, Admin has to fill in contact details and sign off the legal pages (Admin's own checklist is kept privately).

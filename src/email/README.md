@@ -13,7 +13,7 @@ Supabase sends these emails; their text lives in the Supabase dashboard, not in 
 
 Notes
 - `{{ .Token }}` is the 6-digit code, `{{ .ConfirmationURL }}` the link. Keep both: the code works on any device, the link only in the browser that asked for it.
-- The logo is the app icon from the preview site. For the real game, change the image address to `https://circart.langschwerts.de/icons/icon-192.png`.
+- The logo is the app icon from the preview site. For the real game, change the image address to `https://YOUR-GAME-DOMAIN/icons/icon-192.png`.
 - Emails are bilingual (German first) because Supabase sends one text to everyone.
 - The "valid for one hour" line matches Supabase's default "Email OTP expiration" (3600 s, under Authentication → Providers → Email). Change the text if that setting changes.
 - Supabase's built-in email service only sends a few emails per hour. A real email service (roadmap task 25) removes that limit.

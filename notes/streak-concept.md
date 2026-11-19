@@ -1,6 +1,6 @@
-# Streak + painting of the week — concept (Julian, 11 Nov)
+# Streak + painting of the week — concept (Admin, 11 Nov)
 
-Julian: "A fire emoji streak like Snapchat for things you come back to every day. Instead of or next to the classic streak, you fill in a picture over several days. A reveal over several days."
+Admin: "A fire emoji streak like Snapchat for things you come back to every day. Instead of or next to the classic streak, you fill in a picture over several days. A reveal over several days."
 
 ## The idea in one sentence
 Every day you play the daily, you clean one more part of a hidden **painting of the week**. By Sunday the whole picture is visible, and it goes into your collection. Next to it a 🔥 counter shows how many days in a row you've played.
@@ -36,12 +36,12 @@ Every day you play the daily, you clean one more part of a hidden **painting of 
 ## Split (one evening build each)
 - **45a** Server: streak + weekly painting + patches + guesses, with tests. 🔥 counter on home and profile.
 - **45b** The painting card on home with the cleaning animation, the Sunday reveal, the collection in the Gallery. First painting chosen.
-- **45c** Push reminder (opt-in), the "Sharp Eye" guess badge (with 40), polish after Julian has played a week.
+- **45c** Push reminder (opt-in), the "Sharp Eye" guess badge (with 40), polish after Admin has played a week.
 
-## Julian's decisions (11 Nov)
+## Admin's decisions (11 Nov)
 - One painting per **week** (7 patches). ✅
 - **One free day per week.** ✅ (A free day doesn't add to the 🔥 count, it only keeps it alive.)
-- **Restoration look**: mockup in `notes/streak-mockup.png` — waiting for his OK.
+- **Restoration look**: mockup in `notes/streak-mockup.png` — waiting for Admin's OK.
 
 ## Original questions
 1. Painting per **week** (7 patches) as proposed, or per **month** (bigger picture, ~30 patches, slower)?

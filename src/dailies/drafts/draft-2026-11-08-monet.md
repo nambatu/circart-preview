@@ -1,6 +1,6 @@
 # Draft (8 Nov 2026, story-daily run): Monet's life in eight pictures / Monets Leben in acht Bildern
 
-Status: **built and live 12 Nov for Sat 14 Nov** (`src/dailies/2026-11-14-monet.json`); approved by Julian 8 Nov evening
+Status: **built and live 12 Nov for Sat 14 Nov** (`src/dailies/2026-11-14-monet.json`); approved by Admin 8 Nov evening
 
 | | |
 |---|---|

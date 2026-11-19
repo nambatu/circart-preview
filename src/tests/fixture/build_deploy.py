@@ -44,7 +44,7 @@ QUALITY = 82         # JPEG quality (82 is visually lossless for photos)
 # the custom domain survive a rebuild, and this script recreates docs/ from
 # scratch each run, so the file has to be written here rather than committed by
 # hand. Set to None if you ever go back to a plain github.io URL.
-CUSTOM_DOMAIN = "circart.langschwerts.de"
+CUSTOM_DOMAIN = "YOUR-GAME-DOMAIN"
 # ----------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parent

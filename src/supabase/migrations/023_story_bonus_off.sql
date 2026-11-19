@@ -1,6 +1,6 @@
 -- CIRCArt 023 — a story daily can switch off the bonus questions.
 --
--- Julian (14 Nov, after playing the Monet story): the questions after each
+-- Admin (14 Nov, after playing the Monet story): the questions after each
 -- card ("who painted it?", "which style?") make no sense when every card is by
 -- the same painter in the same style. A theme now says whether it asks them:
 -- daily_themes.artist_bonus / movement_bonus (default true, as before). The

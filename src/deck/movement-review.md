@@ -1,6 +1,6 @@
 # Style review — base deck, artists A–M (task 37a)
 
-**Status: NOT applied, waiting for Julian's go.** Sources checked on 10 Nov 2026: Wikidata (property "movement", P135, on the work and on the artist) and the English Wikipedia pages of the work and the artist. A style counts as confirmed when two of these four mention it. The info page and the question now show the same group (code fix deployed).
+**Status: NOT applied, waiting for Admin's go.** Sources checked on 10 Nov 2026: Wikidata (property "movement", P135, on the work and on the artist) and the English Wikipedia pages of the work and the artist. A style counts as confirmed when two of these four mention it. The info page and the question now show the same group (code fix deployed).
 
 Legend: ✅ keep · ❌ change to none (null: no style shown, no style question) · 🟡 only one source found: proposal is none unless you say keep.
 

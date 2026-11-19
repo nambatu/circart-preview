@@ -1,17 +1,17 @@
 # Shipping CIRCArt to production
 
-"Ship it" moves what you tested on the preview to the real game at **circart.langschwerts.de**.
+"Ship it" moves what you tested on the preview to the real game at **YOUR-GAME-DOMAIN**.
 The real game gets its **own** database, separate from the preview, so test players and test scores never mix with real ones.
 
 Who does what:
-- **You (Julian):** steps 1, 4 (one copy-paste), 7 (merge) and 8 (phone test).
+- **You (Admin):** steps 1, 4 (one copy-paste), 7 (merge) and 8 (phone test).
 - **Claude:** everything else. Claude never pushes to the game repo. It prepares a branch and you merge the pull request.
 
 ## 1. Create the production Supabase project (you, about 10 minutes, once)
 
 1. **New project:** on supabase.com, create a project called `circart`. Pick the Frankfurt region and save the database password somewhere safe.
 2. **Sign-ins:** go to *Authentication → Sign In / Providers*. Turn on **Anonymous sign-ins** and **Email**. Google comes later, and when you add it, also turn on **Allow manual linking**.
-3. **Where sign-in links go:** go to *Authentication → URL Configuration*. Set **Site URL** to `https://circart.langschwerts.de/` and add `https://circart.langschwerts.de/**` under Redirect URLs.
+3. **Where sign-in links go:** go to *Authentication → URL Configuration*. Set **Site URL** to `https://YOUR-GAME-DOMAIN/` and add `https://YOUR-GAME-DOMAIN/**` under Redirect URLs.
 4. **Send Claude the project details:** from *Project Settings → API*, copy the **Project URL** and the **anon public** key. Both are public, so you can paste them into the chat. Never paste the service_role key or the database password.
 
 ## 2. Create the database (Claude, or you in the SQL editor)
@@ -26,7 +26,7 @@ Who does what:
    ```sql
    insert into private.settings values
      ('vapid_public', '<public>'), ('vapid_private', '<private>'),
-     ('vapid_subject', 'https://circart.langschwerts.de'), ('site', 'https://circart.langschwerts.de');
+     ('vapid_subject', 'https://YOUR-GAME-DOMAIN'), ('site', 'https://YOUR-GAME-DOMAIN');
    ```
    The private key only goes there, never into a file or the chat log.
 3. **Turn on the scheduled jobs:** replace `PROJECT-REF` in `ship/prod_cron.sql` with the project's reference and run it. Check with `select jobname from cron.job;`, which should list 4 jobs.
@@ -58,14 +58,14 @@ Who does what:
 2. **Open the PR:** open a pull request on `nambatu/circart` with a plain-English summary.
 3. **Merge:** you merge it. GitHub Pages redeploys in about a minute.
 
-4. **Daily history for the real game:** before the preview database is reset or retired, run the `daily-history` Action in nambatu/circart-preview by hand once, so `src/dailies/history/preview.json` holds every preview-era daily. These may be reused in the real game, each one once, with `"reuse_of": "<old date>"` in the story's theme. Then set up the same nightly export for production (a copy of `src/preview/daily-history.yml` writing `src/dailies/history/production.json`, with a production secret Julian adds himself), so the real game never repeats a daily.
+4. **Daily history for the real game:** before the preview database is reset or retired, run the `daily-history` Action in nambatu/circart-preview by hand once, so `src/dailies/history/preview.json` holds every preview-era daily. These may be reused in the real game, each one once, with `"reuse_of": "<old date>"` in the story's theme. Then set up the same nightly export for production (a copy of `src/preview/daily-history.yml` writing `src/dailies/history/production.json`, with a production secret Admin adds), so the real game never repeats a daily.
 
 ## 6. Phone smoke test (you, about 10 minutes)
 
-Open circart.langschwerts.de and pull to refresh twice so the new version loads.
+Open YOUR-GAME-DOMAIN and pull to refresh twice so the new version loads.
 
 - [ ] **Solo game:** the home screen shows Play · Ranks · Gallery · Profile, and a solo game starts and finishes.
-- [ ] **Sign in:** Profile → sign in with an email link. The link opens circart.langschwerts.de, not the preview.
+- [ ] **Sign in:** Profile → sign in with an email link. The link opens YOUR-GAME-DOMAIN, not the preview.
 - [ ] **Saved game:** after a solo game, Ranks shows your stats.
 - [ ] **Daily challenge:** it plays, and the images load.
 - [ ] **Live game:** start one with a friend or a private tab, and the invite link works.

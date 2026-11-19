@@ -1,6 +1,6 @@
 # CIRCArt multiplayer & accounts — design decisions (draft, Nov 2026)
 
-The earlier async-duel draft is discarded. Julian's original game (repo nambatu/circart, live at circart.langschwerts.de) is the base; this repo's `src/` builds on top of it.
+The earlier async-duel draft is discarded. Admin's original game (repo nambatu/circart, live at YOUR-GAME-DOMAIN) is the base; this repo's `src/` builds on top of it.
 
 ## Decided
 - Solo games are saved for logged-in players (stats, history, seen cards across devices). Solo stays playable offline. Solo results are personal stats only and don't feed leaderboards.

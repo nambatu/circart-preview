@@ -1,6 +1,6 @@
 -- CIRCArt 020 — Monthly Run: one point per card; timer with your own seconds.
 --
--- Julian (6 Nov):
+-- Admin (6 Nov):
 --   "the monthly challenge should only be 1 point for each correctly placed
 --    piece. The artist and style guess we can leave out."
 --   "a setting for the timer not only 20 sec or none but a custom time"

@@ -1,6 +1,6 @@
 -- CIRCArt 026 — take a guest's games along when signing in to an existing account.
 --
--- Julian (19 Nov): someone who played as a guest on a device and then signs in
+-- Admin (19 Nov): someone who played as a guest on a device and then signs in
 -- to the account they already have should keep what they played there.
 --
 -- How it works:

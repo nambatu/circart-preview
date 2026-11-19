@@ -80,14 +80,14 @@ const code = async f => { try { await f(); return null; } catch (e) { return e.c
 // 2. THE BUG: second device played as a guest, email already has an account
 {
   const w = makeWorld();
-  w.accounts.set("julian@example.com", { id: "acct-julian" });
+  w.accounts.set("admin@example.com", { id: "acct-admin" });
   await w.o.ensureGuest();
-  const mode = await w.o.signInWithEmail("julian@example.com");
+  const mode = await w.o.signInWithEmail("admin@example.com");
   ok(mode === "existing", "guest + existing email: no error, signs in to the existing account");
   ok(w.calls.includes("updateUser") && w.calls.includes("otp"), "tries to attach first, then falls back to a normal sign-in");
   ok(w.calls.indexOf("rpc:start_guest_transfer") < w.calls.indexOf("otp"), "a transfer ticket is taken while still the guest");
-  const r = await w.o.verifyEmailCode("julian@example.com", "123456", mode);
-  ok(w.me().id === "acct-julian", "after the code: this device is on the existing account");
+  const r = await w.o.verifyEmailCode("admin@example.com", "123456", mode);
+  ok(w.me().id === "acct-admin", "after the code: this device is on the existing account");
   ok(r.moved && r.moved.moved === true, "the guest's games are handed over to the account");
   ok(w.calls.filter(c => c === "rpc:finish_guest_transfer").length === 1, "the ticket is handed in exactly once");
 }
@@ -95,16 +95,16 @@ const code = async f => { try { await f(); return null; } catch (e) { return e.c
 // 3. signed out, no guest → plain sign-in
 {
   const w = makeWorld();
-  w.accounts.set("julian@example.com", { id: "acct-julian" });
-  const mode = await w.o.signInWithEmail("julian@example.com");
+  w.accounts.set("admin@example.com", { id: "acct-admin" });
+  const mode = await w.o.signInWithEmail("admin@example.com");
   ok(mode === "signin" && !w.calls.includes("updateUser") && !w.calls.includes("rpc:start_guest_transfer"), "signed out: normal sign-in, no ticket");
-  await w.o.verifyEmailCode("julian@example.com", "123456", mode);
-  ok(w.me().id === "acct-julian", "signed in to the account");
+  await w.o.verifyEmailCode("admin@example.com", "123456", mode);
+  ok(w.me().id === "acct-admin", "signed in to the account");
   await w.o.signOut();
   await w.o.ensureGuest();                                   // played once after signing out
-  const m2 = await w.o.signInWithEmail("julian@example.com");
-  await w.o.verifyEmailCode("julian@example.com", "123456", m2);
-  ok(w.me().id === "acct-julian", "sign out, play as guest, sign in again: back on the same account");
+  const m2 = await w.o.signInWithEmail("admin@example.com");
+  await w.o.verifyEmailCode("admin@example.com", "123456", m2);
+  ok(w.me().id === "acct-admin", "sign out, play as guest, sign in again: back on the same account");
 }
 
 // 4. errors

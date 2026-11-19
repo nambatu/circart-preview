@@ -1,6 +1,6 @@
 -- CIRCArt 021 — Daily and Monthly Run: 45 seconds per card.
 --
--- Julian (11 Nov): "Timer fuer die daily und monthly challenges erhoehen auf
+-- Admin (11 Nov): "Timer fuer die daily und monthly challenges erhoehen auf
 -- 45 Sekunden insgesamt."
 --   · new daily and run games get answer_seconds = 45 (a trigger, so every
 --     place that creates them stays untouched). Games already in progress and

@@ -19,8 +19,8 @@
 --    truncated, quarantined messages are shown redacted, and every row
 --    carries its flags. Not callable from the app (service role / owner only).
 -- 5. New feedback statuses for the review flow:
---      new → reported (shown to Julian) → approved | later | rejected → done
---      quarantined (flagged; never acted on without Julian's explicit OK)
+--      new → reported (shown to Admin) → approved | later | rejected → done
+--      quarantined (flagged; never acted on without Admin's explicit OK)
 
 -- ─── 1. cleaning ────────────────────────────────────────────────────────────
 create function public.clean_player_text(p text) returns text
@@ -135,7 +135,7 @@ language sql stable security definer set search_path = public as $$
    limit greatest(1, least(p_limit, 200))
 $$;
 
--- after Julian answered: set the status of several reports at once
+-- after Admin answered: set the status of several reports at once
 create function public.feedback_set_status(p_ids bigint[], p_status text) returns int
 language plpgsql security definer set search_path = public as $$
 declare n int;

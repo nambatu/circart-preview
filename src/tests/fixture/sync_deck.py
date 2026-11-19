@@ -33,7 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from card_keys import load_keys, image_name  # noqa: E402
 
-SITE = "https://circart.langschwerts.de"     # same domain as build_deploy.py
+SITE = "https://YOUR-GAME-DOMAIN"     # same domain as build_deploy.py
 TIER_BY_LABEL = {"icon": 1, "recognisable": 2, "recognizable": 2, "obscure": 3}
 TEXT_FIELDS = ("title", "artist", "date_note", "movement", "medium", "location", "trivia")
 

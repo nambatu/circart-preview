@@ -111,7 +111,7 @@ for (let i = 0; i <= 10; i++)
   await db.query(`insert into daily_theme_cards (day, position, card_id) values ('2026-11-08', $1, $2)`, [i, "th" + i]);
 ok(await call("ben", "daily_story", null) === null, "a theme that came after the deal shows no story (cards don't match)");
 
-// a short story: start card + 4 cards (Julian: "sometimes shortness is the sweetest")
+// a short story: start card + 4 cards (Admin: "sometimes shortness is the sweetest")
 await db.exec(`insert into daily_themes (day, slug, title, intro, outro) values ('2026-11-09', 'short', 'Short', 'Quick one', 'Done')`);
 for (let i = 0; i <= 4; i++)
   await db.query(`insert into daily_theme_cards (day, position, card_id, chapter) values ('2026-11-09', $1, $2, $3)`, [i, "th" + (i + 3), "C" + i]);
@@ -132,7 +132,7 @@ ok(sum.status === "done", "after 4 cards the short daily is done");
 st = await call("ana", "daily_story", null);
 ok(st.outro === "Done" && st.chapters.length === 4, "short story: 4 chapters and the ending");
 
-// 023: a story can switch off the questions after each card (Julian, 14 Nov: one painter → no sense)
+// 023: a story can switch off the questions after each card (Admin, 14 Nov: one painter → no sense)
 await db.exec(`insert into daily_themes (day, slug, title, intro, artist_bonus, movement_bonus) values ('2026-11-10', 'one-painter', 'One', 'Hi', false, false)`);
 for (let i = 0; i <= 4; i++)
   await db.query(`insert into daily_theme_cards (day, position, card_id) values ('2026-11-10', $1, $2)`, [i, "th" + (i + 5)]);

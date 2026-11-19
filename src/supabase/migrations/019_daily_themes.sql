@@ -1,10 +1,10 @@
 -- CIRCArt 019 — story dailies: a themed daily challenge with a red thread.
 --
--- Julian (6 Nov): "a challenge with only those pieces together with a story
+-- Admin (6 Nov): "a challenge with only those pieces together with a story
 -- told along a red string". On a date with a theme, the daily deals the
 -- theme's works in a fixed order (position 0 = the start card on the
 -- timeline) instead of random cards. A story can be short or long: 3 to 30
--- cards to place (Julian: "sometimes shortness is the sweetest"). Each work has a short chapter that is
+-- cards to place (Admin: "sometimes shortness is the sweetest"). Each work has a short chapter that is
 -- shown after the player placed it; read in order, the chapters tell one
 -- story (e.g. a walk through Würzburg Cathedral). Days without a theme stay
 -- random, exactly as before.
