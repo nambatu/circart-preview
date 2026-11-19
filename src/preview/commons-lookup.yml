@@ -79,8 +79,10 @@ jobs:
           print(len(rows), "files from", len(seen), "categories")
           PY
       - name: Commit
+        env:
+          CAT: ${{ inputs.category }}
         run: |
           git config user.name "circart-bot"; git config user.email "bot@users.noreply.github.com"
           git add commons-lookup
-          git commit -m "commons lookup: ${{ inputs.category }}" || echo "nothing new"
+          git commit -m "commons lookup: $CAT" || echo "nothing new"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

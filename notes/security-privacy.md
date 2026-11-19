@@ -14,6 +14,14 @@ Distilled from the reviews of 13 Nov 2026 (server security, GDPR, plus Supabase'
 - No analytics or tracking service, no cookies, no third-party scripts or fonts; strict Content-Security-Policy in `src/app/index.html`.
 - Guest → existing account transfer only with a one-time ticket from the guest itself (026); daily and Monthly Run results never move.
 
+## Client + pipeline review (task 54, 19 Nov) — done
+- Every HTML template in `src/app/*.js` that shows server or player text goes through `esc()` (home cards, ranks, games with friends, profile, packs, gallery, onboarding). Numbers and internal class names are inserted raw, which is fine.
+- Fixed: a tapped notification could in theory open any address the payload named; `sw-push.js` now only opens pages of our own app.
+- Fixed: the `commons-lookup` workflow put its free-text input straight into a shell command (commit message); it now goes through an environment variable like the rest of that workflow.
+- Fine: workflows use minimal permissions (`contents: read` for preview-db, `write` only where they commit); no workflow runs on pull requests from forks; secrets are only used in preview-db and daily-history and never printed.
+- Fine: the build's SQL quoting doubles single quotes (standard Postgres strings), and file names come from our own JSON, not from players.
+- Not reviewed: the base game's `app.js` (Julian's repo); it only shows card data from our own deck.
+
 ## Accepted risks (Julian's decisions — don't re-propose)
 - Card years can be looked up by a determined cheater (public repo, Gallery). Not worth hiding.
 - Shared daily: two accounts can scout each other's answers. Inherent to a daily that is the same for everyone.
@@ -42,7 +50,6 @@ Always change EN and DE together, plain full sentences, informal "du".
 Planned features already known to need text: friends (who sees your username, stats and badges; friendships are deleted with the account), invitations by push (inviter's name goes through the push service, encrypted), streak reminders (separate opt-in), app stores (Google/Apple as recipients, store privacy labels, trader details shown publicly in the EU), email provider + Google login (task 25).
 
 ## Open items (see the roadmap)
-- Task 54: client + build-pipeline security review (the reviewer of 13 Nov didn't finish).
 - Task 55: bugs / performance / UX review (didn't finish either).
 - Task 56: privacy text and app gaps found in the GDPR review that need no decision from Julian.
 - Before release, Julian has to fill in his contact details and sign off the legal pages (his own checklist is kept privately).

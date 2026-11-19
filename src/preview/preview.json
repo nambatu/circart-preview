@@ -2,14 +2,12 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 21:00",
+  "label": "Thu 19 Nov, 21:30",
   "changes": [
-    "New: Gallery → Styles explains every style in two plain sentences, with famous examples from the game.",
-    "New: a small \"?\" next to the style question shows what to look for in the four styles you can pick from."
+    "Security check of the app: tapping a notification can only ever open CIRCArt itself."
   ],
   "test": [
-    "Gallery → Styles: scroll through, check the texts in English and German (Profile → language).",
-    "In a solo game or the daily, tap the \"?\" next to \"Which movement?\"."
+    "Profile → Test notification, then tap it: the app opens."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

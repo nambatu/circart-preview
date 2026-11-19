@@ -17,7 +17,8 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
     event.notification.close();
-    const url = new URL(event.notification.data && event.notification.data.url || './', self.registration.scope).href;
+    let url = new URL(event.notification.data && event.notification.data.url || './', self.registration.scope).href;
+    if (!url.startsWith(self.registration.scope)) url = self.registration.scope;   // only ever open our own app
     event.waitUntil((async () => {
         const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const w of wins) {
