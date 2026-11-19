@@ -3,7 +3,7 @@
 A map for agents new to the code. Rules are in `AGENTS.md`, the work queue in `notes/roadmap.md`.
 
 ## Two repos, one app
-- **nambatu/circart** (private game repo, never push): Julian's original offline game ("base game"). Its published `docs/` has `app.js` (solo game, timeline, gallery), `style.css`, `artline.json` (the 230-card deck) and `images/`. The tools clone it read-only into `~/circart-game`.
+- **nambatu/circart** (Julian's game repo, public; never push): Julian's original offline game ("base game"). Its published `docs/` has `app.js` (solo game, timeline, gallery), `style.css`, `artline.json` (the 230-card deck) and `images/`. The tools clone it read-only into `~/circart-game`.
 - **nambatu/circart-preview** (this repo, public): everything new — the online modes, the server, and the preview site at https://nambatu.github.io/circart-preview/.
 
 The app = base game files + the files from `src/app/` laid on top. `src/preview/build_preview.py` does that: it starts from the game repo's `docs/`, adds `src/app/*`, points `src/web/online.js` at the preview Supabase project, republishes every card image under a random year-free key (`docs/art/<key>.jpg`, keys kept in `card_keys.json`), adds packs and story dailies, writes `supabase/` (migrations + `deck.sql`, `packs.sql`, `dailies.sql`) and copies the workflow files to `.github/workflows/`. `src/tools/deploy_preview.sh` runs the build, commits source + output and pushes. For the real game, `src/ship/stage.py` + `src/ship/SHIP.md` do the same into a pull request on nambatu/circart.
