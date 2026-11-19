@@ -686,6 +686,7 @@
             ${window.CircOnboarding ? `<button id="pf-howto"><span>${esc(t('profile.howTo'))}</span><span class="value" aria-hidden="true">›</span></button>` : ''}
             <button id="pf-about"><span>${esc(t('profile.about'))}</span><span class="value" aria-hidden="true">›</span></button>
             <a id="pf-privacy" href="${window.CircI18n.lang === 'de' ? 'privacy-de.html' : 'privacy-en.html'}"><span>${esc(t('profile.privacy'))}</span><span class="value" aria-hidden="true">›</span></a>
+            <a id="pf-impressum" href="impressum.html"><span>${esc(t('profile.impressum'))}</span><span class="value" aria-hidden="true">›</span></a>
             ${u && o && o.exportMyData ? `<button id="pf-export"><span>${esc(t('profile.export'))}</span><span class="value" aria-hidden="true">⤓</span></button>` : ''}
             ${u ? `<button id="pf-signout"><span>${esc(t('profile.signOut'))}</span></button>
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
@@ -718,7 +719,8 @@
                 <button class="btn quiet" id="pf-code-send">${esc(t('profile.codeSend'))}</button></div>
             </div>
           </div>
-          <button class="btn link" id="pf-email-toggle">${esc(t('profile.email'))}</button>`;
+          <button class="btn link" id="pf-email-toggle">${esc(t('profile.email'))}</button>
+          <p class="note" style="text-align:center;margin:0">${esc(t('profile.privacyNote'))} <a href="${window.CircI18n.lang === 'de' ? 'privacy-de.html' : 'privacy-en.html'}">${esc(t('profile.privacy'))}</a></p>`;
     }
 
     function wireProfile(o) {

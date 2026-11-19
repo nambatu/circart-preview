@@ -91,7 +91,7 @@
             'about.close': 'Close',
 
             'feedback.sent': 'Thanks! Your feedback has been sent.',
-            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, your email app opens with everything filled in.',
+            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, your email app opens with everything filled in. Please don\'t put personal details in your message. How it is stored is explained in the privacy policy (Profile).',
             'feedback.flag': 'Report this card',
 
             'friends.title': 'Play with friends',
@@ -283,6 +283,8 @@
             'profile.howTo': 'How to play',
             'profile.export': 'Download my data',
             'profile.privacy': 'Privacy policy',
+            'profile.impressum': 'Imprint',
+            'profile.privacyNote': 'How your data is handled is explained here:',
             'ranks.winnersTitle': "{month}'s winners",
             'profile.badges': 'Your badges',
             'profile.badgeLine': 'Monthly Run · place {rank} · {score} pts',

@@ -87,7 +87,7 @@
         'about.close': 'Schließen',
 
         'feedback.sent': 'Danke! Dein Feedback wurde gesendet.',
-        'feedback.hint': 'Das geht direkt an das CIRCArt-Team. Klappt das Senden nicht, öffnet sich deine Mail-App mit allem schon ausgefüllt.',
+        'feedback.hint': 'Das geht direkt an das CIRCArt-Team. Klappt das Senden nicht, öffnet sich deine Mail-App mit allem schon ausgefüllt. Bitte schreib keine persönlichen Angaben in die Nachricht. Wie sie gespeichert wird, steht in der Datenschutzerklärung (Profil).',
         'feedback.flag': 'Diese Karte melden',
 
         'friends.title': 'Mit Freunden spielen',
@@ -323,6 +323,8 @@
         'profile.howTo': 'So wird gespielt',
         'profile.export': 'Meine Daten herunterladen',
         'profile.privacy': 'Datenschutz',
+        'profile.impressum': 'Impressum',
+        'profile.privacyNote': 'Wie mit deinen Daten umgegangen wird, steht hier:',
         'onb.dialogLabel': 'So spielst du CIRCArt',
         'onb.skip': 'Überspringen',
         'onb.back': 'Zurück',

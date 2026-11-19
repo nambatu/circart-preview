@@ -73,6 +73,8 @@ def main():
     for name in ("privacy-en.html", "privacy-de.html"):      # drafts until Julian fills in his details
         if (claude / "legal" / name).exists():
             shutil.copy2(claude / "legal" / name, docs / name)
+    if (claude / "legal" / "impressum-template.html").exists():   # Impressum (draft until Julian fills it in)
+        shutil.copy2(claude / "legal" / "impressum-template.html", docs / "impressum.html")
     if (claude / "app" / "vendor").is_dir():              # self-hosted fonts + libraries
         shutil.copytree(claude / "app" / "vendor", docs / "vendor", dirs_exist_ok=True)
     for name in OPTIONAL_WWW:

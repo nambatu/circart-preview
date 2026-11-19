@@ -97,6 +97,7 @@ STATIC_FILES = [
     "packs.js",
     "privacy-en.html",
     "privacy-de.html",
+    "impressum.html",
 ]
 
 # Copied wholesale (app icons).

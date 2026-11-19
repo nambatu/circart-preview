@@ -83,6 +83,8 @@ def main():
         shutil.copytree(be / "app" / "vendor", game / "www" / "vendor", dirs_exist_ok=True)
     for f in sorted((be / "legal").glob("privacy-*.html")):   # privacy policy, linked from Profile
         shutil.copy2(f, game / "www" / f.name)
+    if (be / "legal" / "impressum-template.html").exists():  # Impressum, linked from Profile and the privacy pages
+        shutil.copy2(be / "legal" / "impressum-template.html", game / "www" / "impressum.html")
     if (be / "packs").is_dir():                       # card packs (images load from Wikimedia in prod for now)
         (game / "www" / "packs").mkdir(parents=True, exist_ok=True)
         for f in sorted((be / "packs").glob("*.json")):

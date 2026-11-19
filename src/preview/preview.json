@@ -2,12 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 21:30",
+  "label": "Thu 19 Nov, 22:00",
   "changes": [
-    "Security check of the app: tapping a notification can only ever open CIRCArt itself."
+    "Privacy page updated in English and German: what stays on your device, the sign-in code, moving guest games into your account, and what happens when you delete your account.",
+    "New: Impressum in the profile (still with placeholders until Julian fills in his details), and a privacy link under the sign-in buttons."
   ],
   "test": [
-    "Profile → Test notification, then tap it: the app opens."
+    "Profile → Privacy policy and Profile → Impressum both open.",
+    "Signed out, open Profile: under the sign-in buttons there is a privacy link."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
