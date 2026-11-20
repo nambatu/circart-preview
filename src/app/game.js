@@ -304,7 +304,6 @@
     }
 
     // the test site (circart-preview) loads preview.js; the real game doesn't
-    const isPreview = () => !!document.querySelector('script[src="preview.js"]') && !!O().previewResetDaily;
 
     // ─── feedback you can feel: a colour flash, a mark, a short buzz ──────
     // Android buzzes; iPhone browsers don't allow vibration, so it's visual there.
@@ -622,7 +621,6 @@
           <h2 class="label">${esc(t('game.yourTimeline'))}</h2>
           ${timeline(false)}
           <p class="note" style="text-align:center">${esc(t('game.dailyTomorrow'))}</p>
-          ${isPreview() ? `<button class="btn quiet block" data-act="replayDaily">${esc(t('game.replayTest'))}</button>` : ''}
           <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
     }
@@ -892,11 +890,6 @@
             if (a === 'shareRun') {
                 const st = G.st, month = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' });
                 return shareText(t('run.share', { month, score: st.me.score.toLocaleString(), n: st.me.answered }) + '\n' + squares());
-            }
-            if (a === 'replayDaily') {
-                await O().previewResetDaily();
-                const g = await O().playDaily();
-                return open(g.id, { challengeNo: g.challenge_no });
             }
             if (a === 'shareGame') {
                 const st = G.st, rank = st.players.findIndex(p => p.is_me) + 1;
