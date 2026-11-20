@@ -261,3 +261,4 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 - 2026-11-20 · manual session (Admin asked) · 40 more badges (028 my_achievements + profile list EN/DE) · server tests + e2e green (no screenshot of the new rows) · deployed yes · next: 45a streak (needs Admin's go), rest of 40
 - 2026-11-20 · manual session (Admin asked) · feedback #2 (This Is Fine text), #3 (style images zoom; Gallery never unlocked from online games: my_collection returned random card ids instead of deck ids, fixed in 029) · all green · deployed yes · next: 45a streak, rest of 40
 - 2026-11-20 · manual session · removed the daily 'play again (test)' button · all green · deployed yes · next: 45a streak, rest of 40
+- 2026-11-20 · manual session (Admin asked) · result screen: no verdict before lock-in, no redraw while picking, pun headlines for all/most/some/none right, year box with your guess vs right spot · all green · deployed yes · next: Admin's feedback on the look
