@@ -259,3 +259,4 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 - 2026-11-20 · manual session (Gemini) · 57 unify Solo & Pack play onto shared game screen, retire old solo wrappers, rebuild docs/ · tests green · deployed yes · next: 40 (badges: show Admin the list first)
 - 2026-11-20 · manual session (Admin asked) · 40 more badges (028 my_achievements + profile list EN/DE) · server tests + e2e green (no screenshot of the new rows) · deployed yes · next: 45a streak (needs Admin's go), rest of 40
 - 2026-11-20 · manual session (Admin asked) · feedback #2 (This Is Fine text), #3 (style images zoom; Gallery never unlocked from online games: my_collection returned random card ids instead of deck ids, fixed in 029) · all green · deployed yes · next: 45a streak, rest of 40
+- 2026-11-20 · manual session · removed the daily 'play again (test)' button · all green · deployed yes · next: 45a streak, rest of 40
