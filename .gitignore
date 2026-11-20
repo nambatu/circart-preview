@@ -2,3 +2,9 @@ __pycache__/
 node_modules/
 *.pyc
 .stories-tmp/
+.env
+.env.*
+prod.json
+deploy_config.json
+*.pem
+*.key
