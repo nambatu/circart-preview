@@ -237,10 +237,46 @@ try {
   for (let k = 0; k < 10; k++) {
     await waitText(cleo, 'Tap where it belongs');
     if (k === 0) await shot(cleo, '11-daily-card');
+    if (k === 9) {
+      const pinCheck = await cleo.evaluate(() => {
+        const body = document.getElementById('go-body');
+        const art = document.querySelector('.go-sticky .go-art');
+        if (!body || !art) return null;
+        const before = art.getBoundingClientRect();
+        body.scrollTop = body.scrollHeight;
+        const after = art.getBoundingClientRect();
+        return {
+          scrolled: body.scrollTop,
+          horizOverflow: body.scrollWidth > body.clientWidth,
+          beforeTop: before.top,
+          afterTop: after.top,
+          afterBottom: after.bottom,
+          vh: window.innerHeight,
+        };
+      });
+      ok(!!pinCheck && pinCheck.scrolled > 80 && !pinCheck.horizOverflow
+         && Math.abs(pinCheck.afterTop - pinCheck.beforeTop) <= 1
+         && pinCheck.afterBottom <= pinCheck.vh,
+         `daily card 10: artwork stays pinned while scrolled (${pinCheck?.scrolled}px, diff=${Math.abs((pinCheck?.afterTop||0)-(pinCheck?.beforeTop||0)).toFixed(1)}px)`);
+      await shot(cleo, '11c-daily-scrolled-light');
+      await cleo.evaluate(() => { document.getElementById('go-body').scrollTop = 0; });
+    }
     const pos = await run(async () => (await db.query(`select max(position)::int p from answers where game_id=$1 and player_id=$2`, [gid3, users.cleo])).rows[0].p);
     const r = await right(gid3, pos);
     await cleo.click(`[data-gap="${k % 3 === 2 ? (r.slot === 0 ? r.n : 0) : r.slot}"]`);
     await waitText(cleo, 'Who made it?');
+    if (k === 9) {
+      const bonusPin = await cleo.evaluate(() => {
+        const body = document.getElementById('go-body');
+        const img = document.querySelector('.go-sticky .go-bonus-art');
+        if (!body || !img) return null;
+        body.scrollTop = body.scrollHeight;
+        const rect = img.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, w: rect.width, h: rect.height, vh: window.innerHeight };
+      });
+      ok(!!bonusPin && bonusPin.w > 0 && bonusPin.h > 0 && bonusPin.top >= 0 && bonusPin.bottom <= bonusPin.vh,
+         "daily bonus picker: artwork stays visible inside viewport when scrolled");
+    }
     await cleo.click('[data-act="skip"]');
     await waitText(cleo, k === 9 ? 'See results' : 'Next');
     if (k === 0) {
@@ -427,6 +463,30 @@ try {
           await p.waitForSelector('#report-modal', { state: 'hidden' });
         }
         if (shotsPrefix) await shot(p, `solo-play-${shotsPrefix}`);
+      }
+      if (shotsPrefix === 'dark' && pos === rounds) {
+        const darkPin = await p.evaluate(() => {
+          const body = document.getElementById('go-body');
+          const art = document.querySelector('.go-sticky .go-art');
+          if (!body || !art) return null;
+          const before = art.getBoundingClientRect();
+          body.scrollTop = body.scrollHeight;
+          const after = art.getBoundingClientRect();
+          return {
+            scrolled: body.scrollTop,
+            horizOverflow: body.scrollWidth > body.clientWidth,
+            beforeTop: before.top,
+            afterTop: after.top,
+            afterBottom: after.bottom,
+            vh: window.innerHeight,
+          };
+        });
+        ok(!!darkPin && darkPin.scrolled > 40 && !darkPin.horizOverflow
+           && Math.abs(darkPin.afterTop - darkPin.beforeTop) <= 1
+           && darkPin.afterBottom <= darkPin.vh,
+           `offline solo dark card ${pos}: artwork stays pinned while scrolled (${darkPin?.scrolled}px)`);
+        await shot(p, 'solo-scrolled-dark');
+        await p.evaluate(() => { document.getElementById('go-body').scrollTop = 0; });
       }
 
       if (pos === 2 && verifyTimelineGrowth && played[0]?.correct) {

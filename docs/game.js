@@ -436,10 +436,25 @@
         const shown = G.answer && !G.picked && G.answer.scoreBefore != null ? G.answer.scoreBefore : st.me.score;   // no hint before lock-in
         $('go-score').textContent = (st.phase === 'lobby' || ((st.kind === 'solo' || st.kind === 'price') && st.phase === 'finished')) ? '' : t('game.points', { n: shown.toLocaleString() });
         const body = $('go-body');
+        const stepKey = [
+            st.kind,
+            st.phase,
+            st.current_turn,
+            G.card ? G.card.position : '',
+            G.answer ? (G.picked ? 'picked' : 'pick') : '',
+            G.revFor || '',
+            G.price ? G.price.round : '',
+            G.priceRev ? 'prev' : '',
+        ].join(':');
+        const resetScroll = G._stepKey !== stepKey;
+        const prevScroll = body.scrollTop;
         if (st.kind === 'price') {
             delete body.dataset.pickFor;
+            G._stepKey = stepKey;
             body.innerHTML = st.phase === 'finished' ? viewPriceDone() : G.priceRev ? viewPriceReveal() : viewPricePlay();
-            return wire();
+            wire();
+            body.scrollTop = resetScroll ? 0 : prevScroll;
+            return;
         }
         if (G.answer) {
             // while picking, polls and live updates must not rebuild the picker (it flickered on every update)
@@ -451,17 +466,22 @@
                 if (lp) lp.innerHTML = livePlayersInner(false);
                 return;
             }
+            G._stepKey = stepKey;
             body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult();
             if (G.picked) delete body.dataset.pickFor; else body.dataset.pickFor = key;
-            return wire();
+            wire();
+            body.scrollTop = resetScroll ? 0 : prevScroll;
+            return;
         }
         delete body.dataset.pickFor;
+        G._stepKey = stepKey;
         const view = {
             lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
             finished: () => (st.kind === 'solo' ? viewSoloDone() : st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
         }[st.phase] || (() => '');
         body.innerHTML = view();
         wire();
+        body.scrollTop = resetScroll ? 0 : prevScroll;
     }
 
     const note = msg => `<div class="page"><p class="muted">${esc(msg)}</p>
@@ -602,6 +622,12 @@
         </div>`;
     }
 
+    function stickyArt(src, title, extraImgCls) {
+        const cls = ['zoomable-img', extraImgCls].filter(Boolean).join(' ');
+        if (src) return `<div class="go-art"><img class="${cls}" src="${esc(src)}" alt="${esc(t('game.artAlt'))}"></div>`;
+        return `<div class="go-art"><div class="go-typo serif">${esc(title || '?')}</div></div>`;
+    }
+
     function viewPlay() {
         const c = G.card;
         if (!c && G.st.kind !== 'live') return viewReady();
@@ -609,13 +635,13 @@
         const total = G.st.card_count;
         return `<div class="page">
           <div class="go-sticky">
-          <div class="row" style="justify-content:space-between">
-            <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
-            ${timed() ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>` : ''}
+            <div class="row" style="justify-content:space-between">
+              <span><b>${esc(G.st.kind === 'run' ? '#' + c.position : t('game.card', { n: c.position, total }))}</b>${G.st.kind === 'run' ? ' ' + hearts(G.st) : ''}</span>
+              ${timed() ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.ceil(left(c.ends_at) / 1000)}</span>s</span>` : ''}
+            </div>
+            ${timed() ? `<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${c.seconds && c.ends_at ? Math.max(0, Math.min(100, 100 * left(c.ends_at) / (c.seconds * 1000))) : 100}%"></div></div>` : ''}
+            ${stickyArt(c.image_url, c.title)}
           </div>
-          ${timed() ? `<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${c.seconds && c.ends_at ? Math.max(0, Math.min(100, 100 * left(c.ends_at) / (c.seconds * 1000))) : 100}%"></div></div>` : ''}
-          </div>
-          <div class="go-art">${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(t('game.artAlt'))}">` : `<div class="go-typo serif">${esc(c.title || '?')}</div>`}</div>
           <div class="row" style="justify-content:space-between"><b>${esc(t('game.tap'))}</b>
             ${G.st.kind === 'live' ? `<span class="note">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}</span>` : ''}</div>
           ${timeline(true)}
@@ -689,20 +715,26 @@
         return !!r && (!opts(r, 'artist') || !!G.sel.artist) && (!opts(r, 'movement') || !!G.sel.movement);
     }
 
+    function bonusSticky(leadHtml) {
+        const ends = G.answer && !G.picked && G.answer.bonusEnds && G.st.kind !== 'live';
+        const total = (G.answer && G.answer.bonusTotal) || 19000;
+        const hasArt = !!(G.card && (G.card.image_url || G.card.title));
+        const pct = ends ? Math.max(0, Math.min(100, 100 * (G.answer.bonusEnds - O().serverNow()) / total)) : 0;
+        const secs = ends ? Math.max(0, Math.ceil((G.answer.bonusEnds - O().serverNow()) / 1000)) : 0;
+        return `<div class="go-sticky">
+          ${leadHtml || ends ? `<div class="row" style="justify-content:space-between">${leadHtml || '<span></span>'}${ends ? `<span class="go-timer" aria-live="off"><span data-countdown>${secs}</span>s</span>` : ''}</div>` : ''}
+          ${ends ? `<div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${pct}%"></div></div>` : ''}
+          ${hasArt ? stickyArt(G.card.image_url, G.card.title, 'go-bonus-art') : ''}
+        </div>`;
+    }
+
     function artistPicker() {
         const r = G.answer.res, a = opts(r, 'artist'), m = opts(r, 'movement');
         if (!a && !m) return '';
         if (G.picked && !G.sel.artist && !G.sel.movement) return '';
         const res = G.bonusRes;
         const solo = G.st.kind === 'solo';
-        const showArt = !G.picked && G.card && G.card.image_url;   // look at the painting again while you decide
-        const ends = !G.picked && G.answer.bonusEnds && G.st.kind !== 'live';
-        const total = G.answer.bonusTotal || 19000;
         return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:14px">
-          ${ends ? `<div class="go-sticky"><div class="go-barbox" aria-hidden="true"><div id="go-bar" class="go-bar" style="width:${Math.max(0, Math.min(100, 100 * (G.answer.bonusEnds - O().serverNow()) / total))}%"></div></div></div>` : ''}
-          ${showArt || ends ? `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">
-              ${showArt ? `<img class="go-bonus-art zoomable-img" src="${esc(G.card.image_url)}" alt="${esc(t('game.artAlt'))}">` : '<span></span>'}
-              ${ends ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.max(0, Math.ceil((G.answer.bonusEnds - O().serverNow()) / 1000))}</span>s</span>` : ''}</div>` : ''}
           ${res && res.closed ? `<p class="note">${esc(t('game.bonusClosed'))}</p>` : ''}
           ${a ? bonusRow('artist', t('game.whoPainted'), solo ? 1 : 200, a) : ''}
           ${m ? bonusRow('movement', t('game.whichMovement'), solo ? 1 : 100, m) : ''}
@@ -714,8 +746,8 @@
     function liveWaitingArt(ld) {
         const src = (G.card && G.card.image_url) || (ld && ld.card && ld.card.image_url) || (ld && ld.image_url) || '';
         const title = (G.card && G.card.title) || (ld && ld.card && ld.card.title) || '';
-        if (src) return `<div class="lw-art"><img class="zoomable-img" src="${esc(src)}" alt="${esc(t('game.artAlt'))}"></div>`;
-        if (title) return `<div class="lw-art"><div class="go-typo serif">${esc(title)}</div></div>`;
+        if (src) return `<div class="go-art lw-art"><img class="zoomable-img" src="${esc(src)}" alt="${esc(t('game.artAlt'))}"></div>`;
+        if (title) return `<div class="go-art lw-art"><div class="go-typo serif">${esc(title)}</div></div>`;
         return '';
     }
 
@@ -895,12 +927,16 @@
         const picked = !!(G.picked || timedOut || (!a && G.st.phase === 'waiting' && G.liveData && G.liveData.me_locked !== false));
         const ld = picked ? G.liveData : null;
         const deadline = G.st.turn_deadline;
+        const art = picked ? liveWaitingArt(ld) : (G.card && (G.card.image_url || G.card.title) ? stickyArt(G.card.image_url, G.card.title, 'go-bonus-art') : '');
         return `<div class="page">
-          <h2 class="serif" style="font-size:26px">${esc(timedOut ? t('game.tooSlow') : t('game.locked'))}</h2>
+          <div class="go-sticky">
+            <div class="row" style="justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+              <h2 class="serif" style="font-size:24px">${esc(timedOut ? t('game.tooSlow') : t('game.locked'))}</h2>
+              <p class="muted" style="font-size:13px"><span id="go-answered">${esc(answeredLine())}</span>${timed() && deadline ? ` · <span data-countdown>${Math.max(0, Math.ceil(left(deadline) / 1000))}</span>s` : ''}</p>
+            </div>
+            ${art}
+          </div>
           ${!picked && a && !timedOut ? artistPicker() : ''}
-          ${picked ? liveWaitingArt(ld) : ''}
-          <p class="muted"><span id="go-answered">${esc(answeredLine())}</span>
-            ${timed() && deadline ? `· <span data-countdown>${Math.max(0, Math.ceil(left(deadline) / 1000))}</span>s` : ''}</p>
           ${livePlayersBlock(picked)}
           ${picked ? crowdHeatBlock(ld, picked) : ''}
           ${picked ? lookCloserBlock(ld, picked) : ''}
@@ -916,7 +952,7 @@
         if (!G.picked) {
             // still choosing: no verdict, no points, no flash until lock-in
             return `<div class="page">
-              <p class="muted">${esc(t('game.placedWait'))}</p>
+              ${bonusSticky(`<span class="muted">${esc(t('game.placedWait'))}</span>`)}
               ${artistPicker()}
             </div>`;
         }
