@@ -103,7 +103,7 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
     - one line with a link to the privacy page under the sign-in buttons and under the feedback form ("How we handle your data: privacy policy").
     - make sure `impressum.html` is built from `src/legal/impressum-template.html` and linked in the profile next to the privacy page (Admin fills in details at release).
     - ⏳ **56b, Admin decides:** delete email accounts after 24 months without use (today only guests expire)? Mention in the privacy text that feedback is read with an AI assistant (Claude, Anthropic, USA)?
-40. [ ] **More badges** (Admin, 10 Nov: "monthly challenge winner, bug reporter etc. Think of new ones yourself, with art puns"). Today only `badges()` from 010 (top 3 of a finished month). Show Admin the list first, then build. Each badge: name EN + DE, one line on how to earn it, at most one pun per badge. Ideas to propose:
+40. [ ] 🔧 claude 2026-11-20 **More badges** (Admin, 10 Nov: "monthly challenge winner, bug reporter etc. Think of new ones yourself, with art puns"). Today only `badges()` from 010 (top 3 of a finished month). Show Admin the list first, then build. Each badge: name EN + DE, one line on how to earn it, at most one pun per badge. Ideas to propose:
     - *Monthly Run winner / podium* — "Old Master of the Month" / "Alter Meister des Monats".
     - *Bug reporter* (feedback Admin marked as a real bug, set by hand) — "Restorer" / "Restaurator*in": you found a crack in the varnish.
     - *Daily streak* 7 / 30 / 100 days — "Daily Brushstroke", "Fresco Habit" (it sets every day).
