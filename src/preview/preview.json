@@ -2,14 +2,15 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 20 Nov, 18:55",
+  "label": "Fri 20 Nov, 19:40",
   "changes": [
-    "Four new badges on your Profile: Daily Brushstroke (7/30/100 days in a row), Masterpiece (all cards right in a daily), Signature Spotter (100 artists named) and Photo Finish (won a game with friends by under 100 points).",
-    "Badges are worked out by the server from your games, so nobody can give themselves one."
+    "Gallery: cards you play in the daily, the monthly run and games with friends now unlock (before, only solo cards did).",
+    "The example pictures in \"How to spot a style\" open full screen when you tap them.",
+    "\"This Is Fine\": the description now says the picture shows the whole six-panel strip."
   ],
   "test": [
-    "Open Profile after some played games and look for the new badges next to the monthly medals (they appear only once earned).",
-    "Check the badge names and lines in German too."
+    "Play a daily card, then open Gallery and look for that painting in full colour.",
+    "Gallery → Styles: tap an example picture and zoom in."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

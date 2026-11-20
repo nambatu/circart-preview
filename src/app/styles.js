@@ -107,7 +107,7 @@
             return `<section class="panel st-card" id="st-${esc(g.replace(/\W+/g, '-'))}">
               <h3 class="serif">${esc(g)}</h3>
               <p>${esc(look(g))}</p>
-              ${ex.length ? `<div class="st-ex">${ex.map(c => `<figure><img loading="lazy" src="${esc(img(c))}" alt="${esc(c.title)}"><figcaption>${esc(c.title)}</figcaption></figure>`).join('')}</div>` : ''}
+              ${ex.length ? `<div class="st-ex">${ex.map(c => `<figure><img class="zoomable-img" loading="lazy" src="${esc(img(c))}" alt="${esc(c.title)}"><figcaption>${esc(c.title)}</figcaption></figure>`).join('')}</div>` : ''}
             </section>`;
         }).join('');
     }

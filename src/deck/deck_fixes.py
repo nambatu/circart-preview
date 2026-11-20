@@ -27,6 +27,19 @@ STYLE_NONE = [
     "1948-andrew-wyeth-christina-s-world",
 ]
 
+# Wrong or unclear descriptions reported by players and checked (20 Nov 2026).
+# "This Is Fine": the card image shows the whole six-panel strip, the old text talked about two panels.
+TRIVIA_FIX = {
+    "2013-kc-green-this-is-fine": (
+        "The strip has six panels: a dog in a hat sits in a burning room with a coffee cup and says "
+        "everything is fine. The meme usually shows only the first two, and what it cuts off is the rest "
+        "of the strip, in which the dog's face melts and it dies. Green has been openly uneasy about the "
+        "crop, partly because the ending is the point and partly because the image gets used by exactly "
+        "the institutions it satirises, including a US political party account during the 2016 election, "
+        "which prompted him to say publicly that they should stop. He later drew a sequel in which the dog "
+        "gets up and puts the fire out. Nobody shares that one."),
+}
+
 def apply(cards, fix_text=lambda s: s):
     """Returns how many cards were changed. Also repairs broken characters in names (AbramoviÄ‡)."""
     n = 0
@@ -34,6 +47,8 @@ def apply(cards, fix_text=lambda s: s):
         if c.get("id") in STYLE_NONE and c.get("movement"):
             c["movement"] = None
             n += 1
+        if c.get("id") in TRIVIA_FIX:
+            c["trivia"] = TRIVIA_FIX[c["id"]]
         for f in ("artist", "title"):
             if isinstance(c.get(f), str):
                 c[f] = fix_text(c[f])
