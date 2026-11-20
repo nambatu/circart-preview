@@ -999,5 +999,88 @@
             }
         ],
         "story": "hammer-2"
+    },
+    {
+        "date": "2026-11-19",
+        "cards": [
+            {
+                "id": "rhqx4jazmu",
+                "year": 1922,
+                "title": "Senecio",
+                "artist": "Paul Klee",
+                "position": 0
+            },
+            {
+                "id": "ct2j5yvjmb",
+                "year": 1658,
+                "title": "The Courtyard of a House in Delft",
+                "artist": "Pieter de Hooch",
+                "position": 1
+            },
+            {
+                "id": "4qaunsqcfc",
+                "year": 1905,
+                "title": "Woman with a Hat",
+                "artist": "Henri Matisse",
+                "position": 2
+            },
+            {
+                "id": "bgz4weuw6k",
+                "year": 1515,
+                "title": "The Isenheim Altarpiece",
+                "artist": "Matthias Grünewald",
+                "position": 3
+            },
+            {
+                "id": "cym6phuq3t",
+                "year": 1930,
+                "title": "Ecce Homo, Borja",
+                "artist": "Elias Garcia Martinez",
+                "position": 4
+            },
+            {
+                "id": "wb9sbec2k7",
+                "year": 1950,
+                "title": "Autumn Rhythm (Number 30)",
+                "artist": "Jackson Pollock",
+                "position": 5
+            },
+            {
+                "id": "g98bb4z5ze",
+                "year": 1849,
+                "title": "The Stone Breakers",
+                "artist": "Gustave Courbet",
+                "position": 6
+            },
+            {
+                "id": "vbmxq69nq9",
+                "year": 1728,
+                "title": "The Ray",
+                "artist": "Jean-Siméon Chardin",
+                "position": 7
+            },
+            {
+                "id": "hygyp8w3q2",
+                "year": 1512,
+                "title": "The Creation of Adam",
+                "artist": "Michelangelo",
+                "position": 8
+            },
+            {
+                "id": "b4bggrx4hw",
+                "year": 1876,
+                "title": "Bal du moulin de la Galette",
+                "artist": "Pierre-Auguste Renoir",
+                "position": 9
+            },
+            {
+                "id": "utdw4tp4dq",
+                "year": 1819,
+                "title": "The Raft of the Medusa",
+                "artist": "Théodore Géricault",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
