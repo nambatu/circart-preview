@@ -2,11 +2,12 @@
 // The style groups the style question uses (same as migration 007 + 027), a
 // short plain description of each in EN and DE, and the guide shown in
 // Gallery → Styles and from the "?" next to the style question.
-// solo.js reads GROUPS from here, so there is one list for the whole app.
+// dealer.js reads GROUPS from here, so there is one list for the whole app.
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = s => (window.CircI18n && window.CircI18n.esc) ? window.CircI18n.esc(s)
+        : String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const t = (k, v) => (window.CircI18n ? window.CircI18n.t(k, v) : k);
     const de = () => window.CircI18n && window.CircI18n.lang === 'de';
 
@@ -98,8 +99,9 @@
     let deckP = null;
     async function renderGuide(box) {
         if (!box) return;
-        deckP = deckP || fetch('artline.json').then(r => r.json()).catch(() => []);
-        const deck = await deckP;
+        const deck = (window.CircShell && window.CircShell.loadDeck)
+            ? await window.CircShell.loadDeck()
+            : await (deckP = deckP || fetch('artline.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => []));
         box.innerHTML = `<p class="note st-intro">${esc(t('styles.intro'))}</p>` + ordered().map(g => {
             const ex = examples(deck, g);
             return `<section class="panel st-card" id="st-${esc(g.replace(/\W+/g, '-'))}">

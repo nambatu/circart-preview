@@ -1,12 +1,14 @@
-// CIRCArt — lasting list of the cards this device has met and placed right.
-// Julian's original solo game only remembers cards for 6 hours; the Gallery
-// needs a list that stays (and also works offline / without an account).
-// Solo rounds are caught by wrapping the game's own track() call. Online games
-// are already stored on the server (my_collection), merged in by merged().
-// Load after app.js. Only card ids are stored, nothing else.
+// CIRCArt — lasting list of the cards this device has met and placed right,
+// plus direct rendering of the Gallery works grid.
+// Only card ids are stored locally, nothing else.
 (function () {
     'use strict';
+
     const KEY = 'circart-collection';
+    const tr = (k, v) => (window.CircI18n ? window.CircI18n.t(k, v) : k);
+    const esc = s => (window.CircI18n && window.CircI18n.esc)
+        ? window.CircI18n.esc(s)
+        : String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     function read() {
         try {
@@ -26,10 +28,11 @@
         } catch (e) { /* storage unavailable: the game plays fine without it */ }
     }
 
-    // local list only, as Sets
-    function local() { const d = read(); return { seen: new Set(d.seen), correct: new Set(d.correct) }; }
+    function local() {
+        const d = read();
+        return { seen: new Set(d.seen), correct: new Set(d.correct) };
+    }
 
-    // local list + the server's list (when there is one); never throws
     async function merged() {
         const out = local();
         try {
@@ -44,79 +47,60 @@
         return out;
     }
 
-    window.CircCollection = { record, local, merged };
+    let renderSeq = 0;
 
-    // ─── Gallery look: cards you haven't met are grey and blurred, placed-right ones get a gold mark ───
-    const tr = (k, v) => (window.CircI18n ? window.CircI18n.t(k, v) : k);
-    let deckIds = null, busy = false;
-
-    async function deckOrder() {
-        if (deckIds) return deckIds;
-        const res = await fetch('artline.json', { cache: 'no-cache' });
-        const data = await res.json();
-        data.sort((a, b) => (a.year || 0) - (b.year || 0));      // same order and filter as app.js's gallery
-        deckIds = data.filter(i => (i.image_local || i.image || '')).map(i => i.id);
-        return deckIds;
-    }
-
-    async function decorate() {
-        const grid = document.getElementById('gallery-grid');
-        if (!grid || busy) return;
-        const cards = [...grid.querySelectorAll(':scope > .gallery-card')];
-        if (!cards.length || cards[0].dataset.cid) return;
-        busy = true;
+    async function renderGallery(gridEl) {
+        if (!gridEl) return;
+        const seq = ++renderSeq;
+        gridEl.innerHTML = `<p class="muted" style="padding:1rem;text-align:center">${esc(tr('gallery.loading'))}</p>`;
         try {
-            const [ids, col] = await Promise.all([deckOrder(), merged()]);
-            if (cards.length !== ids.length || cards[0].dataset.cid) return;
-            let found = 0;
-            cards.forEach((el, i) => {
-                const id = ids[i];
-                el.dataset.cid = id;
-                if (col.seen.has(id)) {
-                    found++;
-                    if (col.correct.has(id)) {
-                        el.classList.add('mastered');
-                        const m = document.createElement('span');
-                        m.className = 'gc-gold'; m.textContent = '★'; m.title = tr('gallery.mastered');
-                        el.appendChild(m);
-                    }
-                } else {
-                    el.classList.add('undiscovered');
-                    el.setAttribute('aria-label', tr('gallery.undiscovered'));
-                    const img = el.querySelector('img');
-                    if (img) { img.classList.remove('zoomable-img'); img.alt = ''; }
-                    const d = el.querySelector('.gallery-details');
-                    if (d) d.innerHTML = '<h3>?</h3>';
-                }
-            });
-            let bar = document.getElementById('gallery-count');
-            if (!bar) {
-                bar = document.createElement('p');
-                bar.id = 'gallery-count'; bar.className = 'note gallery-count';
-                grid.parentNode.insertBefore(bar, grid);
+            const [deck, col] = await Promise.all([window.CircShell.loadDeck(), merged()]);
+            if (seq !== renderSeq) return;
+            const list = (deck || [])
+                .filter(c => c && (c.image_local || c.image))
+                .slice()
+                .sort((a, b) => (a.year || 0) - (b.year || 0));
+            if (!list.length) {
+                gridEl.innerHTML = `<p class="muted" style="padding:1rem;text-align:center">${esc(tr('gallery.failed'))}</p>`;
+                return;
             }
-            bar.textContent = tr('gallery.count', { n: found, total: ids.length });
-        } catch (e) { /* gallery stays as app.js drew it */ }
-        finally { busy = false; }
-    }
 
-    function watchGallery() {
-        const grid = document.getElementById('gallery-grid');
-        if (!grid) return;
-        new MutationObserver(decorate).observe(grid, { childList: true });
-    }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchGallery); else watchGallery();
-
-    // solo rounds: app.js calls track('round-correct' | 'round-wrong') once the card is placed
-    if (typeof track === 'function') {
-        const orig = track;
-        window.track = function (name) {
-            try {
-                if ((name === 'round-correct' || name === 'round-wrong') && typeof currentCard !== 'undefined' && currentCard) {
-                    record(currentCard.id, name === 'round-correct');
+            let found = 0;
+            const cardsHtml = list.map(c => {
+                const imgSrc = String(c.image_local || c.image || '').replace(/\\/g, '/');
+                const seen = col.seen.has(c.id);
+                if (seen) {
+                    found++;
+                    const mastered = col.correct.has(c.id);
+                    return `<div class="gallery-card${mastered ? ' mastered' : ''}" data-cid="${esc(c.id)}">`
+                        + `<img src="${esc(imgSrc)}" class="zoomable-img" alt="${esc(c.title)}" loading="lazy">`
+                        + `<div class="gallery-details"><h3>${esc(c.title)}</h3><p>${esc(c.artist)}</p><p class="year">${esc(c.year)}</p></div>`
+                        + `${mastered ? `<span class="gc-gold" title="${esc(tr('gallery.mastered'))}">★</span>` : ''}`
+                        + `</div>`;
                 }
-            } catch (e) { /* never break gameplay */ }
-            return orig.apply(this, arguments);
-        };
+                return `<div class="gallery-card undiscovered" data-cid="${esc(c.id)}" aria-label="${esc(tr('gallery.undiscovered'))}">`
+                    + `<img src="${esc(imgSrc)}" alt="" loading="lazy">`
+                    + `<div class="gallery-details"><h3>?</h3></div>`
+                    + `</div>`;
+            }).join('');
+
+            let bar = document.getElementById('gallery-count');
+            if (!bar && gridEl.parentNode) {
+                bar = document.createElement('p');
+                bar.id = 'gallery-count';
+                bar.className = 'note gallery-count';
+                gridEl.parentNode.insertBefore(bar, gridEl);
+            }
+            if (bar) {
+                bar.textContent = tr('gallery.count', { n: found, total: list.length });
+                bar.classList.toggle('hidden', gridEl.classList.contains('hidden'));
+            }
+            gridEl.innerHTML = cardsHtml;
+        } catch (e) {
+            if (seq !== renderSeq) return;
+            gridEl.innerHTML = `<p class="muted" style="padding:1rem;text-align:center">${esc(tr('gallery.failed'))}</p>`;
+        }
     }
+
+    window.CircCollection = { record, local, merged, renderGallery };
 })();

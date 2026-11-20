@@ -72,7 +72,7 @@ for (let i = 0; i <= 10; i++)
 // today has no theme: random as before, no story
 const g0 = await call("ana", "play_daily", null);
 ok(await call("ana", "daily_story", null) === null, "a day without a theme has no story");
-const dealt0 = (await db.query(`select count(*)::int n from game_cards where game_id = $1 and card_id like 'th%'`, [g0.id])).rows[0].n;
+const dealt0 = (await db.query(`select count(*)::int n from game_cards where game_id = $1 and card_id ~ '^th[0-9]+$'`, [g0.id])).rows[0].n;
 ok(dealt0 === 0, "random dailies never deal theme cards");
 ok(await call("ana", "daily_story", "2026-11-07") === null, "no peeking at tomorrow's story");
 

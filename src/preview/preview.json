@@ -2,13 +2,15 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 19 Nov, 22:30",
+  "label": "Fri 20 Nov, 01:44",
   "changes": [
-    "Games with friends catch up at once when you come back to the app, and no longer ask the server for updates while the app is in the background.",
-    "Profile buttons ignore a second quick tap, so you don't get two sign-in emails."
+    "Solo play and Card Packs now run on the same game screen and round flow as Daily and Games with Friends.",
+    "For each card you place the artwork on the timeline first, then lock in your artist and style choices before seeing the year and story.",
+    "Wrong cards still stay off your timeline in Solo, and your score counts 1 point per right answer with coloured squares and your full timeline at the end."
   ],
   "test": [
-    "In a game with friends, switch to another app for a minute and come back: the game is up to date straight away."
+    "Start a 5-card Solo game and place one card wrong to make sure it stays off your timeline, then change your mind on an artist or style before locking in.",
+    "Open an unlocked pack in Gallery and play a round to check that it uses the same game screen cleanly in both light and dark mode."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

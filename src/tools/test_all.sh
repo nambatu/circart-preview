@@ -19,23 +19,26 @@ cd "$WORK"
 for t in "$BE"/tests/*.test.mjs; do
   name=$(basename "$t" .test.mjs)
   cp "$t" "$WORK/"
-  if [ "$name" = foundation ]; then args="$MIG/001_foundation.sql $DECK"; else args="$MIG $DECK"; fi
-  res=$(timeout 300 node "$WORK/$(basename "$t")" $args 2>&1 | grep -E "✗|all checks passed|FAILED|Error" | head -5 | tr '\n' ' ')
+  if [ "$name" = foundation ]; then args=("$MIG/001_foundation.sql" "$DECK"); else args=("$MIG" "$DECK"); fi
+  res=$(timeout 300 node "$WORK/$(basename "$t")" "${args[@]}" 2>&1 | grep -E "✗|all checks passed|FAILED|Error" | head -5 | tr '\n' ' ')
   printf "%-12s %s\n" "$name" "$res"
   case "$res" in *"all checks passed"*) ;; *) [ "$name" = foundation ] || fail=1 ;; esac
 done
 if [ "${1:-}" != "--no-e2e" ]; then
   S="$WORK/e2e"; rm -rf "$S"; mkdir -p "$S/site"
-  # base game (images, app.js, artline.json) from Julian's game repo, read-only, like deploy_preview.sh
+  # base game (images, app.js, artline.json) from Admin's game repo, read-only, like deploy_preview.sh
   GAME="${GAME:-$HOME/circart-game}"
   [ -d "$GAME/.git" ] || git clone -q --depth 1 https://github.com/nambatu/circart "$GAME"
   cp -r "$GAME/docs/." "$S/site/"
+  [ -f "$S/site/app.js" ] && sed -i "s/const REPORT_EMAIL = '[^']*';/const REPORT_EMAIL = '';/" "$S/site/app.js"
   cp "$BE"/app/*.js "$BE"/app/*.css "$BE"/app/index.html "$S/site/" 2>/dev/null
   [ -d "$BE/app/vendor" ] && cp -r "$BE/app/vendor" "$S/site/"
   mkdir -p "$S/site/packs" && for f in "$BE"/packs/*.json; do [ -f "$f" ] && cp "$f" "$S/site/packs/"; done
+  [ -d "$BE/../docs/packs" ] && for f in "$BE/../docs/packs"/*.json; do [ -f "$f" ] && cp "$f" "$S/site/packs/"; done
+  [ -d "$BE/../pack-art" ] && mkdir -p "$S/site/art" && cp "$BE/../pack-art"/* "$S/site/art/" 2>/dev/null || true
   cp "$BE/app/tests/e2e-online.js" "$S/site/online.js"
   cp "$BE/app/tests/e2e.mjs" "$S/run.mjs"
-  res=$(timeout 600 node "$S/run.mjs" "$S" "$MIG" "$DECK" 2>&1 | grep -E "✗|all checks passed|FAILED" | tr '\n' ' ')
+  res=$(timeout 600 node "$S/run.mjs" "$S" "$MIG" "$DECK" 2>&1 | grep -E "✗|all checks passed|FAILED|Error" | head -8 | tr '\n' ' ')
   printf "%-12s %s\n" "e2e" "$res"
   case "$res" in *"all checks passed"*) ;; *) fail=1 ;; esac
 fi

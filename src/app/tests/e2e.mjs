@@ -57,7 +57,9 @@ const srv = http.createServer((req, res) => {
 let fails = 0; const ok = (c, m) => { console.log((c ? "  ✓ " : "  ✗ ") + m); if (!c) fails++; };
 const right = (gid, pos) => run(async () => { const r = (await db.query(`select c.year, _years_before($1,$2) ys from game_cards gc join cards c on c.id=gc.card_id where gc.game_id=$1 and gc.position=$2`, [gid, pos])).rows[0];
   return { slot: r.ys.filter(y => y < r.year).length, n: r.ys.length }; });
-const b = await chromium.launch();
+let b;
+try { b = await chromium.launch(); }
+catch (e) { b = await chromium.launch({ channel: 'chrome' }); }
 const shot = (p, n) => p.screenshot({ path: `${E}/${n}.png` });
 const errs = [];
 const page = async (who, scheme = 'light') => { const p = await b.newPage({ viewport: { width: 390, height: 844 }, colorScheme: scheme });
@@ -319,52 +321,343 @@ try {
 
   console.log("\ntutorial");
   const nb = await page('newbie'); await nb.goto('http://localhost:8772/?as=newbie'); await nb.waitForTimeout(1500);
-  const dlg = await nb.$('[role="dialog"]:not(#zoom-modal)');
+  const dlg = await nb.$('.onb-overlay [role="dialog"]');
   ok(!!dlg && (await dlg.innerText()).toLowerCase().includes('which came first'), "first visit: the tutorial opens (new plain wording)");
   await shot(nb, '21-tutorial');
-  for (let i = 0; i < 6; i++) { const b = await nb.$('[role="dialog"]:not(#zoom-modal) button:has-text("Next"), [role="dialog"]:not(#zoom-modal) button:has-text("Let\'s play")'); if (!b) break; await b.click(); await nb.waitForTimeout(250); }
-  ok(!(await nb.$('[role="dialog"]:not(#zoom-modal)')) || !(await nb.isVisible('[role="dialog"]:not(#zoom-modal)')), "Next … Let's play closes it");
+  for (let i = 0; i < 6; i++) { const b = await nb.$('.onb-overlay [role="dialog"] button:has-text("Next"), .onb-overlay [role="dialog"] button:has-text("Let\'s play")'); if (!b) break; await b.click(); await nb.waitForTimeout(250); }
+  ok(!(await nb.$('.onb-overlay [role="dialog"]')) || !(await nb.isVisible('.onb-overlay [role="dialog"]')), "Next … Let's play closes it");
   await nb.reload(); await nb.waitForTimeout(1500);
-  ok(!(await nb.$('[role="dialog"]:not(#zoom-modal)')) || !(await nb.isVisible('[role="dialog"]:not(#zoom-modal)')), "…and it doesn't come back");
+  ok(!(await nb.$('.onb-overlay [role="dialog"]')) || !(await nb.isVisible('.onb-overlay [role="dialog"]')), "…and it doesn't come back");
   await nb.click('.tabbar [data-tab="profile"]'); await nb.waitForTimeout(600);
   await nb.click('#pf-howto'); await nb.waitForTimeout(500);
-  ok(await nb.isVisible('[role="dialog"]:not(#zoom-modal)'), "Profile → How to play opens it again");
+  ok(await nb.isVisible('.onb-overlay [role="dialog"]'), "Profile → How to play opens it again");
+
+  // Helpers for unified Solo & Pack play on #game-online-screen
+  const normImg = s => String(s || '').replace(/\\/g, '/').replace(/^\/+/, '');
+  const attrEsc = s => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const findCardBySrc = (deck, src) => {
+    const n = normImg(src);
+    if (!n) return null;
+    return deck.find(c => normImg(c.image_local) === n || normImg(c.image) === n || normImg(c.image_source) === n)
+        || deck.find(c => normImg(c.image_local).split('?')[0] === n.split('?')[0]);
+  };
+  const readActiveCard = async (p, deck) => {
+    const src = await p.getAttribute('.go-art img', 'src').catch(() => null);
+    let card = findCardBySrc(deck, src);
+    if (!card) {
+      const typo = (await p.textContent('.go-typo').catch(() => '')).trim();
+      card = deck.find(c => c.title === typo) || null;
+    }
+    return { card, src };
+  };
+  const readTlYears = p => p.$$eval('.go-tl b', bs => bs.map(b => parseInt(b.textContent, 10)).sort((a, b) => a - b));
+  const readScore = async p => Number(((await p.textContent('#go-score')).replace(/,/g, '').match(/\d+/) || [0])[0]);
+
+  async function playSoloCards(p, deck, rounds, {
+    wantWrong = false,
+    testFlag = false,
+    testBonusLock = false,
+    shotsPrefix = null,
+    verifyTimelineGrowth = false,
+    verifyPackImage = false,
+  } = {}) {
+    let startCard = null;
+    const played = [];
+    let expectedScore = 0;
+    let didWrong = false;
+    let justPlacedWrong = false;
+    let prevTlLen = 0;
+    let bonusTested = false;
+
+    for (let pos = 1; pos <= rounds; pos++) {
+      await waitText(p, 'Tap where it belongs');
+      ok((await text(p)).includes(`Card ${pos} / ${rounds}`), `solo card ${pos}/${rounds} shown`);
+      const ys = await readTlYears(p);
+      const { card, src } = await readActiveCard(p, deck);
+      ok(!!card, `solo card ${pos}: identified in deck`);
+
+      if (pos === 1) {
+        const hasTimer = (await p.$('.go-timer')) || (await p.$('#go-bar'));
+        ok(!hasTimer, "solo: no timer or countdown bar");
+        if (verifyTimelineGrowth) ok(ys.length === 1, "solo starts with 1 card on timeline");
+        const startSrc = await p.getAttribute('.go-tl img', 'src').catch(() => null);
+        startCard = findCardBySrc(deck, startSrc);
+        if (verifyPackImage) {
+          ok(!!src && /^(\/?art\/|https:\/\/)/.test(src),
+             `pack solo: card image uses art/ or pack image_source (${src})`);
+        }
+        if (testFlag) {
+          await p.waitForSelector('#go-flag');
+          ok(await p.isVisible('#go-flag'), "solo: #go-flag is visible");
+          await p.click('#go-flag');
+          await p.waitForSelector('#report-modal:not(.hidden)');
+          const repTxt = await p.textContent('#report-modal');
+          ok(!repTxt.includes(String(card.year)) && !repTxt.includes(card.artist),
+             "solo: #go-flag opens #report-modal without leaking hidden card year or artist");
+          await p.click('#cancel-report-btn');
+          await p.waitForSelector('#report-modal', { state: 'hidden' });
+        }
+        if (shotsPrefix) await shot(p, `solo-play-${shotsPrefix}`);
+      }
+
+      if (pos === 2 && verifyTimelineGrowth && played[0]?.correct) {
+        ok(ys.length === 2, "solo: timeline grew from 1 to 2 after placing card 1 right");
+      }
+      if (justPlacedWrong) {
+        ok(ys.length === prevTlLen, `solo Hitster rule: timeline stays at ${prevTlLen} after wrong card`);
+        justPlacedWrong = false;
+      }
+
+      let slot = ys.filter(y => y < card.year).length;
+      let isWrong = false;
+      if (pos >= 2 && wantWrong && !didWrong) {
+        const wrongSlot = card.year > ys[0] ? 0 : card.year < ys[ys.length - 1] ? ys.length : -1;
+        if (wrongSlot !== -1) {
+          slot = wrongSlot;
+          isWrong = true;
+          didWrong = true;
+          prevTlLen = ys.length;
+          justPlacedWrong = true;
+        }
+      }
+
+      await p.click(`[data-gap="${slot}"]`);
+      await p.waitForFunction(() => {
+        const el = document.getElementById('go-body');
+        return el && /Correct!|Not quite/.test(el.innerText);
+      });
+      if (!isWrong) expectedScore += 1;
+
+      const hasA = !!(await p.$('[data-artist]'));
+      const hasM = !!(await p.$('[data-movement]'));
+      let artistBonus = false;
+      if (testBonusLock && !bonusTested && !isWrong && (hasA || hasM)) {
+        bonusTested = true;
+        const ptsBefore = await readScore(p);
+        await p.evaluate(() => {
+          window.__flash = 0;
+          const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong')) window.__flash++; };
+          window.__obs = new MutationObserver(chk);
+          window.__obs.observe(document.body, { subtree: true, childList: true, attributes: true });
+        });
+
+        let expectedBonus = 0;
+        let pickedRight = false;
+        let pickedWrong = false;
+
+        if (hasA) {
+          const aOpts = await p.$$eval('[data-artist]', bs => bs.map(b => b.dataset.artist));
+          const wrongA = aOpts.find(a => a !== card.artist) || aOpts[0];
+          await p.click(`[data-artist="${attrEsc(wrongA)}"]`);
+          await p.waitForTimeout(100);
+          ok((await p.$$('[data-artist]')).length === aOpts.length, "solo bonus: artist answers stay changeable");
+          if (hasM) ok(!(await p.$('[data-act="lock"]')), "solo bonus: no lock-in button until all questions picked");
+          const targetA = aOpts.includes(card.artist) ? card.artist : (aOpts.find(a => a !== wrongA) || wrongA);
+          await p.click(`[data-artist="${attrEsc(targetA)}"]`);
+          await p.waitForTimeout(80);
+          if (targetA === card.artist) { expectedBonus += 1; pickedRight = true; artistBonus = true; }
+          else pickedWrong = true;
+        }
+
+        if (hasM) {
+          const mOpts = await p.$$eval('[data-movement]', bs => bs.map(b => b.dataset.movement));
+          const realM = await p.evaluate(m => window.CircStyles && window.CircStyles.groupOf(m), card.movement);
+          await p.click(`[data-movement="${attrEsc(mOpts[0])}"]`);
+          await p.waitForTimeout(80);
+          // Pick a wrong movement when artist was already right so both green + red + +1 bonus are exercised
+          const targetM = (hasA && pickedRight)
+            ? (mOpts.find(m => m !== realM) || mOpts[0])
+            : (mOpts.includes(realM) ? realM : mOpts[0]);
+          await p.click(`[data-movement="${attrEsc(targetM)}"]`);
+          await p.waitForTimeout(80);
+          if (targetM === realM) { expectedBonus += 1; pickedRight = true; }
+          else pickedWrong = true;
+        }
+
+        ok(!(await p.$('.go-pick.right, .go-pick.wrong')), "solo bonus: nothing shown as right or wrong before lock-in");
+        ok(!!(await p.$('[data-act="lock"]')), "solo bonus: lock-in button appears once all present questions picked");
+        await p.waitForTimeout(50);
+        const flashBeforeLock = await p.evaluate(() => {
+          if (window.__obs) window.__obs.disconnect();
+          return window.__flash;
+        });
+        ok(flashBeforeLock === 0, "solo bonus: zero right/wrong flash before lock-in");
+        await p.click('[data-act="lock"]');
+        await p.waitForSelector('[data-act="next"]');
+        ok(!!(await p.$('.go-pick.right')), "solo bonus: right answer highlighted green after lock-in");
+        if (pickedWrong) ok(!!(await p.$('.go-pick.wrong')), "solo bonus: wrong answer highlighted red after lock-in");
+        const ptsAfter = await readScore(p);
+        expectedScore += expectedBonus;
+        ok(ptsAfter === ptsBefore + expectedBonus, `solo bonus: score incremented by +${expectedBonus} (${ptsBefore} -> ${ptsAfter})`);
+        if (shotsPrefix) await shot(p, `solo-bonus-${shotsPrefix}`);
+      } else if (await p.$('[data-act="skip"]')) {
+        await p.click('[data-act="skip"]');
+      }
+
+      await p.waitForSelector('[data-act="next"]');
+      if (isWrong) {
+        const resTxt = await text(p);
+        ok(resTxt.includes('Not quite') && /stays off your timeline/i.test(resTxt) && resTxt.includes(String(card.year)),
+           "solo wrong card: shows 'Not quite', 'This one stays off your timeline', and year");
+        if (card.trivia) {
+          const tr = await p.textContent('.go-trivia').catch(() => '');
+          ok(tr.trim().length > 0, "solo wrong card: shows trivia");
+        }
+      }
+      if (pos === rounds) {
+        ok((await p.textContent('[data-act="next"]')).includes('See results'), "solo last card: next button says 'See results'");
+      }
+      played.push({ card, correct: !isWrong, artistBonus });
+      await p.click('[data-act="next"]');
+    }
+
+    await p.waitForSelector('[data-act="soloAgain"]');
+    if (justPlacedWrong) {
+      ok((await readTlYears(p)).length === prevTlLen, `solo Hitster rule: final timeline stays at ${prevTlLen}`);
+    }
+    if (shotsPrefix) await shot(p, `solo-done-${shotsPrefix}`);
+    return { startCard, played, expectedScore, didWrong };
+  }
 
   console.log("\nback button");
-  const bk = await page('backy'); await bk.goto('http://localhost:8772/?as=backy'); await bk.waitForTimeout(1200);
+  const bk = await page('backy'); await bk.goto('http://localhost:8772/?as=backy'); await homeReady(bk);
   await bk.click('.tabbar [data-tab="ranks"]'); await bk.waitForTimeout(400);
   await bk.evaluate(() => history.back()); await bk.waitForTimeout(500);
   ok(await bk.evaluate(() => document.querySelector('.screen.active').id) === 'start-screen', "back on Ranks → home");
   await bk.evaluate(() => history.back()); await bk.waitForTimeout(500);
   ok((await bk.textContent('body')).includes('Swipe back once more'), "back on home → 'swipe back once more' hint, app stays open");
-  await bk.mouse.click(5, 5); await bk.waitForTimeout(200);
-  await bk.click('#start-btn').catch(() => {}); await bk.waitForTimeout(2500);
-  if (await bk.evaluate(() => document.querySelector('.screen.active').id) === 'game-screen') {
-    await bk.evaluate(() => history.back()); await bk.waitForTimeout(500);
-    ok((await bk.textContent('body')).includes('Leave this game?') && await bk.evaluate(() => document.querySelector('.screen.active').id) === 'game-screen', "back in a solo game → 'Leave this game?', game still there");
-    await bk.click('[data-x="stay"]'); await bk.waitForTimeout(300);
-    await bk.evaluate(() => history.back()); await bk.waitForTimeout(500);
-    await bk.click('[data-x="leave"]'); await bk.waitForTimeout(500);
-    ok(await bk.evaluate(() => document.querySelector('.screen.active').id) === 'start-screen', "'Leave the game' → home");
-  } else ok(false, "solo game didn't start in the test site");
-  const col = await bk.evaluate(() => {
-    if (typeof currentCard === 'undefined' || !currentCard) return null;
-    const id = currentCard.id; track('round-wrong'); const a = CircCollection.local();
-    const wrongOnly = a.seen.has(id) && !a.correct.has(id);
-    track('round-correct'); const b = CircCollection.local();
-    return { wrongOnly, both: b.seen.has(id) && b.correct.has(id), stored: !!localStorage.getItem('circart-collection') };
+  await bk.click('#round-chips [data-rounds="5"]');
+  ok((await bk.getAttribute('#round-chips [data-rounds="5"]', 'aria-pressed')) === 'true', "home: 5-card chip active");
+  await bk.click('#start-btn');
+  await bk.waitForSelector('#game-online-screen.active');
+  await waitText(bk, 'Tap where it belongs');
+  ok((await text(bk)).includes('Card 1 / 5'), "solo opens on #game-online-screen with Card 1 / 5");
+  ok(!(await bk.$('.go-timer')) && !(await bk.$('#go-bar')), "solo: no timer or countdown bar");
+  await bk.evaluate(() => history.back()); await bk.waitForTimeout(400);
+  ok((await bk.textContent('body')).includes('Leave this game?') && await bk.evaluate(() => document.querySelector('.screen.active').id) === 'game-online-screen',
+     "back in solo game → 'Leave this game?' and stays on #game-online-screen");
+  await bk.click('[data-x="no"]'); await bk.waitForTimeout(300);
+  ok(!(await bk.$('[data-x="no"]')) && await bk.evaluate(() => document.querySelector('.screen.active').id) === 'game-online-screen',
+     "'Keep playing' closes dialog and stays in solo game");
+  await bk.evaluate(() => history.back()); await bk.waitForTimeout(400);
+  await bk.click('[data-x="yes"]'); await bk.waitForTimeout(400);
+  ok(await bk.evaluate(() => document.querySelector('.screen.active').id) === 'start-screen', "'Leave the game' → home");
+
+  console.log("\nsolo game (signed-in guest) + collection + gallery");
+  const baseDeck = JSON.parse(fs.readFileSync(path.join(E, 'site', 'artline.json'), 'utf8'));
+  const solo = await page('solo');
+  await solo.goto('http://localhost:8772/?as=solo'); await homeReady(solo);
+  await solo.evaluate(() => window.CircOnline.ensureGuest());
+  await solo.reload(); await homeReady(solo);
+  await solo.click('#round-chips [data-rounds="5"]');
+  ok((await solo.getAttribute('#round-chips [data-rounds="5"]', 'aria-pressed')) === 'true', "solo: 5-card round chip selected");
+  await solo.click('#start-btn');
+  await solo.waitForSelector('#game-online-screen.active');
+  const sRes = await playSoloCards(solo, baseDeck, 5, {
+    wantWrong: true, testFlag: true, testBonusLock: true, shotsPrefix: 'light', verifyTimelineGrowth: true,
   });
-  ok(col && col.wrongOnly && col.both && col.stored, "collection list: a wrong card is 'seen', a right one is 'correct', and it is stored on the device");
-  await bk.evaluate(() => { localStorage.setItem('circart-collection', JSON.stringify({ seen: ['1305-giotto-the-lamentation-of-christ', '1311-duccio-di-buoninsegna-maesta'], correct: ['1305-giotto-the-lamentation-of-christ'] })); });
-  await bk.click('.tabbar [data-tab="gallery"]'); await bk.waitForTimeout(2500);
-  const gal = await bk.evaluate(() => ({
+  ok(sRes.didWrong, "solo: placed at least one card wrong to exercise Hitster rule");
+  const sDoneTxt = await text(solo);
+  const rightCount = sRes.played.filter(x => x.correct).length;
+  const sqMatch = sDoneTxt.match(/[🟩🟥🎨]+/gu) || [];
+  const sqJoined = sqMatch.join('');
+  ok(sDoneTxt.includes(String(sRes.expectedScore)) && /placed right/i.test(sDoneTxt)
+     && [...sqJoined].length === 5 && !!(await solo.$('[data-act="soloAgain"]'))
+     && !!(await solo.$('[data-act="shareSolo"]')) && /your timeline/i.test(sDoneTxt)
+     && (await readTlYears(solo)).length === 1 + rightCount,
+     `solo finished: score ${sRes.expectedScore}, ${rightCount}/5 placed right, squares ${sqJoined}`);
+
+  // Verify PGlite DB saved the solo game (mode = 'classic', rounds = 5, 6 solo_game_cards rows)
+  let savedSolo = null;
+  for (let w = 0; w < 25; w++) {
+    const r = await run(() => db.query(`select * from solo_games where player_id = $1 order by created_at desc limit 1`, [users.solo]));
+    if (r.rows.length) { savedSolo = r.rows[0]; break; }
+    await solo.waitForTimeout(150);
+  }
+  ok(!!savedSolo && savedSolo.mode === 'classic' && savedSolo.rounds === 5
+     && savedSolo.placements_correct === rightCount && savedSolo.score === sRes.expectedScore,
+     "DB solo_games: saved mode='classic', rounds=5, exact score & placements_correct");
+  if (savedSolo) {
+    const sgc = await run(() => db.query(
+      `select sgc.position, c.source_id, sgc.correct from solo_game_cards sgc join cards c on c.id = sgc.card_id where sgc.game_id = $1 order by sgc.position`,
+      [savedSolo.id]));
+    ok(sgc.rows.length === 6
+       && sgc.rows.every((r, idx) => r.position === idx)
+       && sgc.rows[0].correct === null
+       && sgc.rows.slice(1).every((r, idx) => r.correct === sRes.played[idx].correct),
+       "DB solo_game_cards: 6 rows (position 0..5) matching start card and played cards");
+  }
+
+  // Collection + Gallery check (updated naturally by Solo play, no track() / currentCard)
+  const localCol = await solo.evaluate(() => JSON.parse(localStorage.getItem('circart-collection') || 'null'));
+  const expectedSeenIds = [sRes.startCard?.id, ...sRes.played.map(x => x.card.id)].filter(Boolean);
+  const expectedCorrectIds = sRes.played.filter(x => x.correct).map(x => x.card.id);
+  ok(!!localCol && Array.isArray(localCol.seen) && Array.isArray(localCol.correct)
+     && expectedSeenIds.every(id => localCol.seen.includes(id))
+     && localCol.seen.length === expectedSeenIds.length
+     && expectedCorrectIds.every(id => localCol.correct.includes(id))
+     && localCol.correct.length === expectedCorrectIds.length
+     && (!sRes.startCard || !localCol.correct.includes(sRes.startCard.id)),
+     `collection: localStorage has ${localCol?.seen?.length} seen (start + 5 played) and ${localCol?.correct?.length} correct`);
+
+  await solo.click('[data-act="home"]');
+  await solo.waitForSelector('#start-screen.active');
+  await solo.click('.tabbar [data-tab="gallery"]');
+  await solo.waitForSelector('#gallery-count');
+  await solo.waitForFunction(() => /^\d+ of \d+ discovered$/.test((document.getElementById('gallery-count') || {}).textContent?.trim() || ''));
+  const gal = await solo.evaluate(() => ({
     total: document.querySelectorAll('#gallery-grid > .gallery-card').length,
     open: document.querySelectorAll('#gallery-grid > .gallery-card:not(.undiscovered)').length,
     gold: document.querySelectorAll('#gallery-grid > .gallery-card.mastered').length,
-    count: (document.getElementById('gallery-count') || {}).textContent || '',
-    hiddenText: [...document.querySelectorAll('#gallery-grid > .undiscovered .gallery-details')].some(d => d.textContent.trim() !== '?')
+    count: (document.getElementById('gallery-count') || {}).textContent.trim(),
+    hiddenBad: [...document.querySelectorAll('#gallery-grid > .undiscovered .gallery-details')].some(d => d.textContent.trim() !== '?'),
+    hiddenZoom: document.querySelectorAll('#gallery-grid > .undiscovered .zoomable-img').length,
   }));
-  ok(gal.total > 100 && gal.open === 2 && gal.gold === 1 && /^2 of \d+ discovered$/.test(gal.count) && !gal.hiddenText, "gallery: 2 cards in colour, 1 gold, the rest hidden, counter '" + gal.count + "'");
+  ok(gal.total > 100 && gal.open === localCol.seen.length && gal.gold === localCol.correct.length
+     && gal.count === `${localCol.seen.length} of ${gal.total} discovered` && !gal.hiddenBad && gal.hiddenZoom === 0,
+     `gallery: ${gal.open} open, ${gal.gold} gold, counter '${gal.count}', undiscovered hidden without zoom`);
+
+  console.log("\noffline solo (dark mode)");
+  const off = await page('off', 'dark');
+  await off.route('**/rpc', route => route.abort());
+  await off.goto('http://localhost:8772/');
+  await off.waitForSelector('#start-btn'); await off.waitForTimeout(400);
+  await off.click('#round-chips [data-rounds="5"]');
+  await off.click('#start-btn');
+  await off.waitForSelector('#game-online-screen.active');
+  const offRes = await playSoloCards(off, baseDeck, 5, {
+    wantWrong: false, testBonusLock: true, shotsPrefix: 'dark',
+  });
+  const offDoneTxt = await text(off);
+  ok(offDoneTxt.includes(String(offRes.expectedScore)) && /placed right/i.test(offDoneTxt),
+     "offline solo (dark mode): plays 5 cards + bonus lock-in cleanly to results");
+  await off.click('[data-act="soloAgain"]');
+  await waitText(off, 'Tap where it belongs');
+  ok((await text(off)).includes('Card 1 / 5'), "offline solo: 'Play again' starts a new game cleanly");
+
+  console.log("\nunlocked pack solo");
+  const packDeck = JSON.parse(fs.readFileSync(path.join(E, 'site', 'packs', 'baroque-masters.json'), 'utf8')).cards;
+  await run(() => db.query(
+    `insert into player_packs (player_id, pack_id, seen) values ($1, 'baroque-masters', true) on conflict do nothing`,
+    [users.dora]));
+  await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
+  await dora.click('#round-chips [data-rounds="5"]');
+  await dora.click('.tabbar [data-tab="gallery"]');
+  await dora.waitForSelector('#gallery-seg [data-gview="packs"]');
+  await dora.click('#gallery-seg [data-gview="packs"]');
+  await dora.waitForSelector('[data-open-pack="baroque-masters"]');
+  await dora.click('[data-open-pack="baroque-masters"]');
+  await dora.waitForSelector('[data-pack-play="baroque-masters"]');
+  ok((await dora.$$('.gp-grid .gp-secret')).length === 0 && (await dora.$$('.gp-grid .gallery-card')).length === 25,
+     "unlocked pack shows all 25 cards and 'Play this pack'");
+  await dora.click('[data-pack-play="baroque-masters"]');
+  await dora.waitForSelector('#game-online-screen.active');
+  await waitText(dora, 'Tap where it belongs');
+  ok((await dora.textContent('#go-title')).includes('Baroque Masters'),
+     "pack solo: #game-online-screen opens with 'Baroque Masters' in #go-title");
+  await playSoloCards(dora, packDeck, 5, { wantWrong: false, verifyPackImage: true });
+  ok(!!(await dora.$('[data-act="soloAgain"]')), "pack solo: plays cleanly on #game-online-screen to finished screen");
+
   ok(errs.length === 0, "no script errors" + (errs.length ? ': ' + errs.join(' | ') : ''));
 } catch (e) { console.log("  ✗ " + e.message.split('\n')[0]); fails++; }
 console.log(fails ? `${fails} FAILED` : "all checks passed");

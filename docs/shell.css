@@ -67,55 +67,26 @@
     color-scheme: dark;
 }
 
-/* ---------- existing screens, re-pointed at the tokens ---------- */
+/* ---------- shared / gallery / modals, re-pointed at the tokens ---------- */
 body { background-color: var(--bg-color); color: var(--text-primary); }
-header, .game-header { border-bottom-color: var(--line); }
-.card-image-container, .gallery-card img { background: var(--surface-2); }
-.card-details { border-top-color: var(--line); }
-.card-details .year, .gallery-details .year { color: var(--accent-text); }
-.bonus-section, .metadata-box { background: var(--surface-2); border-color: var(--line); }
-.bonus-section .instruction { color: var(--accent-text); }
-.bonus-section input, .modal-content textarea, .modal-content select, .settings select {
+header { border-bottom-color: var(--line); }
+.gallery-card img { background: var(--surface-2); }
+.gallery-details .year { color: var(--accent-text); }
+.modal-content textarea, .modal-content select {
     background: var(--card-bg); color: var(--text-primary); border-color: var(--line);
 }
-#feedback-area, .score-breakdown, .gallery-card, .modal-content { background: var(--card-bg); color: var(--text-primary); }
-#bonus-feedback li, .score-breakdown p { border-bottom-color: var(--line); }
-#trivia-section { background: var(--surface-2); border-left-color: var(--accent-color); }
-#trivia-section h3 { color: var(--accent-text); }
-#did-you-know-section { background: var(--surface-2); }
-.final-score { color: var(--accent-text); }
-#loading-overlay { background: color-mix(in srgb, var(--bg-color) 95%, transparent); }
+.gallery-card, .modal-content { background: var(--card-bg); color: var(--text-primary); }
 .secondary-btn { color: var(--text-primary); border-color: var(--line); }
-.timeline-card { border-color: var(--line); }
-.timeline-gap { background: var(--gap-bg); border-color: var(--gap-hover); }
-.timeline-gap:active { background: var(--gap-color); }
 #install-hint { background: var(--card-bg); border-color: var(--line); border-left-color: var(--accent-color); }
 .primary-btn { background-color: var(--accent-color); color: var(--on-accent); }
-.gallery-btn-style { background-color: var(--text-secondary); }
-#report-card-context { background: var(--surface-2) !important; border-color: var(--line) !important; }
+#report-card-context { background: var(--surface-2) !important; border-color: var(--line) !important; border-left-color: var(--accent-color) !important; color: var(--text-primary); }
 @media (hover: hover) and (pointer: fine) {
     .primary-btn:hover { background-color: var(--accent-hover); }
     .secondary-btn:hover { background: var(--surface-2); }
-    .timeline-gap:hover { background: var(--gap-color); border-color: var(--accent-color); }
-    .timeline-gap:hover .gap-btn { background-color: var(--accent-hover); }
 }
 @media (max-width: 780px) {
-    .timeline-gap { background: var(--gap-bg); }
-    .direction-label { background: var(--surface-2); }
     #gallery-screen header { border-bottom-color: var(--line); }
-    .timeline-card .card-details { border-left-color: var(--line); }
-    .timeline-gap:active .gap-btn { background-color: var(--accent-hover); }
 }
-
-/* the floating feedback button is gone: a flag in the game header instead */
-.report-btn { display: none; }
-.flag-btn {
-    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
-    width: 44px; height: 44px; border: none; background: transparent; color: var(--text-secondary);
-    display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%;
-}
-.flag-btn:active { background: var(--surface-2); }
-.game-header { position: relative; }
 
 /* ---------- tab bar ---------- */
 .tabbar {
@@ -239,11 +210,22 @@ body.tabs-on #back-to-menu-btn { display: none; }
     font-size: 14px; z-index: 2500; max-width: calc(100% - 32px);
 }
 
-/* ---------- playing with friends (game.js) ---------- */
+/* ---------- unified game screen (game.js) ---------- */
 #game-online-screen { padding: 0; }
 .go-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .go-head b { font-size: 15px; }
-.go-close { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.go-head-right { display: flex; align-items: center; gap: 4px; }
+.go-flag {
+    width: 44px; height: 44px; border-radius: 50%; border: none; background: transparent;
+    color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.go-flag:active { background: var(--surface-2); }
+@media (hover: hover) and (pointer: fine) {
+    .go-flag:hover { background: var(--surface-2); color: var(--text-primary); }
+}
+#go-body .note { line-height: 1.45; }
+.go-close { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--surface-2); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .go-av { border-radius: 50%; color: #fff; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .go-code { font-family: var(--font-heading); font-size: 64px; font-weight: 600; letter-spacing: 12px; padding-left: 12px; line-height: 1.1; }
 .go-lobby { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -298,23 +280,6 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .choice.strong .ic { background: var(--accent-color); color: var(--on-accent); }
 .code-input { letter-spacing: 6px; text-transform: uppercase; font-weight: 600; }
 
-/* ---------- solo game on desktop/laptop ----------
-   style.css squeezes the card and the result panel into whatever height is
-   left, so on a short laptop window the trivia and Continue were cut off.
-   Here the game area scrolls instead, the card keeps a readable size, and
-   Continue stays pinned in view. Phones keep their own layout (≤780px). */
-@media (min-width: 781px) {
-    #game-screen .game-main { overflow-y: auto; justify-content: flex-start; }
-    #game-screen .game-header { margin-bottom: 1rem; flex-shrink: 0; }
-    #active-card-section { flex: none; align-items: flex-start; }
-    #active-card { height: clamp(300px, 52vh, 540px); max-height: none; }
-    #interaction-panel { align-self: stretch; }
-    #feedback-area { max-height: none; overflow: visible; margin: 0; }
-    #trivia-section, #did-you-know-section { flex: none; overflow-y: visible; }
-    #next-round-btn { position: sticky; bottom: 0.75rem; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
-    #timeline-section h2 { margin-bottom: 1rem; }
-}
-
 /* ---------- instant feedback ---------- */
 .go-flash { position: fixed; inset: 0; z-index: 2600; pointer-events: none; display: flex; align-items: center; justify-content: center;
     animation: goFlash 0.85s ease-out forwards; }
@@ -329,6 +294,10 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .go-verdict { animation: goPop 0.5s ease-out; }
 .go-pick { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 6px 10px; border-radius: 12px;
     background: var(--surface-2); text-align: center; font-weight: 600; font-size: 14px; border: 2px solid transparent; }
+button.go-pick { color: var(--text-primary); font-family: var(--font-body); cursor: pointer; touch-action: manipulation; }
+@media (hover: hover) and (pointer: fine) {
+    button.go-pick:not(.chosen):hover { border-color: var(--text-secondary); }
+}
 .go-pick.chosen { border-color: var(--text-primary); }
 .go-pick.right { background: color-mix(in srgb, var(--success) 18%, var(--card-bg)); border-color: var(--success); color: var(--success); }
 .go-pick.wrong { background: color-mix(in srgb, var(--error) 14%, var(--card-bg)); border-color: var(--error); color: var(--error); }

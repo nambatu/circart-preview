@@ -1124,7 +1124,7 @@ const cancelReportBtn = document.getElementById('cancel-report-btn');
 const sendReportBtn = document.getElementById('send-report-btn');
 const reportText = document.getElementById('report-text');
 
-const REPORT_EMAIL = 'julian@langschwerts.de';
+const REPORT_EMAIL = '';
 const reportCardContext = document.getElementById('report-card-context');
 const reportCardSummary = document.getElementById('report-card-summary');
 const reportTopic = document.getElementById('report-topic');
@@ -1199,11 +1199,11 @@ sendReportBtn.addEventListener('click', () => {
     // Show the copyable version FIRST. A mailto: can fail silently when no mail
     // client is configured, and the old code cleared the box and claimed the
     // feedback had been sent, so anything typed was simply lost.
-    reportFallbackText.value = 'To: ' + REPORT_EMAIL + '\r\nSubject: ' + subject + '\r\n\r\n' + body;
+    reportFallbackText.value = 'Subject: ' + subject + '\r\n\r\n' + body;
     reportFallback.classList.remove('hidden');
 
     try {
-        window.location.href = 'mailto:' + REPORT_EMAIL +
+        if (REPORT_EMAIL) window.location.href = 'mailto:' + REPORT_EMAIL +
             '?subject=' + encodeURIComponent(subject) +
             '&body=' + encodeURIComponent(body);
     } catch (e) {

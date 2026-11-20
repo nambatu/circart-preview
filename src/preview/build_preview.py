@@ -14,7 +14,7 @@ What it does
      Keys live in <out>/card_keys.json so they stay the same between builds.
   4. Makes it obviously a preview: "CIRCArt Preview" name, a banner with the
      build time linking to a "What's new / what to test" page, no CNAME
-     (so it can never take over circart.langschwerts.de).
+     (so it never claims a custom domain).
   5. Writes supabase/migrations/*.sql and supabase/deck.sql for the GitHub
      Action, which applies them to the preview database.
 
@@ -35,8 +35,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css", "dealer.js", "collection.js", "styles.js"]
-OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "solo-i18n.js", "packs.js"]          # copied when present
+NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "dealer.js", "collection.js", "styles.js"]
+OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "packs.js"]          # copied when present
 
 
 def log(msg):
@@ -65,15 +65,28 @@ def main():
     shutil.copytree(src_docs, docs)
     (docs / "CNAME").unlink(missing_ok=True)          # never claim the real domain
     (docs / ".nojekyll").write_text("")               # serve files as they are
+    app_js = docs / "app.js"
+    if app_js.exists():
+        aj = app_js.read_text(encoding="utf-8")
+        aj = re.sub(r"const REPORT_EMAIL = '[^']*';", "const REPORT_EMAIL = '';", aj)
+        aj = aj.replace(
+            "reportFallbackText.value = 'To: ' + REPORT_EMAIL + '\\r\\nSubject: ' + subject + '\\r\\n\\r\\n' + body;",
+            "reportFallbackText.value = 'Subject: ' + subject + '\\r\\n\\r\\n' + body;",
+        )
+        aj = aj.replace(
+            "window.location.href = 'mailto:' + REPORT_EMAIL",
+            "if (REPORT_EMAIL) window.location.href = 'mailto:' + REPORT_EMAIL",
+        )
+        app_js.write_text(aj, encoding="utf-8")
     log(f"base: {src_docs} ({len(list((docs / 'images').glob('*')))} images)")
 
     # 2. new app files
     for name in NEW_WWW:
         shutil.copy2(claude / "app" / name, docs / name)
-    for name in ("privacy-en.html", "privacy-de.html"):      # drafts until Julian fills in his details
+    for name in ("privacy-en.html", "privacy-de.html"):      # drafts until Admin fills in details
         if (claude / "legal" / name).exists():
             shutil.copy2(claude / "legal" / name, docs / name)
-    if (claude / "legal" / "impressum-template.html").exists():   # Impressum (draft until Julian fills it in)
+    if (claude / "legal" / "impressum-template.html").exists():   # Impressum (draft until Admin fills it in)
         shutil.copy2(claude / "legal" / "impressum-template.html", docs / "impressum.html")
     if (claude / "app" / "vendor").is_dir():              # self-hosted fonts + libraries
         shutil.copytree(claude / "app" / "vendor", docs / "vendor", dirs_exist_ok=True)
@@ -125,9 +138,19 @@ def main():
     if sw.exists():
         s = sw.read_text(encoding="utf-8")
         s = re.sub(r"const CACHE_VERSION = '[^']*';", f"const CACHE_VERSION = 'preview-{stamp}';", s, count=1)
-        extra = "".join(f"\n    './{f}'," for f in ["shell.css", "shell.js", "strings.js", "strings-de.js", "game.js", "solo.js", "solo.css", "dealer.js", "collection.js", "styles.js", "solo-i18n.js", "onboarding.js", "onboarding.css", "packs.js", "online.js", "preview.js"]
-                        if f"'./{f}'" not in s)
+        # strip unused legacy files so the service worker does not precache dead paths
+        s = re.sub(r"[ \t]*['\"]\./(?:app\.js|Abstract Painting Loader\.json)['\"],?[ \t]*\r?\n?", "", s)
+        extra_assets = [
+            "shell.css", "shell.js", "strings.js", "strings-de.js", "game.js",
+            "dealer.js", "collection.js", "styles.js", "onboarding.js",
+            "onboarding.css", "packs.js", "online.js", "preview.js",
+        ]
+        extra = "".join(f"\n    './{f}'," for f in extra_assets if f"'./{f}'" not in s)
         s = s.replace("const SHELL_ASSETS = [", "const SHELL_ASSETS = [" + extra, 1)
+        # cache year-free and pack artwork under art/ alongside legacy images/
+        if "url.pathname.includes('/art/')" not in s:
+            s = s.replace("url.pathname.includes('/images/')",
+                          "(url.pathname.includes('/images/') || url.pathname.includes('/art/'))")
         # a preview must never serve yesterday's build: shell files network-first
         s = s.replace("event.respondWith(cacheFirst(request, SHELL_CACHE));",
                       "event.respondWith(networkFirst(request, SHELL_CACHE));")
@@ -317,7 +340,7 @@ def changes_page(cfg):
 <h2 class="serif" style="font-size:22px">What to test</h2><ol>{li(cfg.get('test', []))}</ol>
 <p class="note">Something wrong? In the app: Profile → Send feedback, or the flag during a game.
 It lands in the preview database and the next evening build reads it.</p>
-<p class="note">This is a test version with its own database. Your real game at circart.langschwerts.de is not affected.</p>
+<p class="note">This is a test version with its own database. Your live game is not affected.</p>
 <p><a class="btn primary" href="./">Open the preview</a></p></div></body></html>
 """
 

@@ -8,10 +8,13 @@
   }
   window.CircOnline = {
     available: () => true,
-    user: async () => (await rpc('_test_user')) ? { id: who } : null,
+    user: async () => { try { return (await rpc('_test_user')) ? { id: who } : null; } catch (e) { return null; } },
     ensureGuest: async () => rpc('_test_signup'),
     getProfile: () => rpc('get_my_profile'), updateProfile: ({displayName=null,username=null}={}) => rpc('update_profile',{p_display_name:displayName,p_username:username}),
-    soloStats: () => rpc('my_solo_stats'), recentlySeen: async () => [], saveSoloGame: () => {}, sendFeedback: () => rpc('submit_feedback',{p_topic:'x',p_message:'y'}),
+    soloStats: () => rpc('my_solo_stats'), recentlySeen: async () => [],
+    saveSoloGame: game => rpc('submit_solo_game', { p: { client_id: crypto.randomUUID(), mode: game.mode || 'classic', started_at: game.startedAt || null, finished_at: new Date().toISOString(), score: game.score, bonus_points: game.bonusPoints || 0, best_streak: game.bestStreak || 0, cards: game.cards } }).catch(() => {}),
+    myCollection: () => rpc('my_collection'),
+    sendFeedback: (topic, msg, cardId, ctx) => rpc('submit_feedback', { p_topic: topic || 'x', p_message: msg || 'y', p_card_source_id: cardId || null, p_context: ctx || {} }),
     serverNow: () => Date.now() + offset,
     createGame: async (kind,{cardCount=null,cardsPerTurn=null,displayName=null}={}) => { await rpc('_test_signup'); return rpc('create_game',{p_kind:kind,p_card_count:cardCount,p_cards_per_turn:cardsPerTurn,p_display_name:displayName}); },
     joinGame: async (code,name) => { await rpc('_test_signup'); const id = await rpc('join_game',{p_code:code,p_display_name:name||null}); if (id == null) { const e = new Error('game_not_found'); e.code = 'game_not_found'; throw e; } return id; },

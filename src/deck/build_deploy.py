@@ -60,7 +60,7 @@ QUALITY = 82         # JPEG quality (82 is visually lossless for photos)
 # the custom domain survive a rebuild, and this script recreates docs/ from
 # scratch each run, so the file has to be written here rather than committed by
 # hand. Set to None if you ever go back to a plain github.io URL.
-CUSTOM_DOMAIN = "circart.langschwerts.de"
+CUSTOM_DOMAIN = "YOUR-GAME-DOMAIN"
 # ----------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parent
@@ -69,11 +69,9 @@ DST = ROOT / "docs"
 
 STATIC_FILES = [
     "index.html",
-    "app.js",
     "pwa.js",
     "style.css",
     "artline.json",
-    "Abstract Painting Loader.json",
     "manifest.webmanifest",
     "sw.js",
     # app shell + online features
@@ -84,13 +82,9 @@ STATIC_FILES = [
     "online.js",
     # added 2026-11-05 (copied when present in www/)
     "strings-de.js",
-    "solo.js",
     "dealer.js",
     "collection.js",
     "styles.js",
-    "solo.css",
-    "solo-i18n.js",
-    "solo-i18n.css",
     "onboarding.js",
     "onboarding.css",
     # added 2026-11-06: card packs + privacy policy pages
@@ -104,7 +98,12 @@ STATIC_FILES = [
 STATIC_DIRS = ["icons", "vendor", "packs"]   # vendor: self-hosted fonts + libraries; packs: card pack json
 
 # Added to the service worker's offline list (if present in docs/).
-SW_EXTRA_ASSETS = ["strings.js", "shell.css", "shell.js", "game.js", "online.js"] + ['strings-de.js', 'solo.js', 'dealer.js', 'collection.js', 'styles.js', 'solo.css', 'solo-i18n.js', 'solo-i18n.css', 'onboarding.js', 'onboarding.css', 'packs.js', 'vendor/fonts.css', 'vendor/supabase.js', 'vendor/lottie-player.js']
+SW_EXTRA_ASSETS = [
+    "strings.js", "shell.css", "shell.js", "game.js", "online.js",
+    "strings-de.js", "dealer.js", "collection.js", "styles.js",
+    "onboarding.js", "onboarding.css", "packs.js",
+    "vendor/fonts.css", "vendor/supabase.js",
+]
 # Push-notification handlers, appended to docs/sw.js (not published on its own).
 SW_PUSH = "sw-push.js"
 CONFIG_FILE = ROOT / "deploy_config.json"
@@ -193,9 +192,26 @@ def main():
         print(f"  + online.js -> {cfg['SUPABASE_URL']}"
               f" (notifications {'on' if cfg['VAPID_PUBLIC_KEY'] else 'off'})")
 
-    if CUSTOM_DOMAIN:
-        (DST / "CNAME").write_text(CUSTOM_DOMAIN + "\n", encoding="utf-8")
-        print(f"  + CNAME ({CUSTOM_DOMAIN})")
+    app_js = DST / "app.js"
+    if app_js.exists():
+        aj = app_js.read_text(encoding="utf-8")
+        if re.search(r"const REPORT_EMAIL = '[^']*@[^']*';", aj):
+            aj = re.sub(r"const REPORT_EMAIL = '[^']*';", "const REPORT_EMAIL = '';", aj)
+            aj = aj.replace(
+                "reportFallbackText.value = 'To: ' + REPORT_EMAIL + '\\r\\nSubject: ' + subject + '\\r\\n\\r\\n' + body;",
+                "reportFallbackText.value = 'Subject: ' + subject + '\\r\\n\\r\\n' + body;",
+            )
+            aj = aj.replace(
+                "window.location.href = 'mailto:' + REPORT_EMAIL",
+                "if (REPORT_EMAIL) window.location.href = 'mailto:' + REPORT_EMAIL",
+            )
+            app_js.write_text(aj, encoding="utf-8")
+
+    file_cfg = json.loads(CONFIG_FILE.read_text(encoding="utf-8")) if CONFIG_FILE.exists() else {}
+    domain = os.environ.get("CIRCART_CUSTOM_DOMAIN") or file_cfg.get("custom_domain") or CUSTOM_DOMAIN
+    if domain:
+        (DST / "CNAME").write_text(domain + "\n", encoding="utf-8")
+        print(f"  + CNAME ({domain})")
 
     # A service worker only replaces its caches when its own bytes change.
     # Stamping the build time in guarantees that, so a returning player is
@@ -206,10 +222,16 @@ def main():
         text = sw.read_text(encoding="utf-8")
         text = re.sub(r"const CACHE_VERSION = '[^']*';",
                       f"const CACHE_VERSION = '{stamp}';", text, count=1)
+        # strip unused legacy files so the service worker does not precache dead paths
+        text = re.sub(r"[ \t]*['\"]\./(?:app\.js|Abstract Painting Loader\.json)['\"],?[ \t]*\r?\n?", "", text)
         # the new app files work offline too
         extra = "".join(f"\n    './{f}'," for f in SW_EXTRA_ASSETS
                         if (DST / f).exists() and f"'./{f}'" not in text)
         text = text.replace("const SHELL_ASSETS = [", "const SHELL_ASSETS = [" + extra, 1)
+        # cache year-free and pack artwork under art/ alongside legacy images/
+        if "url.pathname.includes('/art/')" not in text:
+            text = text.replace("url.pathname.includes('/images/')",
+                                "(url.pathname.includes('/images/') || url.pathname.includes('/art/'))")
         # push notifications + notification taps
         push = SRC / SW_PUSH
         if push.exists() and "addEventListener('push'" not in text:

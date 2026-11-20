@@ -2,7 +2,7 @@
 """
 CIRCArt — put the tested preview files into a clone of the REAL game repo and
 build docs/ for production. Nothing is committed or pushed; that stays a
-pull request Julian merges (see SHIP.md).
+pull request Admin merges (see SHIP.md).
 
     python3 stage.py --game <clone of nambatu/circart on a new branch>
                      --backend <folder with app/ web/ deck/ supabase/>
@@ -21,12 +21,12 @@ import sys
 from pathlib import Path
 
 WWW_FROM_APP = ["index.html", "shell.js", "shell.css", "strings.js", "game.js", "sw-push.js",
-                "strings-de.js", "solo.js", "dealer.js", "collection.js", "styles.js", "solo.css", "solo-i18n.js", "solo-i18n.css", "onboarding.js", "onboarding.css", "packs.js"]
+                "strings-de.js", "dealer.js", "collection.js", "styles.js", "onboarding.js", "onboarding.css", "packs.js"]
 ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py"]
 
 
 PREVIEW_SITE = "https://nambatu.github.io/circart-preview"
-SITE = "https://circart.langschwerts.de"
+SITE = "https://YOUR-GAME-DOMAIN"
 
 
 def stage_pack_images(repo, docs, cfg, packs_sql):
@@ -50,7 +50,8 @@ def stage_pack_images(repo, docs, cfg, packs_sql):
         sys.exit(f"pack photos missing in pack-art/: {len(missing)} (e.g. {missing[0]}). Let the pack-images Action finish first.")
     print(f"staged: {copied} pack photos in docs/art/")
     if packs_sql:
-        sql = (repo / "supabase" / "packs.sql").read_text(encoding="utf-8").replace(PREVIEW_SITE, SITE)
+        site = (cfg.get("site") or SITE).rstrip("/")
+        sql = (repo / "supabase" / "packs.sql").read_text(encoding="utf-8").replace(PREVIEW_SITE, site)
         Path(packs_sql).write_text(sql, encoding="utf-8")
         print(f"wrote {packs_sql} (run it in the production SQL editor after the deck)")
 
@@ -97,8 +98,13 @@ def main():
         if dst.exists():
             shutil.rmtree(dst)
         shutil.copytree(be / "supabase" / sub, dst)
+    out_cfg = {k: cfg.get(k, "") for k in ("supabase_url", "anon_key", "vapid_public")}
+    if cfg.get("custom_domain"):
+        out_cfg["custom_domain"] = cfg["custom_domain"]
+    elif cfg.get("site"):
+        out_cfg["custom_domain"] = cfg["site"].replace("https://", "").replace("http://", "").split("/")[0]
     (game / "deploy_config.json").write_text(
-        json.dumps({k: cfg.get(k, "") for k in ("supabase_url", "anon_key", "vapid_public")}, indent=2) + "\n",
+        json.dumps(out_cfg, indent=2) + "\n",
         encoding="utf-8")
     print("staged: www/ app files, build scripts, supabase/, deploy_config.json")
 

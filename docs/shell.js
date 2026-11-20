@@ -1,21 +1,26 @@
-// CIRCArt — app shell: tabs, home, ranks, profile, theme, and the glue
-// between the solo game (app.js) and the server (online.js).
+// CIRCArt — app shell: tabs, home, ranks, profile, theme, feedback, zoom,
+// and the connection between the screens and the server (online.js).
 //
-// Load order in index.html: strings.js, supabase, online.js, app.js, shell.js.
 // Works without online.js or without a connection: solo play, the gallery and
 // the theme switch never depend on the server.
 
 (function () {
     'use strict';
 
-    const { t } = window.CircI18n;
+    const { t, esc, de } = window.CircI18n;
     const online = () => (window.CircOnline && window.CircOnline.available()) ? window.CircOnline : null;
+    const safeUser = async o => { if (!o) return null; try { return await o.user(); } catch (e) { return null; } };
     const $ = id => document.getElementById(id);
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const store = {
         get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
         set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } },
     };
+    const ROUNDS_KEY = 'circart-rounds';
+    const VALID_ROUNDS = [5, 10, 15, 20];
+    let selectedRounds = (() => {
+        const n = Number(store.get(ROUNDS_KEY));
+        return VALID_ROUNDS.includes(n) ? n : 10;
+    })();
 
     // Multiplayer, daily challenge and leaderboards switch on here once their
     // screens are built (roadmap tasks 9–11). The server side is ready.
@@ -64,15 +69,10 @@
 
     function showTab(name) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        if (name === 'gallery') {
-            $('start-screen').classList.add('active');     // app.js's gallery handler expects to leave the start screen
-            $('gallery-btn').click();
-            setGalleryView(galleryView);
-        } else {
-            $(TAB_SCREENS[name]).classList.add('active');
-        }
+        $(TAB_SCREENS[name]).classList.add('active');
         if (name === 'play') renderHome();
         if (name === 'ranks') renderRanks();
+        if (name === 'gallery') setGalleryView(galleryView);
         if (name === 'profile') renderProfile();
     }
 
@@ -115,35 +115,17 @@
             const zoom = $('zoom-modal');
             if (visible(zoom)) { $('close-zoom-btn').click(); return true; }
             const report = $('report-modal');
-            if (visible(report)) { $('cancel-report-btn').click(); return true; }
+            if (visible(report)) { closeFeedback(); return true; }
             const sheets = [...document.querySelectorAll('body > .modal')].filter(visible);
             if (sheets.length) { sheets[sheets.length - 1].remove(); return true; }
             if (visible($('gallery-screen')) && closePackDetail()) return true;
             return false;
         }
 
-        function askLeaveSolo() {
-            const m = document.createElement('div');
-            m.className = 'modal';
-            m.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" style="display:flex;flex-direction:column;gap:12px">
-                <h2 class="serif" style="font-size:22px">${esc(t('back.leaveTitle'))}</h2>
-                <p class="muted" style="font-size:14px">${esc(t('back.leaveSolo'))}</p>
-                <button class="btn primary block" data-x="stay">${esc(t('back.stay'))}</button>
-                <button class="btn link" data-x="leave">${esc(t('back.leave'))}</button></div>`;
-            m.addEventListener('click', e => {
-                const x = e.target.closest('[data-x]');
-                if (e.target === m || (x && x.dataset.x === 'stay')) return m.remove();
-                if (x && x.dataset.x === 'leave') { m.remove(); showTab('play'); }
-            });
-            document.body.appendChild(m);
-            m.querySelector('[data-x="stay"]').focus();
-        }
-
         window.addEventListener('popstate', () => {
             if (closeTopWindow()) return arm();
             const active = document.querySelector('.screen.active');
             const id = active ? active.id : '';
-            if (id === 'game-screen') { askLeaveSolo(); return arm(); }
             if (id === 'game-online-screen') { window.CircGame.leaveAsk(); return arm(); }
             if (id !== 'start-screen') { showTab('play'); return arm(); }
             // home: first back shows a hint and leaves the guard off,
@@ -154,18 +136,23 @@
     }
 
     // ─── home ─────────────────────────────────────────────────────────────
-    let deck = null;
+    let deck = null, deckP = null;
     async function loadDeck() {
         if (deck) return deck;
-        try { deck = await (await fetch('artline.json', { cache: 'no-cache' })).json(); } catch (e) { deck = []; }
-        return deck;
+        if (!deckP) {
+            deckP = fetch('artline.json', { cache: 'no-cache' })
+                .then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+                .then(d => { if (Array.isArray(d) && d.length) deck = d; return Array.isArray(d) ? d : []; })
+                .catch(() => [])
+                .finally(() => { deckP = null; });
+        }
+        return deckP;
     }
 
     async function renderHome() {
         if (online() && FEATURES.daily && !$('home-daily').firstElementChild) drawDaily($('home-daily'), online(), null, null);
-        const sel = $('rounds-select');
         document.querySelectorAll('#round-chips .chip').forEach(c => {
-            c.setAttribute('aria-pressed', String(c.dataset.rounds === sel.value));
+            c.setAttribute('aria-pressed', String(Number(c.dataset.rounds) === selectedRounds));
         });
 
         // A different well-known work on the solo card each time you open the app.
@@ -182,7 +169,7 @@
         }
 
         const o = online();
-        const u = o ? await o.user() : null;
+        const u = await safeUser(o);
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
         renderDaily(o, u);
         renderRun(o, u);
@@ -275,17 +262,17 @@
         const fresh = packs.filter(p => p.new);
         if (fresh.length) { fresh.forEach(p => toast(t('packs.new', { name: packText(p, 'title') }))); o.markPacksSeen().catch(() => {}); }
     }
-    // a month's theme (and other server texts) in German when there is one
-    function de(o, k) { return (o && window.CircI18n.lang === 'de' && o[k + '_de']) || (o && o[k]); }
-    function packText(p, k) { return (window.CircI18n.lang === 'de' && p[k + '_de']) || p[k]; }
+    const packText = (p, k) => de(p, k);
     const packImg = c => (c.image_local || c.image || c.image_source || '').replace(/\\/g, '/');
 
     function setGalleryView(v) {
         galleryView = v;
         document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gview === v)));
         $('gallery-grid').classList.toggle('hidden', v !== 'works');
+        if ($('gallery-count')) $('gallery-count').classList.toggle('hidden', v !== 'works');
         $('gallery-packs').classList.toggle('hidden', v !== 'packs');
         if ($('gallery-styles')) $('gallery-styles').classList.toggle('hidden', v !== 'styles');
+        if (v === 'works' && window.CircCollection) window.CircCollection.renderGallery($('gallery-grid'));
         if (v === 'packs') renderGalleryPacks();
         if (v === 'styles' && window.CircStyles) window.CircStyles.renderGuide($('gallery-styles'));
     }
@@ -293,7 +280,7 @@
     async function renderGalleryPacks() {
         const box = $('gallery-packs');
         const o = online();
-        const u = o ? await o.user() : null;
+        const u = await safeUser(o);
         if (!packsCache && u) await checkPacks(o, u);
         const packs = packsCache || [];
         if (!packs.length || !window.CircPacks) {
@@ -358,7 +345,7 @@
             const id = play.dataset.packPlay;
             openPack = null;
             const sc = box.closest('.gallery-main'); if (sc) sc.scrollTop = 0;
-            window.CircPacks.play(id);
+            window.CircPacks.play(id, packText(p, 'title'));
         });
     }
     function closePackDetail() {
@@ -465,7 +452,7 @@
         return s && s !== k ? s : (e && e.message) || t('common.error');
     }
     const isDefaultName = n => !n || /^Guest [0-9]+$/.test(n);
-    // a first username from the name someone already uses ("Julian L." → "JulianL.")
+    // a first username from the name someone already uses ("Alex M." → "AlexM.")
     const suggestUsername = n => isDefaultName(n) ? '' : String(n).replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20);
 
     async function currentName() {
@@ -525,7 +512,7 @@
         const box = $('ranks-body');
         const o = online();
         if (!o) { box.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`; return; }
-        const u = await o.user();
+        const u = await safeUser(o);
         if (!u) { box.innerHTML = `<p class="muted">${esc(t('ranks.signIn'))}</p>`; return; }
         const tabs = ['today', 'month', 'allTime'];
         box.innerHTML = `
@@ -629,7 +616,7 @@
     async function renderProfile() {
         const box = $('profile-body');
         const o = online();
-        const u = o ? await o.user() : null;
+        const u = await safeUser(o);
         let p = null;
         if (u) { try { p = cachedProfile = await o.getProfile(); } catch (e) { p = null; } }
         const theme = themeChoice();
@@ -737,7 +724,7 @@
             applyTheme(b.dataset.theme);
             renderProfile();
         }));
-        on('pf-feedback', () => $('open-report-btn').click());
+        on('pf-feedback', openFeedback);
         on('pf-testpush', guard(async () => {
             if (!(await o.pushOn())) return toast(t('profile.testPushOff'));
             toast(t((await o.previewTestPush()) ? 'profile.testPushSent' : 'profile.testPushOff'));
@@ -820,89 +807,125 @@
         m.querySelector('button').focus();
     }
 
-    // ─── feedback: save to the database, email as the fallback ────────────
-    // app.js's own handler (mailto) only runs if saving fails.
-    let fallback = false;
-    function hookFeedback() {
-        const send = $('send-report-btn');
-        send.addEventListener('click', async (e) => {
-            if (fallback) { fallback = false; return; }          // let app.js handle it
-            const o = online();
-            const text = $('report-text').value.trim();
-            if (!o || !text) return;                              // app.js shows its own messages
-            e.stopImmediatePropagation();
-            const card = typeof currentCard !== 'undefined' ? currentCard : null;   // eslint-disable-line no-undef
-            const inGame = $('game-screen').classList.contains('active');
-            try {
-                await o.sendFeedback($('report-topic').value, text, inGame && card ? String(card.id) : null, {
-                    round: inGame && typeof currentRound !== 'undefined' ? currentRound : null,  // eslint-disable-line no-undef
-                    page: location.href, ua: navigator.userAgent.slice(0, 200),
-                });
-                $('report-modal').classList.add('hidden');
-                $('report-text').value = '';
-                toast(t('feedback.sent'));
-            } catch (err) {
-                fallback = true;
-                send.click();
-            }
-        }, true);
+    // ─── feedback: save to the database, copy box + Imprint as the fallback ────────────
+    let reportCtx = null;
+
+    function resetFeedback() {
+        const fb = $('report-fallback'), ft = $('report-fallback-text'), cb = $('report-copy-btn'), rt = $('report-text');
+        if (fb) fb.classList.add('hidden');
+        if (ft) ft.value = '';
+        if (cb) cb.textContent = t('feedback.copy');
+        if (rt) rt.value = '';
     }
 
-    // ─── solo game: logging and saving, without touching app.js ───────────
-    // app.js declares its functions globally and calls them by name, so
-    // wrapping window.placeCard / endGame / readSeen hooks in cleanly.
-    /* global timeline, currentCard, currentRound, score, bonusPoints, fuzzyMatch */
-    let soloLog = null;
-    function hookSoloGame() {
-        if (typeof window.placeCard !== 'function') return;
-        const origPlace = window.placeCard;
-        const origEnd = window.endGame;
-        const origSeen = window.readSeen;
+    function closeFeedback() {
+        const modal = $('report-modal');
+        if (modal) modal.classList.add('hidden');
+        resetFeedback();
+        reportCtx = null;
+    }
 
-        window.placeCard = function (index) {
-            if (!$('feedback-area').classList.contains('hidden')) return origPlace(index);   // already placed
-            if (currentRound === 1 || !soloLog) {
-                soloLog = { startedAt: new Date().toISOString(), cards: [{ id: timeline[0] && timeline[0].id }], streak: 0, best: 0 };
+    function openFeedback() {
+        resetFeedback();
+        const inGame = $('game-online-screen') && $('game-online-screen').classList.contains('active');
+        reportCtx = (inGame && window.CircGame && window.CircGame.reportContext) ? window.CircGame.reportContext() : null;
+        const ctxBox = $('report-card-context'), ctxSum = $('report-card-summary');
+        if (reportCtx && ctxBox && ctxSum) {
+            ctxSum.textContent = reportCtx.revealed
+                ? ([reportCtx.title, reportCtx.artist, reportCtx.year].filter(Boolean).join(' · ') || t('feedback.currentCard'))
+                : t('feedback.currentCard');
+            ctxBox.classList.remove('hidden');
+        } else if (ctxBox) {
+            ctxBox.classList.add('hidden');
+        }
+        const modal = $('report-modal');
+        if (modal) modal.classList.remove('hidden');
+        if ($('report-text')) $('report-text').focus();
+    }
+
+    function buildReportEmailBody(text, topic, ctx) {
+        const lines = [text, '', '---', 'Topic: ' + topic];
+        if (ctx) {
+            if (ctx.revealed) {
+                if (ctx.title) lines.push('Card: ' + ctx.title);
+                if (ctx.artist) lines.push('Artist: ' + ctx.artist);
+                if (ctx.year != null) lines.push('Year: ' + ctx.year);
+                if (ctx.movement) lines.push('Movement: ' + ctx.movement);
+                if (ctx.medium) lines.push('Medium: ' + ctx.medium);
+                if (ctx.location) lines.push('Location: ' + ctx.location);
             }
-            const card = currentCard;
-            const g = id => ($(id).value || '').trim();
-            const artist = !!g('guess-artist') && fuzzyMatch(g('guess-artist'), card.artistDisplayName || '');
-            const title = !!g('guess-title') && fuzzyMatch(g('guess-title'), card.title || '');
-            const year = !!g('guess-year') && parseInt(g('guess-year'), 10) === card.objectEndDate;
-            const result = origPlace(index);
-            const correct = timeline.includes(card);
-            soloLog.streak = correct ? soloLog.streak + 1 : 0;
-            soloLog.best = Math.max(soloLog.best, soloLog.streak);
-            soloLog.cards.push({ id: card.id, correct, artist, title, year });
-            // desktop: the result sits above the timeline, so bring it into view
-            const main = document.querySelector('#game-screen .game-main');
-            if (main && innerWidth > 780) main.scrollTo({ top: 0, behavior: 'smooth' });
-            return result;
-        };
+            if (ctx.sourceId) lines.push('Card ID: ' + ctx.sourceId);
+            if (ctx.round != null && ctx.total != null) lines.push('Round: ' + ctx.round + ' of ' + ctx.total);
+        }
+        try { lines.push('Page: ' + window.location.href); } catch (e) { /* ignore */ }
+        return lines.join('\r\n');
+    }
 
-        window.endGame = function () {
-            const result = origEnd.apply(this, arguments);
-            if (soloLog) {
-                window.CircShell.soloGameFinished({
-                    startedAt: soloLog.startedAt, score, bonusPoints,
-                    bestStreak: soloLog.best, cards: soloLog.cards,
-                });
-                soloLog = null;
+    function setupFeedback() {
+        const modal = $('report-modal');
+        if (!modal) return;
+        const cancel = $('cancel-report-btn'), send = $('send-report-btn'), copyBtn = $('report-copy-btn');
+        if (cancel) cancel.addEventListener('click', closeFeedback);
+        modal.addEventListener('click', e => { if (e.target === modal) closeFeedback(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                e.stopPropagation();
+                closeFeedback();
             }
-            return result;
-        };
+        }, true);
 
-        // Cards seen on other devices count as seen for the dealer too.
-        window.readSeen = function () {
-            const seen = origSeen();
-            const now = Date.now();
-            serverSeen.forEach(id => { if (!(id in seen)) seen[id] = now; });
-            return seen;
-        };
+        if (send) {
+            let busy = false;
+            send.addEventListener('click', async () => {
+                if (busy) return;
+                const text = ($('report-text') ? $('report-text').value : '').trim();
+                if (!text) { toast(t('feedback.empty')); return; }
+                const topic = $('report-topic') ? $('report-topic').value : 'Something else';
+                const o = online();
+                if (o) {
+                    busy = true;
+                    send.disabled = true;
+                    try {
+                        await o.sendFeedback(topic, text, reportCtx ? reportCtx.sourceId : null, {
+                            round: reportCtx ? reportCtx.round : null,
+                            page: location.href,
+                            ua: navigator.userAgent.slice(0, 200),
+                        });
+                        closeFeedback();
+                        toast(t('feedback.sent'));
+                        return;
+                    } catch (err) {
+                        /* fall back to email below */
+                    } finally {
+                        busy = false;
+                        send.disabled = false;
+                    }
+                }
+                let subject = 'CIRCArt feedback: ' + topic;
+                if (reportCtx && reportCtx.revealed && reportCtx.title) subject += ' \u2014 ' + reportCtx.title;
+                const body = buildReportEmailBody(text, topic, reportCtx);
+                if ($('report-fallback-text')) $('report-fallback-text').value = 'Subject: ' + subject + '\r\n\r\n' + body;
+                if ($('report-fallback')) $('report-fallback').classList.remove('hidden');
+            });
+        }
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                const ft = $('report-fallback-text');
+                if (!ft) return;
+                try {
+                    await navigator.clipboard.writeText(ft.value);
+                    copyBtn.textContent = t('feedback.copied');
+                } catch (e) {
+                    ft.select();
+                    copyBtn.textContent = t('feedback.copyManual');
+                }
+            });
+        }
     }
 
     // ─── tap a painting to see it large (task 36) ─────────────────────────
-    // Every card image opens app.js's zoom window (#zoom-modal). On top of it:
+    // Every card image opens the zoom window (#zoom-modal). On top of it:
     // pinch or double-tap to zoom, drag to look around, a tap closes it (when
     // not zoomed in), and so do ✕, Escape and the back swipe (setupBack).
     const ZOOM_SEL = '.zoomable-img, .go-art img, .go-tl img, .go-story img, .go-bonus-art, .hcard-thumb';
@@ -1018,7 +1041,7 @@
         new MutationObserver(() => { if (!isOpen() && Z.s !== 1) reset(); }).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // ─── called by app.js ─────────────────────────────────────────────────
+    // ─── public shell API & start ─────────────────────────────────────────
     let serverSeen = new Set();
     window.CircShell = {
         // Finished solo game → saved for signed-in players (queued while offline).
@@ -1028,6 +1051,9 @@
         },
         // Cards this player saw on any device in the last day (artline ids).
         serverSeen: () => serverSeen,
+        soloRounds: () => selectedRounds,
+        loadDeck,
+        openFeedback,
         showTab,
         toast,
         t,
@@ -1039,12 +1065,18 @@
         document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
         $('home-avatar').addEventListener('click', () => showTab('profile'));
         document.querySelectorAll('#round-chips .chip').forEach(c => c.addEventListener('click', () => {
-            $('rounds-select').value = c.dataset.rounds;
-            renderHome();
+            const n = Number(c.dataset.rounds);
+            if (!VALID_ROUNDS.includes(n)) return;
+            selectedRounds = n;
+            store.set(ROUNDS_KEY, String(n));
+            document.querySelectorAll('#round-chips .chip').forEach(b => {
+                b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === selectedRounds));
+            });
         }));
-        $('flag-btn').addEventListener('click', () => $('open-report-btn').click());
-        hookFeedback();
-        hookSoloGame();
+        $('start-btn').addEventListener('click', () => window.CircGame.openSolo({ rounds: selectedRounds }));
+        if ($('back-to-menu-btn')) $('back-to-menu-btn').addEventListener('click', () => showTab('play'));
+        if ($('go-flag')) $('go-flag').addEventListener('click', openFeedback);
+        setupFeedback();
 
         new MutationObserver(syncTabs).observe($('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
         document.querySelectorAll('#gallery-seg [data-gview]').forEach(b => b.addEventListener('click', () => setGalleryView(b.dataset.gview)));
@@ -1062,7 +1094,7 @@
         });
 
         const o = online();
-        if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); });
+        if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); }).catch(() => {});
 
         // A new version took over (sw.js skips waiting): reload so the page and its
         // files match again — straight away on a tab, otherwise after the game.

@@ -34,11 +34,9 @@
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="shell.css">
-    <link rel="stylesheet" href="solo.css">
     <link rel="stylesheet" href="onboarding.css">
     <!-- fonts and libraries are served from this site (GDPR: no visitor IPs to Google/unpkg/CDNs) -->
     <link rel="stylesheet" href="vendor/fonts.css">
-    <script src="vendor/lottie-player.js"></script>
 </head>
 <body>
     <div id="app">
@@ -77,13 +75,6 @@
                                     <button class="chip" data-rounds="20">20</button>
                                 </div>
                             </div>
-                            <!-- app.js reads the number of rounds from this select -->
-                            <select id="rounds-select" class="hidden" aria-hidden="true" tabindex="-1">
-                                <option value="5">5</option>
-                                <option value="10" selected>10</option>
-                                <option value="15">15</option>
-                                <option value="20">20</option>
-                            </select>
                             <button id="start-btn" class="btn primary block" data-i18n="home.solo.start"></button>
                         </div>
                     </section>
@@ -91,9 +82,6 @@
                     <div id="home-run"></div>
                     <!-- play with friends + join by code (shell.js) -->
                     <div id="home-online"></div>
-
-                    <!-- app.js opens the gallery from this button; the Gallery tab clicks it -->
-                    <button id="gallery-btn" class="hidden" tabindex="-1" aria-hidden="true"></button>
                 </div>
             </div>
         </div>
@@ -102,7 +90,7 @@
         <div id="gallery-screen" class="screen">
             <header>
                 <h2 data-i18n="tab.gallery">Gallery</h2>
-                <button id="back-to-menu-btn" class="primary-btn small-btn">Back to Menu</button>
+                <button id="back-to-menu-btn" class="primary-btn small-btn" data-i18n="gallery.back">Back to Menu</button>
             </header>
             <div class="gallery-switch"><div class="seg" id="gallery-seg" role="group">
                 <button data-gview="works" aria-pressed="true" data-i18n="gallery.works"></button>
@@ -137,108 +125,19 @@
             </div>
         </div>
 
-        <!-- ==================== GAME WITH FRIENDS (game.js) ==================== -->
+        <!-- ==================== GAME SCREEN (game.js) ==================== -->
         <div id="game-online-screen" class="screen">
             <div class="go-head">
                 <button class="go-close" data-i18n-label="game.home">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
                 <b id="go-title"></b>
-                <b id="go-score" style="min-width:44px;text-align:right"></b>
+                <div class="go-head-right">
+                    <b id="go-score"></b>
+                    <button id="go-flag" class="go-flag" type="button" data-i18n-label="feedback.flag">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></button>
+                </div>
             </div>
             <div class="scroll" id="go-body" aria-live="polite"></div>
-        </div>
-
-        <!-- ==================== GAME SCREEN ==================== -->
-        <div id="game-screen" class="screen">
-            <header class="game-header">
-                <div class="stats">
-                    <span>Round <span id="current-round">1</span> / <span id="total-rounds">10</span></span>
-                    <span>Score: <span id="score">0</span></span>
-                </div>
-                <button id="flag-btn" class="flag-btn" data-i18n-label="feedback.flag">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>
-                </button>
-            </header>
-
-            <main class="game-main">
-                <!-- Artwork to place, plus the interaction panel.
-                     Side by side on desktop, stacked on a phone. -->
-                <div id="active-card-section">
-                    <div id="active-card" class="card hidden">
-                        <div class="card-image-container">
-                            <img id="active-image" class="zoomable-img" src="" alt="Current Artwork">
-                        </div>
-                        <div id="active-details" class="card-details hidden">
-                            <h3 id="active-title">Title</h3>
-                            <p id="active-artist">Artist</p>
-                            <p class="year" id="active-year">Year</p>
-                        </div>
-                    </div>
-
-                    <div id="interaction-panel">
-                        <div class="bonus-section" id="bonus-section">
-                            <h3>Extra Points (Optional)</h3>
-                            <p class="hint">Guess the artist, title, or exact year for bonus points! (Typos allowed)</p>
-                            <input type="text" id="guess-artist" placeholder="Artist" autocomplete="off">
-                            <input type="text" id="guess-title" placeholder="Title" autocomplete="off">
-                            <input type="number" id="guess-year" placeholder="Year (exact)" inputmode="numeric">
-                            <!-- Wording follows the input device, chosen in CSS -->
-                            <p class="instruction">
-                                <span class="instruction-mouse">Click on a gap in the timeline below to place the artwork.</span>
-                                <span class="instruction-touch">Tap a + button in the timeline below to place the artwork.</span>
-                            </p>
-                        </div>
-
-                        <!-- Feedback Area (shown after placement) -->
-                        <div id="feedback-area" class="hidden">
-                            <h2 id="feedback-message">Correct!</h2>
-                            <ul id="bonus-feedback"></ul>
-                            <div id="active-extra-info" class="metadata-box">
-                                <span id="active-movement"></span> &bull; <span id="active-medium"></span> &bull; <span id="active-location"></span>
-                            </div>
-                            <div id="trivia-section" class="hidden">
-                                <h3>Artwork Details</h3>
-                                <p id="trivia-text"></p>
-                            </div>
-                            <div id="did-you-know-section" class="hidden">
-                                <h3>Did you know?</h3>
-                                <p id="did-you-know-text"></p>
-                            </div>
-                            <button id="next-round-btn" class="primary-btn">Continue</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Timeline: horizontal on desktop, vertical on a phone.
-                     Both the heading and the direction labels are present;
-                     CSS shows whichever suits the current layout. -->
-                <div id="timeline-section">
-                    <h2>Timeline</h2>
-                    <!-- Newest at the top: the phone timeline is
-                         column-reverse, so these labels match the visual
-                         order rather than the DOM order. -->
-                    <div class="timeline-direction">
-                        <span class="direction-label">&#9650; Newer</span>
-                    </div>
-                    <div id="timeline" class="timeline">
-                        <!-- Filled by JS: gaps and cards -->
-                    </div>
-                    <div class="timeline-direction">
-                        <span class="direction-label">&#9660; Older</span>
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <!-- ==================== END SCREEN ==================== -->
-        <div id="end-screen" class="screen">
-            <h1>Game Over!</h1>
-            <p>Your Highscore:</p>
-            <div class="final-score" id="final-score">0</div>
-            <div class="score-breakdown" id="score-breakdown">
-                <!-- Breakdown -->
-            </div>
-            <button id="restart-btn" class="primary-btn">Play Again</button>
         </div>
 
         <!-- ==================== TAB BAR ==================== -->
@@ -257,48 +156,38 @@
                 <span data-i18n="tab.profile">Profile</span></button>
         </nav>
 
-        <!-- ==================== LOADING OVERLAY ==================== -->
-        <div id="loading-overlay" class="hidden">
-            <lottie-player id="lottie-loader" src="Abstract%20Painting%20Loader.json" background="transparent" speed="1" loop autoplay></lottie-player>
-            <p id="loading-text">Loading artworks from the museum...</p>
-        </div>
-
-        <!-- Opens the report form. Hidden: the flag in the game header and
-             Profile → Send feedback click it. -->
-        <button id="open-report-btn" class="report-btn">Report / Feedback</button>
-
         <!-- ==================== REPORT MODAL ==================== -->
         <div id="report-modal" class="modal hidden">
-            <div class="modal-content">
-                <h2>Report / Feedback</h2>
-                <p>Spotted a wrong fact? Want to suggest a new feature? Let us know!</p>
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="report-title">
+                <h2 id="report-title" data-i18n="feedback.title">Report or feedback</h2>
+                <p data-i18n="feedback.intro">Spotted a wrong fact or have an idea? Let us know.</p>
                 <div id="report-card-context" class="hidden" style="text-align:left;font-size:0.85rem;border:1px solid;border-left:4px solid var(--accent-color);border-radius:6px;padding:0.6rem 0.75rem;margin-bottom:0.75rem;">
-                    <strong>About this card</strong>
+                    <strong data-i18n="feedback.aboutCard">About this card</strong>
                     <div id="report-card-summary" style="margin-top:0.2rem;color:var(--text-secondary);"></div>
                 </div>
 
-                <label for="report-topic" style="display:block;text-align:left;font-size:0.85rem;margin-bottom:0.25rem;">What is this about?</label>
+                <label for="report-topic" data-i18n="feedback.topicLabel" style="display:block;text-align:left;font-size:0.85rem;margin-bottom:0.25rem;">What is this about?</label>
                 <select id="report-topic" style="width:100%;padding:0.5rem;margin-bottom:0.75rem;border:1px solid;border-radius:6px;font:inherit;">
-                    <option value="Wrong year">Wrong year</option>
-                    <option value="Wrong artist or title">Wrong artist or title</option>
-                    <option value="Image problem">Image problem</option>
-                    <option value="Wrong or unclear description">Wrong or unclear description</option>
-                    <option value="Feature suggestion">Feature suggestion</option>
-                    <option value="Something else" selected>Something else</option>
+                    <option value="Wrong year" data-i18n="feedback.topic.year">Wrong year</option>
+                    <option value="Wrong artist or title" data-i18n="feedback.topic.artist">Wrong artist or title</option>
+                    <option value="Image problem" data-i18n="feedback.topic.image">Image problem</option>
+                    <option value="Wrong or unclear description" data-i18n="feedback.topic.desc">Wrong or unclear description</option>
+                    <option value="Feature suggestion" data-i18n="feedback.topic.feature">Feature suggestion</option>
+                    <option value="Something else" data-i18n="feedback.topic.other" selected>Something else</option>
                 </select>
 
-                <textarea id="report-text" placeholder="Type your feedback here..." rows="5" maxlength="1000"></textarea>
+                <textarea id="report-text" data-i18n-placeholder="feedback.placeholder" placeholder="Type your feedback here…" rows="5" maxlength="1000"></textarea>
                 <p id="report-hint" data-i18n="feedback.hint" style="font-size:0.75rem;color:var(--text-secondary);text-align:left;margin:0.4rem 0 0;"></p>
 
                 <div id="report-fallback" class="hidden" style="text-align:left;margin-top:0.75rem;">
-                    <p style="font-size:0.8rem;margin:0 0 0.4rem;">If your email app did not open, copy this and send it to <strong>julian@langschwerts.de</strong>:</p>
+                    <p style="font-size:0.8rem;margin:0 0 0.4rem;"><span data-i18n="feedback.fallback">Your message could not be sent automatically. Copy it below and use the contact details in the </span><a href="impressum.html" data-i18n="profile.impressum">Imprint</a>:</p>
                     <textarea id="report-fallback-text" rows="6" readonly style="width:100%;font-size:0.75rem;"></textarea>
-                    <button id="report-copy-btn" class="secondary-btn" style="margin-top:0.4rem;padding:0.35rem 1rem;font-size:0.8rem;">Copy to clipboard</button>
+                    <button id="report-copy-btn" class="secondary-btn" data-i18n="feedback.copy" style="margin-top:0.4rem;padding:0.35rem 1rem;font-size:0.8rem;">Copy to clipboard</button>
                 </div>
 
                 <div class="modal-actions">
-                    <button id="cancel-report-btn" class="secondary-btn">Cancel</button>
-                    <button id="send-report-btn" class="primary-btn">Send</button>
+                    <button id="cancel-report-btn" class="secondary-btn" data-i18n="feedback.cancel">Cancel</button>
+                    <button id="send-report-btn" class="primary-btn" data-i18n="feedback.send">Send</button>
                 </div>
             </div>
         </div>
@@ -325,15 +214,12 @@
     <!-- Online features. If this fails to load (offline), solo play is unaffected. -->
     <script src="vendor/supabase.js"></script>
     <script src="online.js"></script>
-    <script src="app.js"></script>
     <script src="styles.js"></script>
-    <script src="shell.js"></script>
-    <script src="game.js"></script>
-    <script src="solo.js"></script>
     <script src="dealer.js"></script>
     <script src="collection.js"></script>
     <script src="packs.js"></script>
-    <script src="solo-i18n.js"></script>
+    <script src="shell.js"></script>
+    <script src="game.js"></script>
     <script src="onboarding.js"></script>
     <script src="pwa.js"></script>
 </body>

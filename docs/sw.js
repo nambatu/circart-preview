@@ -9,7 +9,7 @@
    for you, so you normally never touch this file.
    ============================================================ */
 
-const CACHE_VERSION = 'preview-20261119-164841';
+const CACHE_VERSION = 'preview-20261120-014443';
 
 const SHELL_CACHE  = `circart-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE  = `circart-images-${CACHE_VERSION}`;
@@ -22,12 +22,9 @@ const SHELL_ASSETS = [
     './strings.js',
     './strings-de.js',
     './game.js',
-    './solo.js',
-    './solo.css',
     './dealer.js',
     './collection.js',
     './styles.js',
-    './solo-i18n.js',
     './onboarding.js',
     './onboarding.css',
     './packs.js',
@@ -36,10 +33,8 @@ const SHELL_ASSETS = [
     './',
     './index.html',
     './style.css',
-    './app.js',
     './pwa.js',
     './artline.json',
-    './Abstract Painting Loader.json',
     './manifest.webmanifest',
     './icons/icon-192.png',
     './icons/icon-512.png'
@@ -136,7 +131,7 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Artwork: cache-first, accumulating as you play.
-        if (url.pathname.includes('/images/')) {
+        if ((url.pathname.includes('/images/') || url.pathname.includes('/art/'))) {
             event.respondWith(cacheFirst(request, IMAGE_CACHE));
             return;
         }

@@ -87,11 +87,11 @@
             'profile.offline': 'Online features are not available right now. Solo play works as always.',
 
             'about.title': 'About CIRCArt',
-            'about.text': 'CIRCArt is a game about art history, made by Julian Langschwert. Every card tells you who made the work and where you can see it today. The images are reproductions, mostly from Wikimedia Commons and the open collections of museums, and they are used in a free game that makes no money. If a work shown here is yours and you would like it removed or credited differently, write to julian@langschwerts.de.',
+            'about.text': 'CIRCArt is a game about art history. Every card tells you who made the work and where you can see it today. The images are reproductions, mostly from Wikimedia Commons and the open collections of museums, and they are used in a free game that makes no money. If a work shown here is yours and you would like it removed or credited differently, send feedback in Profile or use the contact details in the Imprint.',
             'about.close': 'Close',
 
             'feedback.sent': 'Thanks! Your feedback has been sent.',
-            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, your email app opens with everything filled in. Please don\'t put personal details in your message. How it is stored is explained in the privacy policy (Profile).',
+            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, you can copy your message and use the contact details in the Imprint (Profile). Please don\'t put personal details in your message. How it is stored is explained in the privacy policy (Profile).',
             'feedback.flag': 'Report this card',
 
             'friends.title': 'Play with friends',
@@ -241,6 +241,16 @@
             'profile.nameHint': 'Other players see this name in games and on the leaderboards.',
             'profile.yourName': 'Your name',
             'onb.done': 'Let\'s play',
+            'onb.dialogLabel': 'How to play CIRCArt',
+            'onb.skip': 'Skip',
+            'onb.back': 'Back',
+            'onb.next': 'Next',
+            'onb.stepOf': 'Step {n} of {total}',
+            'onb.s1Earlier': 'earlier',
+            'onb.s1Later': 'later',
+            'onb.s2Q1': 'Who made it?',
+            'onb.s2Q2': 'Which movement?',
+            'onb.s3Streak': 'day streak',
             'onb.s4Note': 'Start a game on the home screen and send your friends the code.',
             'onb.s4Async': 'Over a few days',
             'onb.s4Live': 'Live',
@@ -354,6 +364,38 @@
 
             'common.close': 'Close',
             'common.error': 'Something went wrong. Please try again.',
+
+            'solo.title': 'Solo',
+            'solo.done': 'Game over',
+            'solo.placedRight': '{correct} of {total} placed right',
+            'solo.droppedNote': 'This one stays off your timeline because it wasn’t in the right spot.',
+            'solo.bonusPoints': 'bonus points',
+            'solo.shareText': 'CIRCArt solo: {correct}/{total} · {score} pts',
+            'solo.packShareText': 'CIRCArt ({pack}): {correct}/{total} · {score} pts',
+            'solo.streak': '{n} in a row',
+            'solo.noCards': 'Could not load the artworks. Check your connection and try again.',
+            'gallery.back': 'Back to Menu',
+            'gallery.loading': 'Loading gallery…',
+            'gallery.failed': 'Could not load the gallery right now.',
+            'feedback.title': 'Report or feedback',
+            'feedback.intro': 'Spotted a wrong fact or have an idea? Let us know.',
+            'feedback.aboutCard': 'About this card',
+            'feedback.currentCard': 'The card you are looking at right now',
+            'feedback.topicLabel': 'What is this about?',
+            'feedback.topic.year': 'Wrong year',
+            'feedback.topic.artist': 'Wrong artist or title',
+            'feedback.topic.image': 'Image problem',
+            'feedback.topic.desc': 'Wrong or unclear description',
+            'feedback.topic.feature': 'Feature suggestion',
+            'feedback.topic.other': 'Something else',
+            'feedback.placeholder': 'Type your feedback here…',
+            'feedback.empty': 'Please enter a short message before sending.',
+            'feedback.fallback': 'Your message could not be sent automatically. Copy it below and use the contact details in the ',
+            'feedback.copy': 'Copy to clipboard',
+            'feedback.copied': 'Copied',
+            'feedback.copyManual': 'Press Ctrl+C to copy',
+            'feedback.cancel': 'Cancel',
+            'feedback.send': 'Send',
         },
     };
 
@@ -398,6 +440,9 @@
         lang = current();
     }
 
-    window.CircI18n = { t, apply, setLanguage, languages, extend, get lang() { return lang; } };
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const de = (obj, key) => (obj && lang === 'de' && obj[key + '_de']) || (obj && obj[key]) || '';
+
+    window.CircI18n = { t, apply, setLanguage, languages, extend, esc, de, get lang() { return lang; } };
     (window.CIRC_PENDING_LANGS || []).forEach(a => extend.apply(null, a));
 })();

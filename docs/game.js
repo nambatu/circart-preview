@@ -8,16 +8,19 @@
 (function () {
     'use strict';
 
-    const { t } = window.CircI18n;
+    const { t, esc, de } = window.CircI18n;
     const $ = id => document.getElementById(id);
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const O = () => window.CircOnline;
+    const imgUrl = raw => String((raw && (raw.image_local || raw.image || raw.image_source)) || '').replace(/\\/g, '/');
+    const soloSourceId = (raw, packId) => (raw && (raw.pack || packId)) ? ('pack:' + (raw.pack || packId) + ':' + raw.id) : String(raw.id);
+    const formatTlCard = raw => ({ year: raw.year, title: raw.title, artist: raw.artist || raw.artistDisplayName || '', image_url: imgUrl(raw) });
 
     let G = null;          // the open game: { id, st, card, answer, picked, rev, ... }
     let unwatch = null;
     let tick = null;       // countdown interval
     let poll = null;       // fallback refresh
     let refreshing = false, again = false;
+    let soloToken = 0;
 
     // ─── open / close ─────────────────────────────────────────────────────
     function open(id, extra) {
@@ -31,7 +34,99 @@
         refresh();
     }
 
+    async function openSolo({ rounds = 10, cards = null, packId = null, packTitle = null } = {}) {
+        close(true);
+        const token = soloToken;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        $('game-online-screen').classList.add('active');
+        $('go-title').textContent = packTitle || t('solo.title');
+        $('go-score').textContent = '';
+        $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
+
+        const baseDeck = (window.CircShell && window.CircShell.loadDeck) ? await window.CircShell.loadDeck() : [];
+        if (token !== soloToken) return;
+
+        const deck = ((cards || baseDeck) || []).filter(c => c && (c.image_local || c.image || c.image_source));
+        if (deck.length < 2) {
+            window.CircShell.toast(t('solo.noCards'));
+            close();
+            return;
+        }
+
+        const extraSeen = packId || !window.CircShell || !window.CircShell.serverSeen ? null : window.CircShell.serverSeen();
+        const deal = new window.CircDealer.Dealer(deck, extraSeen).deal(rounds, { markAll: false });
+        const startCard = deal.starting_cards[0];
+        const pile = deal.draw_pile;
+        if (!startCard || !pile.length) {
+            window.CircShell.toast(t('solo.noCards'));
+            close();
+            return;
+        }
+
+        const artists = new Set();
+        for (const c of deck) {
+            const a = (c && (c.artist || c.artistDisplayName) || '').trim();
+            if (a && !/unknown/i.test(a)) artists.add(a.toLowerCase());
+        }
+        const artistPool = artists.size >= 4 ? deck : [...deck, ...baseDeck];
+
+        window.CircDealer.markSeen([startCard.id]);
+        if (window.CircCollection) window.CircCollection.record(startCard.id, false);
+
+        G = {
+            id: null,
+            st: {
+                kind: 'solo',
+                phase: 'play',
+                status: 'playing',
+                card_count: pile.length,
+                current_turn: 1,
+                timeline: [formatTlCard(startCard)],
+                me: { score: 0, answered: 0, correct: 0, streak: 0, best_streak: 0 },
+            },
+            card: null,
+            answer: null,
+            picked: false,
+            rev: null,
+            revFor: null,
+            wantCard: true,
+            results: [],
+            sel: {},
+            bonusRes: null,
+            local: {
+                rounds,
+                packId: packId || null,
+                packTitle: packTitle || null,
+                allCards: cards || null,
+                pile,
+                index: 0,
+                artistPool,
+                startedAt: new Date().toISOString(),
+                bonusPoints: 0,
+                logCards: [{ id: soloSourceId(startCard, packId) }],
+                saved: false,
+                currentRaw: null,
+            },
+        };
+        openSoloCard();
+        draw();
+    }
+
+    function openSoloCard() {
+        const raw = G.local.pile[G.local.index];
+        G.local.currentRaw = raw;
+        G.card = {
+            position: G.local.index + 1,
+            image_url: imgUrl(raw),
+            title: raw.title,
+        };
+        G.st.current_turn = G.local.index + 1;
+        window.CircDealer.markSeen([raw.id]);
+        $('go-body').scrollTop = 0;
+    }
+
     function close(silent) {
+        soloToken++;
         if (unwatch) unwatch();
         clearInterval(tick); clearInterval(poll);
         unwatch = tick = poll = null;
@@ -49,7 +144,7 @@
 
     // ─── refresh: one server round-trip, then draw ────────────────────────
     async function refresh() {
-        if (!G) return;
+        if (!G || (G.st && G.st.kind === 'solo') || !G.id) return;
         if (refreshing) { again = true; return; }
         refreshing = true;
         try {
@@ -104,6 +199,7 @@
     // timers: countdown redraws, and a re-fetch when a deadline passes
     function schedule() {
         clearInterval(tick); clearInterval(poll);
+        if (!G || !G.st || G.st.kind === 'solo') return;
         const st = G.st;
         const live = st.kind === 'live';
         let due = null, bonusDue = false;
@@ -130,16 +226,17 @@
     // ─── drawing ──────────────────────────────────────────────────────────
     function draw() {
         const st = G.st;
-        $('go-title').textContent = st.kind === 'live' ? t('game.live')
+        $('go-title').textContent = st.kind === 'solo' ? (G.local.packTitle || t('solo.title'))
+            : st.kind === 'live' ? t('game.live')
             : st.kind === 'daily' ? (G.challengeNo ? t('game.daily', { no: G.challengeNo }) : t('game.dailyShort'))
             : st.kind === 'run' ? t('run.short')
             : t('game.async');
-        $('go-score').textContent = st.phase === 'lobby' ? '' : t('game.points', { n: st.me.score.toLocaleString() });
+        $('go-score').textContent = (st.phase === 'lobby' || (st.kind === 'solo' && st.phase === 'finished')) ? '' : t('game.points', { n: st.me.score.toLocaleString() });
         const body = $('go-body');
         if (G.answer) return body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult(), wire();
         const view = {
             lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
-            finished: () => (st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
+            finished: () => (st.kind === 'solo' ? viewSoloDone() : st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
         }[st.phase] || (() => '');
         body.innerHTML = view();
         wire();
@@ -185,8 +282,8 @@
         </div>`;
     }
 
-    // games with friends can switch the timer off (018); daily and runs always have it
-    const timed = () => !(G.opts && G.opts.timer === false && (G.st.kind === 'live' || G.st.kind === 'async'));
+    // games with friends can switch the timer off (018); daily and runs always have it; solo has no timer
+    const timed = () => G.st.kind !== 'solo' && !(G.opts && G.opts.timer === false && (G.st.kind === 'live' || G.st.kind === 'async'));
 
     function artistOption() {
         const a = !G.opts || G.opts.artist_bonus !== false, m = !G.opts || G.opts.movement_bonus !== false;
@@ -229,7 +326,7 @@
             return clickable ? `<li><button class="go-gap" data-gap="${i}">+ ${esc(label)}</button></li>` : '';
         };
         const card = c => `<li class="go-tl">${c.image_url ? `<img src="${esc(c.image_url)}" alt="">` : '<span class="go-noimg"></span>'}
-            <b class="serif">${c.year}</b><span>${esc(c.title)}<br><small>${esc(c.artist)}</small></span></li>`;
+            <b class="serif">${esc(c.year)}</b><span>${esc(c.title)}<br><small>${esc(c.artist)}</small></span></li>`;
         let out = gap(tl.length);
         for (let i = tl.length - 1; i >= 0; i--) out += card(tl[i]) + gap(i);
         return `<ol class="go-timeline" aria-label="${esc(t('game.timeline'))}">${out}</ol>`;
@@ -328,6 +425,7 @@
         if (!a && !m) return '';
         if (G.picked && !G.sel.artist && !G.sel.movement) return '';
         const res = G.bonusRes;
+        const solo = G.st.kind === 'solo';
         const showArt = !G.picked && G.card && G.card.image_url;   // look at the painting again while you decide
         const ends = !G.picked && G.answer.bonusEnds && G.st.kind !== 'live';
         const total = G.answer.bonusTotal || 19000;
@@ -337,8 +435,8 @@
               ${showArt ? `<img class="go-bonus-art zoomable-img" src="${esc(G.card.image_url)}" alt="${esc(t('game.artAlt'))}">` : '<span></span>'}
               ${ends ? `<span class="go-timer" aria-live="off"><span data-countdown>${Math.max(0, Math.ceil((G.answer.bonusEnds - O().serverNow()) / 1000))}</span>s</span>` : ''}</div>` : ''}
           ${res && res.closed ? `<p class="note">${esc(t('game.bonusClosed'))}</p>` : ''}
-          ${a ? bonusRow('artist', t('game.whoPainted'), 200, a) : ''}
-          ${m ? bonusRow('movement', t('game.whichMovement'), 100, m) : ''}
+          ${a ? bonusRow('artist', t('game.whoPainted'), solo ? 1 : 200, a) : ''}
+          ${m ? bonusRow('movement', t('game.whichMovement'), solo ? 1 : 100, m) : ''}
           ${G.picked ? '' : `${(!a || G.sel.artist) && (!m || G.sel.movement) ? `<button class="btn primary block" data-act="lock">${esc(t('game.lockIn'))}</button>` : ''}<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
     }
 
@@ -354,25 +452,27 @@
         </div>`;
     }
 
-    // async: your own result right away, then the card's story
+    // async / daily / run / solo: your own result right away, then the card's story
     function viewResult() {
-        const a = G.answer, r = a.res, rev = G.rev;
+        const a = G.answer, r = a.res, rev = G.rev, solo = G.st.kind === 'solo';
         const verdict = r.timed_out ? t('game.tooSlow') : r.correct ? t('game.correct') : t('game.wrong');
+        const aPts = solo ? 1 : 200, mPts = solo ? 1 : 100;
+        const gained = (r.points || 0) + (rev && rev.mine.artist_correct ? aPts : 0) + (rev && rev.mine.movement_correct ? mPts : 0);
         return `<div class="page">
           <div class="row" style="justify-content:space-between">
             <h2 class="serif go-verdict ${r.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
-            <b class="serif" style="font-size:26px">+${(r.points || 0) + (rev && rev.mine.artist_correct ? 200 : 0) + (rev && rev.mine.movement_correct ? 100 : 0)}</b></div>
-          ${r.streak > 1 ? `<p class="note">${esc(t('game.streak', { n: r.streak }))}</p>` : ''}
+            <b class="serif" style="font-size:26px">+${gained}</b></div>
+          ${r.streak > 1 ? `<p class="note">${esc(t(solo ? 'solo.streak' : 'game.streak', { n: r.streak }))}</p>` : ''}
+          ${solo && !r.correct ? `<p class="note">${esc(t('solo.droppedNote'))}</p>` : ''}
           ${G.st.kind === 'run' ? `<p class="note">${hearts(G.st)} ${!r.correct ? esc(G.st.status === 'finished' ? t('run.over') : t('run.lifeLost')) : ''}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
           ${rev && G.story ? chapterFor(a.position) : ''}
-          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc((G.st.kind === 'daily' && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>` : ''}
+          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc(((G.st.kind === 'daily' || solo) && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>` : ''}
         </div>`;
     }
 
     // ─── story dailies (019) ─────────────────────────────────────────────
-    const de = (o, k) => (o && window.CircI18n.lang === 'de' && o[k + '_de']) || (o && o[k]) || '';
     function chapterFor(pos) {
         const s = G.story;
         const ch = s && s.chapters && s.chapters.find(c => c.position === pos);
@@ -388,11 +488,13 @@
 
     function cardStory(rev) {
         const c = rev.card;
+        const meta = [c.medium, c.location].filter(Boolean).join(' · ');
         return `<section class="panel go-story">
           ${c.image_url ? `<img src="${esc(c.image_url)}" alt="${esc(c.title)}">` : ''}
-          <div><b class="serif" style="font-size:26px">${c.year}</b>
+          <div><b class="serif" style="font-size:26px">${esc(c.year)}</b>
             <div class="serif"><i>${esc(c.title)}</i></div>
             <div class="muted">${esc(c.artist)}${c.movement_group ? ' · ' + esc(c.movement_group) : ''}</div>
+            ${meta ? `<div class="note" style="margin-top:4px">${esc(meta)}</div>` : ''}
             ${c.trivia && !G.story ? `<p class="go-trivia">${esc(c.trivia)}</p>` : ''}
             ${G.story && G.answer ? creditFor(G.answer.position) : ''}</div></section>`;
     }
@@ -446,6 +548,28 @@
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
           ${st.timeline.length > 1 ? `<h2 class="label">${esc(t('game.timeline'))} · ${st.timeline.length}</h2>${timeline(false)}` : ''}
+        </div>`;
+    }
+
+    function viewSoloDone() {
+        const st = G.st, me = st.me;
+        return `<div class="page">
+          <div style="text-align:center">
+            <div class="label">${esc(t('solo.done'))}</div>
+            <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            <p style="font-size:22px;letter-spacing:2px;margin:4px 0;word-break:break-all">${squares()}</p>
+            <p class="muted">${esc(t('solo.placedRight', { correct: me.correct, total: st.card_count }))}</p>
+          </div>
+          <div class="stats-grid" style="text-align:center">
+            <div class="stat"><b>${me.correct}/${st.card_count}</b><span>${esc(t('ranks.accuracy'))}</span></div>
+            <div class="stat"><b>${G.local.bonusPoints}</b><span>${esc(t('solo.bonusPoints'))}</span></div>
+            <div class="stat"><b>${me.best_streak}</b><span>${esc(t('ranks.bestStreak'))}</span></div>
+          </div>
+          <button class="btn primary block" data-act="soloAgain">${esc(t('game.playAgain'))}</button>
+          <button class="btn outline block" data-act="shareSolo">${esc(t('game.dailyShare'))}</button>
+          <h2 class="label">${esc(t('game.yourTimeline'))} · ${st.timeline.length}</h2>
+          ${timeline(false)}
+          <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
     }
 
@@ -580,8 +704,81 @@
         }));
     }
 
+    function finalizeSoloCard() {
+        const raw = G.local.currentRaw;
+        const ok = !!(G.answer && G.answer.res && G.answer.res.correct);
+        const aOk = !!(G.bonusRes && G.bonusRes.artist_correct);
+        const mOk = !!(G.bonusRes && G.bonusRes.movement_correct);
+        G.rev = {
+            position: G.card.position,
+            card: {
+                year: raw.year,
+                title: raw.title,
+                artist: raw.artist || raw.artistDisplayName || '',
+                movement_group: window.CircStyles ? window.CircStyles.groupOf(raw.movement) : null,
+                medium: raw.medium,
+                location: raw.location,
+                image_url: imgUrl(raw),
+                trivia: de(raw, 'trivia'),
+            },
+            mine: { artist_correct: aOk, movement_correct: mOk },
+        };
+        G.results.push({ correct: ok, timed_out: false, artist: aOk, movement: mOk });
+        G.local.logCards.push({ id: soloSourceId(raw, G.local.packId), correct: ok, artist: aOk, title: false, year: false });
+    }
+
+    function saveSoloOnce() {
+        if (!G || !G.local || G.local.saved) return;
+        G.local.saved = true;
+        if (window.CircShell && window.CircShell.soloGameFinished) {
+            window.CircShell.soloGameFinished({
+                mode: G.local.packId ? 'pack' : 'classic',
+                startedAt: G.local.startedAt,
+                score: G.st.me.score,
+                bonusPoints: G.local.bonusPoints,
+                bestStreak: G.st.me.best_streak,
+                cards: G.local.logCards,
+            });
+        }
+    }
+
     async function place(slot) {
         if (!G.card || G.answer) return;
+        if (G.st.kind === 'solo') {
+            const raw = G.local.currentRaw;
+            const tl = G.st.timeline;
+            const lo = tl[slot - 1], hi = tl[slot];
+            const ok = (!lo || raw.year >= lo.year) && (!hi || raw.year <= hi.year);
+            if (ok) tl.splice(slot, 0, formatTlCard(raw));
+            G.st.me.answered += 1;
+            if (ok) {
+                G.st.me.correct += 1;
+                G.st.me.score += 1;
+                G.st.me.streak += 1;
+                G.st.me.best_streak = Math.max(G.st.me.best_streak, G.st.me.streak);
+            } else {
+                G.st.me.streak = 0;
+            }
+            if (window.CircCollection) window.CircCollection.record(raw.id, ok);
+            feel(ok);
+            const res = {
+                correct: ok,
+                timed_out: false,
+                points: ok ? 1 : 0,
+                streak: G.st.me.streak,
+                artist_options: window.CircDealer.artistOptions(raw, G.local.artistPool),
+                movement_options: window.CircDealer.movementOptions(raw),
+            };
+            G.answer = { position: G.card.position, turn: G.st.current_turn, res, bonusEnds: null, bonusTotal: 0 };
+            G.picked = !hasBonus(res);
+            G.sel = {};
+            G.bonusRes = null;
+            G.rev = null;
+            if (G.picked) finalizeSoloCard();
+            $('go-body').scrollTop = 0;
+            draw();
+            return;
+        }
         document.querySelectorAll('[data-gap]').forEach(b => { b.disabled = true; });
         try {
             const res = await O().answer(G.id, G.card.position, slot);
@@ -608,6 +805,26 @@
     async function pick() {
         if (!G.answer || G.picked) return;
         G.picked = true;
+        if (G.st.kind === 'solo') {
+            const raw = G.local.currentRaw;
+            const realArtist = (raw.artist || raw.artistDisplayName || '').trim();
+            const realGroup = window.CircStyles ? window.CircStyles.groupOf(raw.movement) : null;
+            const aOk = !!(G.sel.artist && realArtist && G.sel.artist === realArtist);
+            const mOk = !!(G.sel.movement && realGroup && G.sel.movement === realGroup);
+            const gained = (aOk ? 1 : 0) + (mOk ? 1 : 0);
+            G.st.me.score += gained;
+            G.local.bonusPoints += gained;
+            G.bonusRes = {
+                artist_correct: aOk,
+                artist: G.sel.artist ? realArtist : null,
+                movement_correct: mOk,
+                movement: G.sel.movement ? realGroup : null,
+            };
+            if (G.sel.artist || G.sel.movement) feel((!G.sel.artist || aOk) && (!G.sel.movement || mOk));
+            finalizeSoloCard();
+            draw();
+            return;
+        }
         try {
             const r = await O().pickBonus(G.id, G.answer.position, G.sel.artist || null, G.sel.movement || null);
             if (r && ('artist_correct' in r)) {
@@ -627,6 +844,38 @@
     async function act(a) {
         try {
             if (a === 'skip' || a === 'lock') return pick();
+            if (G.st.kind === 'solo' && a === 'next') {
+                G.answer = null; G.card = null; G.rev = null; G.picked = false; G.sel = {}; G.bonusRes = null;
+                G.local.index += 1;
+                if (G.local.index < G.local.pile.length) {
+                    openSoloCard();
+                } else {
+                    G.local.currentRaw = null;
+                    G.st.phase = 'finished';
+                    G.st.status = 'finished';
+                    saveSoloOnce();
+                    $('go-body').scrollTop = 0;
+                }
+                draw();
+                return;
+            }
+            if (a === 'soloAgain') {
+                return openSolo({
+                    rounds: G.local.rounds,
+                    cards: G.local.packId ? G.local.allCards : null,
+                    packId: G.local.packId,
+                    packTitle: G.local.packTitle,
+                });
+            }
+            if (a === 'shareSolo') {
+                const st = G.st;
+                return shareText(t(G.local.packTitle ? 'solo.packShareText' : 'solo.shareText', {
+                    pack: G.local.packTitle || '',
+                    correct: st.me.correct,
+                    total: st.card_count,
+                    score: st.me.score.toLocaleString(),
+                }) + '\n' + squares());
+            }
             if (a === 'next' || a === 'ready') { G.answer = null; G.card = null; G.rev = null; G.wantCard = true; return refresh(); }
             if (a === 'start') { await O().startGame(G.id); return refresh(); }
             if (a === 'leave') { await O().leaveGame(G.id); return close(); }
@@ -670,27 +919,75 @@
         } catch (e) { window.CircShell.toast(e.message); }
     }
 
-    // the ✕: a running live game asks first, everything else just goes home
+    // the ✕: an unfinished solo or live game asks first, everything else just goes home
     function leaveAsk() {
-        if (!G || !G.st || G.st.kind !== 'live' || !['play', 'reveal', 'waiting'].includes(G.st.phase)) return close();
+        if (!G || !G.st) return close();
+        const isSolo = G.st.kind === 'solo' && G.st.phase === 'play';
+        const isLive = G.st.kind === 'live' && ['play', 'reveal', 'waiting'].includes(G.st.phase);
+        if (!isSolo && !isLive) return close();
         const m = document.createElement('div');
         m.className = 'modal';
         m.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" style="display:flex;flex-direction:column;gap:12px">
-            <h2 class="serif" style="font-size:22px">${esc(t('game.leaveTitle'))}</h2>
-            <p class="muted" style="font-size:14px">${esc(t('game.leaveLive'))}</p>
-            <button class="btn primary block" data-x="yes">${esc(t('game.leaveYes'))}</button>
-            <button class="btn link" data-x="no">${esc(t('game.leaveNo'))}</button></div>`;
+            <h2 class="serif" style="font-size:22px">${esc(t(isSolo ? 'back.leaveTitle' : 'game.leaveTitle'))}</h2>
+            <p class="muted" style="font-size:14px">${esc(t(isSolo ? 'back.leaveSolo' : 'game.leaveLive'))}</p>
+            <button class="btn primary block" data-x="no">${esc(t(isSolo ? 'back.stay' : 'game.leaveNo'))}</button>
+            <button class="btn link" data-x="yes">${esc(t(isSolo ? 'back.leave' : 'game.leaveYes'))}</button></div>`;
         m.addEventListener('click', async e => {
             const x = e.target.closest('[data-x]');
             if (e.target === m || (x && x.dataset.x === 'no')) return m.remove();
-            if (x && x.dataset.x === 'yes') { m.remove(); try { await O().leaveGame(G.id); } catch (err) { /* already gone */ } close(); }
+            if (x && x.dataset.x === 'yes') {
+                m.remove();
+                if (!isSolo) { try { await O().leaveGame(G.id); } catch (err) { /* already gone */ } }
+                close();
+            }
         });
         document.body.appendChild(m);
+        const keep = m.querySelector('[data-x="no"]');
+        if (keep) keep.focus();
+    }
+
+    function reportContext() {
+        if (!G || !G.st) return null;
+        if (G.st.kind === 'solo') {
+            const raw = G.local && G.local.currentRaw;
+            return raw ? {
+                sourceId: soloSourceId(raw, G.local.packId),
+                title: raw.title,
+                artist: raw.artist,
+                year: raw.year,
+                movement: raw.movement,
+                medium: raw.medium,
+                location: raw.location,
+                revealed: !!G.rev,
+                round: G.card ? G.card.position : null,
+                total: G.st.card_count,
+            } : null;
+        }
+        if (G.rev && G.rev.card) {
+            return {
+                sourceId: null,
+                title: G.rev.card.title,
+                artist: G.rev.card.artist,
+                year: G.rev.card.year,
+                revealed: true,
+                round: G.rev.position || (G.card && G.card.position) || null,
+                total: G.st.card_count,
+            };
+        }
+        if (G.card) {
+            return {
+                sourceId: null,
+                revealed: false,
+                round: G.card.position,
+                total: G.st.card_count,
+            };
+        }
+        return null;
     }
 
     // the ✕ in the game header (no inline onclick: the Content-Security-Policy forbids it)
     document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.go-close')) leaveAsk(); });
     // back from the background (phone locked, other app): catch up at once instead of waiting for the next poll
     document.addEventListener('visibilitychange', () => { if (!document.hidden && G) refresh(); });
-    window.CircGame = { open, close, refresh, leaveAsk };
+    window.CircGame = { open, openSolo, close, refresh, leaveAsk, reportContext };
 })();
