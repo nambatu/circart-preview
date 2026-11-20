@@ -43,7 +43,7 @@
         const playedToday = Boolean(data.played_today ?? data.today_done ?? data.today);
         const title = n === 1 ? t('streak.modalTitle1') : t('streak.modalTitle', { n });
 
-        openModal(`
+        const m = openModal(`
           <div class="wk-streak-pop">
             <div class="wk-streak-flame" aria-hidden="true">🔥 ${n}</div>
             <h2 class="serif" style="font-size:24px;margin:0">${esc(title)}</h2>
@@ -52,7 +52,15 @@
               <div class="note">${playedToday ? '✓ ' : ''}${esc(t(playedToday ? 'streak.todayDone' : 'streak.todayOpen'))}</div>
               <div class="note">${esc(t(freeUsed ? 'streak.freeUsed' : 'streak.freeAvailable'))}</div>
             </div>
+            ${window.CircShell && window.CircShell.openRestorations ? `<button class="btn outline block" type="button" data-open-studio>${esc(t('streak.openStudio'))}</button>` : ''}
           </div>`);
+        const studioBtn = m.querySelector('[data-open-studio]');
+        if (studioBtn) {
+            studioBtn.addEventListener('click', () => {
+                m.remove();
+                if (window.CircShell && window.CircShell.openRestorations) window.CircShell.openRestorations();
+            });
+        }
     }
 
     function renderHeaderStreak(streakData) {
@@ -149,8 +157,9 @@
         return (varnishUrl ? `<img class="wk-base" src="${esc(varnishUrl)}" alt="${esc(title || '')}">` : '') + patchesHtml;
     }
 
-    function renderWeeklyCard(box, paintingData, o, onUpdated) {
+    function renderWeeklyCard(box, paintingData, o, onUpdated, opts) {
         if (!box) return;
+        const inGallery = !!(opts && opts.inGallery);
         if (!paintingData || (!safeImg(paintingData.varnish_url) && !paintingData.revealed)) {
             box.innerHTML = '';
             return;
@@ -243,7 +252,7 @@
                       <h3 class="hcard-title">${esc(revTitle)}</h3>
                       <div class="muted wk-meta">${esc([rev.artist, rev.year].filter(Boolean).join(' · '))}</div>
                       ${revStory ? `<p class="hcard-text">${esc(revStory)}</p>` : ''}
-                      <button class="btn quiet block" type="button" data-wk-restorations>${esc(t('wk.savedBtn'))}</button>
+                      ${inGallery ? '' : `<button class="btn quiet block" type="button" data-wk-restorations>${esc(t('wk.savedBtn'))}</button>`}
                     </div>
                   ` : `
                     <div class="wk-strip" aria-label="${esc(progressLine)}">${stripHtml}</div>
@@ -297,9 +306,15 @@
             box.innerHTML = `<p class="note gp-empty">${esc(t('restorations.signIn'))}</p>`;
             return;
         }
+        let curPainting = null;
         let raw = null;
         try {
-            raw = await o.myRestorations();
+            const res = await Promise.all([
+                o.myPainting ? o.myPainting().catch(() => null) : Promise.resolve(null),
+                o.myRestorations(),
+            ]);
+            curPainting = res[0];
+            raw = res[1];
         } catch (e) {
             if (seq !== restSeq) return;
             box.innerHTML = `<p class="note gp-empty">${esc(t('gallery.failed'))}</p>`;
@@ -307,15 +322,28 @@
         }
         if (seq !== restSeq) return;
         const list = Array.isArray(raw) ? raw : ((raw && (raw.items || raw.restorations)) || []);
-        if (!list.length) {
+        const hasCurImg = !!(curPainting && (safeImg(curPainting.varnish_url) || curPainting.revealed));
+        const curWeek = curPainting ? String(curPainting.week || curPainting.week_start || '') : '';
+        const showCur = hasCurImg && (!curPainting.revealed || !list.some(x => String(x.week_start || x.week || '') === curWeek));
+
+        if (!showCur && !list.length) {
             box.innerHTML = `<p class="note gp-empty">${esc(t('restorations.empty'))}</p>`;
             return;
         }
 
         const state = list.map(() => ({ clean: false }));
         const emptySet = new Set();
+        box.innerHTML = `${showCur ? '<div class="wk-cur-wrap" style="margin-bottom:14px"></div>' : ''}${showCur && list.length ? `<h2 class="label" style="margin:6px 0 8px">${esc(t('restorations.pastTitle'))}</h2>` : ''}<div class="wk-past-wrap"></div>`;
+        if (showCur) {
+            renderWeeklyCard(box.querySelector('.wk-cur-wrap'), curPainting, o, () => renderRestorations(box, o), { inGallery: true });
+        }
+        const pastBox = box.querySelector('.wk-past-wrap');
+        if (!list.length) {
+            pastBox.innerHTML = `<p class="note" style="text-align:center;margin-top:10px">${esc(t('restorations.empty'))}</p>`;
+            return;
+        }
         function drawList() {
-            box.innerHTML = `<div class="wk-rest-list">${list.map((item, idx) => {
+            pastBox.innerHTML = `<div class="wk-rest-list">${list.map((item, idx) => {
                 const title = de(item, 'title') || item.title || '';
                 const story = de(item, 'story') || item.story || '';
                 const fullUrl = safeImg(item.full_url || item.image_url || item.image_local);
@@ -344,7 +372,7 @@
                   </div>
                 </article>`;
             }).join('')}</div>`;
-            box.querySelectorAll('[data-rest-toggle]').forEach(btn => {
+            pastBox.querySelectorAll('[data-rest-toggle]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const i = Number(btn.dataset.restToggle);
                     if (state[i]) { state[i].clean = !state[i].clean; drawList(); }

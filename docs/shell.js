@@ -233,18 +233,11 @@
 
     async function renderStreakAndPainting(o, u) {
         if (!window.CircStreak) return;
-        if (!o || !u) {
+        if (!o || !u || !o.myStreak) {
             window.CircStreak.renderHeaderStreak(null);
-            window.CircStreak.renderWeeklyCard($('home-painting'), null, o);
             return;
         }
-        if (o.myStreak) {
-            o.myStreak().then(s => window.CircStreak.renderHeaderStreak(s)).catch(() => window.CircStreak.renderHeaderStreak(null));
-        }
-        if (o.myPainting) {
-            o.myPainting().then(p => window.CircStreak.renderWeeklyCard($('home-painting'), p, o, () => renderHome()))
-                .catch(() => window.CircStreak.renderWeeklyCard($('home-painting'), null, o));
-        }
+        o.myStreak().then(s => window.CircStreak.renderHeaderStreak(s)).catch(() => window.CircStreak.renderHeaderStreak(null));
     }
 
     // ─── home: daily challenge + this month's challenge ───────────────────
@@ -483,14 +476,13 @@
         const result = done && me ? esc(me.rank
             ? t('home.daily.done', { score: me.score.toLocaleString(), rank: me.rank })
             : t('home.daily.doneUnranked', { score: me.score.toLocaleString() })) : '';
-        const streak = d && d.streak > 0 ? `🔥 ${esc(d.streak === 1 ? t('home.streak1') : t('home.streak', { n: d.streak }))}` : '';
         box.innerHTML = hcard({
             cls: 'strong',
             eyebrow: d && d.story ? t('story.eyebrow') : t('home.daily.eyebrow', { no: d ? d.challenge_no : '·' }),
             side: d ? t('home.daily.newIn', { time: shortUntil(d.resets_at, o) }) : '',
             title: d && d.story ? de(d.story, 'title') : t('home.daily.title'),
             text: done ? '' : d && d.story ? de(d.story, 'intro') : t('home.daily.sub'),
-            status: [result, streak].filter(Boolean).join(' · '),
+            status: result,
             button: btn,
             foot: hard ? `<div class="row" style="gap:10px">
                 ${hard.image_url ? `<img src="${esc(hard.image_url)}" alt="" class="hcard-thumb">` : ''}

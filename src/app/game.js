@@ -594,7 +594,7 @@
             <span class="note">${esc(t('game.closesIn', { time: fmtLeft(left(st.turn_deadline)) }))}</span></div>
           <section class="panel strong" style="padding:18px;display:flex;flex-direction:column;gap:8px">
             <h2 class="serif" style="font-size:22px">${esc(t('game.yourTurn'))}</h2>
-            <p class="muted" style="font-size:14px">${esc(t('game.readyText', { n: st.cards_per_turn }))}</p>
+            <p class="muted" style="font-size:14px">${esc(timed() ? t('game.readyTextTimed', { n: st.cards_per_turn, s: st.answer_seconds || 20 }) : t('game.readyText', { n: st.cards_per_turn }))}</p>
             <button class="btn primary block" data-act="ready">${esc(t('game.startTurn', { n: st.current_turn }))}</button></section>
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
@@ -1043,9 +1043,23 @@
         return isDe ? `${v} $` : `$${v}`;
     }
 
+    function fmtOrigSale(c) {
+        const usd = fmtUsd(c && (c.price_usd ?? c.sale_price_usd ?? c.price_original_usd));
+        const raw = String((c && c.sale_price_display) || '').trim();
+        if (!raw || raw.startsWith('$')) return usd || raw;
+        const isDe = window.CircI18n && window.CircI18n.lang === 'de';
+        let localDisp = raw;
+        const m = raw.match(/^([£€¥])\s*([\d.,]+)\s*([MBK])$/i);
+        if (isDe && m) {
+            const unit = m[3].toUpperCase() === 'M' ? 'Mio.' : m[3].toUpperCase() === 'B' ? 'Mrd.' : 'Tsd.';
+            localDisp = `${m[2].replace('.', ',')} ${unit} ${m[1]}`;
+        }
+        return usd ? `${usd} (${localDisp})` : localDisp;
+    }
+
     function priceRefLine(c) {
         const todayStr = t('price.todayAmount', { amount: fmtUsd(priceVal(c)) });
-        const origAmt = fmtUsd(c && (c.price_usd ?? c.sale_price_usd ?? c.price_original_usd));
+        const origAmt = fmtOrigSale(c);
         const saleYr = c && (c.sale_year ?? c.auction_year);
         if (origAmt && saleYr) return todayStr + ' · ' + t('price.inYear', { amount: origAmt, year: saleYr });
         if (saleYr) return todayStr + ' · ' + t('price.soldIn', { year: saleYr });
@@ -1054,7 +1068,7 @@
 
     function priceRevLine(c) {
         const parts = [t('price.todayAmount', { amount: fmtUsd(priceVal(c)) })];
-        const origAmt = fmtUsd(c && (c.price_usd ?? c.sale_price_usd ?? c.price_original_usd));
+        const origAmt = fmtOrigSale(c);
         const saleYr = c && (c.sale_year ?? c.auction_year);
         const house = c && (c.auction_house ?? c.house ?? c.venue ?? '');
         if (origAmt && saleYr) parts.push(t('price.soldForIn', { amount: origAmt, year: saleYr }));

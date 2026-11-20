@@ -702,16 +702,24 @@ try {
   await playSoloCards(dora, packDeck, 5, { wantWrong: false, verifyPackImage: true });
   ok(!!(await dora.$('[data-act="soloAgain"]')), "pack solo: plays cleanly on #game-online-screen to finished screen");
 
-  console.log("\nwave 1: streak + weekly painting + price mode + compact history + badges");
+  console.log("\nwave 1: streak + weekly painting (Gallery-only) + price mode + compact history + badges");
   // Cleo finished today's daily (Fri 2026-11-20 -> day 4 of week 2026-11-16)
   await cleo.goto('http://localhost:8772/?as=cleo'); await homeReady(cleo);
-  await cleo.waitForSelector('#home-painting .wk-card');
+  await cleo.waitForSelector('#home-streak:not(.hidden)');
   const cleoStreak = await cleo.textContent('#home-streak').catch(() => '');
-  ok(cleoStreak.includes('1') && (await cleo.locator('#home-painting .wk-patch').count()) === 1,
-     `weekly painting (Cleo): streak pill '${cleoStreak.trim()}' and 1 cleaned patch shown on home`);
-  await shot(cleo, 'w1-home-painting-light');
+  const dailyHomeTxt = await cleo.textContent('#home-daily').catch(() => '');
+  ok(!(await cleo.$('#home-painting')) && !dailyHomeTxt.includes('🔥') && cleoStreak.includes('1'),
+     `home: single streak pill '${cleoStreak.trim()}', no duplicate flame in Daily, and no weekly frame on Home`);
+  await shot(cleo, 'w1-home-clean-light');
+  await cleo.click('#home-streak');
+  await cleo.waitForSelector('[data-open-studio]');
+  await cleo.click('[data-open-studio]');
+  await cleo.waitForSelector('#gallery-restorations .wk-card');
+  ok((await cleo.locator('#gallery-restorations .wk-patch').count()) === 1,
+     "Gallery -> Restorations (Cleo): active weekly painting opens from streak popover with 1 cleaned patch");
+  await shot(cleo, 'w1-gallery-painting-light');
 
-  // Dora plays 3 days in week 2026-11-16 (Mon..Wed), guesses artist, finishes Sunday -> reveal + restorations
+  // Dora plays 3 days in week 2026-11-16 (Mon..Wed), guesses artist in Gallery, finishes Sunday -> Restorations
   const finishDailyAt = async (who, iso) => {
     await run(() => db.exec(`set circart.test_now = '${iso}'`));
     const dg = await rpc(who, 'play_daily', {});
@@ -726,21 +734,26 @@ try {
   await finishDailyAt('dora', '2026-11-17T12:00:00+01:00');
   await finishDailyAt('dora', '2026-11-18T12:00:00+01:00');
   await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
+  await dora.click('.tabbar [data-tab="gallery"]');
+  await dora.waitForSelector('#gallery-seg [data-gview="restorations"]');
+  await dora.click('#gallery-seg [data-gview="restorations"]');
   await dora.waitForSelector('[data-wk-guess]');
   await dora.click('[data-wk-guess]');
   await dora.waitForSelector('[data-wk-choice]');
   await dora.click('[data-wk-choice]');
   await dora.waitForSelector('#wk-guess-res:not(.hidden)');
-  ok((await dora.textContent('#wk-guess-res')).trim().length > 0, "weekly painting: 3-day artist guess saves and shows feedback");
+  ok((await dora.textContent('#wk-guess-res')).trim().length > 0, "weekly painting: 3-day artist guess in Gallery saves and shows feedback");
   await dora.click('body > .modal [data-close]');
   await dora.waitForSelector('body > .modal', { state: 'detached' }).catch(() => {});
   await finishDailyAt('dora', '2026-11-22T12:00:00+01:00');
   await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
-  await dora.waitForSelector('[data-wk-restorations]');
-  ok((await dora.textContent('#home-painting')).includes('Vermeer'), "weekly painting: Sunday reveal displays artwork placard and story");
-  await dora.click('[data-wk-restorations]');
+  await dora.click('.tabbar [data-tab="gallery"]');
+  await dora.waitForSelector('#gallery-seg [data-gview="restorations"]');
+  await dora.click('#gallery-seg [data-gview="restorations"]');
   await dora.waitForSelector('#gallery-restorations .wk-rest-card');
-  ok((await dora.locator('#gallery-restorations .wk-rest-card').count()) >= 1, "Gallery -> Restorations lists completed weekly restoration");
+  ok((await dora.textContent('#gallery-restorations')).includes('Vermeer')
+     && (await dora.locator('#gallery-restorations .wk-rest-card').count()) >= 1,
+     "Gallery -> Restorations lists completed Sunday weekly restoration");
   await shot(dora, 'w1-restorations-light');
   await run(() => db.exec('reset circart.test_now'));
 
@@ -797,6 +810,13 @@ try {
 
   // Dark mode screenshot of Price Mode + Profile Compact History + Price Leaderboard
   await ben.goto('http://localhost:8772/?as=ben'); await homeReady(ben);
+  await shot(ben, 'w1-home-clean-dark');
+  await ben.click('.tabbar [data-tab="gallery"]');
+  await ben.waitForSelector('#gallery-seg [data-gview="restorations"]');
+  await ben.click('#gallery-seg [data-gview="restorations"]');
+  await ben.waitForSelector('#gallery-restorations .wk-card');
+  await shot(ben, 'w1-gallery-painting-dark');
+  await ben.click('.tabbar [data-tab="play"]'); await homeReady(ben);
   await ben.waitForSelector('[data-price="play"]');
   await ben.click('[data-price="play"]');
   await ben.waitForSelector('[data-price-dir="higher"]');
