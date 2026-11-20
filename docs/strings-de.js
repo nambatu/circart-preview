@@ -87,7 +87,8 @@
         'about.close': 'Schließen',
 
         'feedback.sent': 'Danke! Dein Feedback wurde gesendet.',
-        'feedback.hint': 'Das geht direkt an das CIRCArt-Team. Klappt das Senden nicht, kannst du deine Nachricht kopieren und die Kontaktdaten im Impressum (Profil) nutzen. Bitte schreib keine persönlichen Angaben in die Nachricht. Wie sie gespeichert wird, steht in der Datenschutzerklärung (Profil).',
+        'feedback.hint': 'Das geht direkt an das CIRCArt-Team. Klappt das Senden nicht, kannst du deine Nachricht kopieren und die Kontaktdaten im Impressum (Profil) nutzen. Bitte schreib keine persönlichen Angaben in die Nachricht. Wie sie gespeichert wird, steht in der {privacy}.',
+        'feedback.privacyLink': 'Datenschutzerklärung',
         'feedback.flag': 'Diese Karte melden',
 
         'friends.title': 'Mit Freunden spielen',

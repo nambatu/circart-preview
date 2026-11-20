@@ -79,7 +79,7 @@
     }
 
     function uuid() {
-        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
             const r = Math.random() * 16 | 0;
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
@@ -88,19 +88,84 @@
 
     // ─── setup ────────────────────────────────────────────────────────────
 
+    function emitAuth(event) {
+        document.dispatchEvent(new CustomEvent('circart:auth', { detail: { event } }));
+    }
+
+    function isIdentityExistsErr(err) {
+        if (!err) return false;
+        const msg = [err.code, err.error_code, err.error, err.message, err.error_description]
+            .filter(Boolean).join(' ').toLowerCase();
+        return msg.includes('identity_already_exists')
+            || msg.includes('already linked')
+            || msg.includes('already exists')
+            || msg.includes('already registered');
+    }
+
+    function readOAuthCallbackError() {
+        try {
+            const raw = location.href
+                || ((location.origin || '') + (location.pathname || '') + (location.search || '') + (location.hash || ''));
+            if (!raw) return null;
+            const url = new URL(raw);
+            const qp = url.searchParams;
+            const hashBody = url.hash && url.hash.length > 1 ? url.hash.slice(1) : '';
+            const hp = hashBody && hashBody.includes('=')
+                ? new URL('https://x.invalid/?' + hashBody).searchParams
+                : null;
+            const pick = k => qp.get(k) || (hp && hp.get(k)) || '';
+            const error = pick('error');
+            const error_code = pick('error_code');
+            const error_description = pick('error_description');
+            if (!error && !error_code && !error_description) return null;
+            return { url, hp, error, error_code, error_description };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cleanOAuthErrorUrl(cb) {
+        if (!cb || !cb.url) return;
+        try {
+            ['error', 'error_code', 'error_description'].forEach(k => {
+                cb.url.searchParams.delete(k);
+                if (cb.hp) cb.hp.delete(k);
+            });
+            const qs = cb.url.searchParams.toString();
+            const hs = cb.hp ? cb.hp.toString() : (cb.url.hash ? cb.url.hash.slice(1) : '');
+            const clean = cb.url.pathname + (qs ? '?' + qs : '') + (hs ? '#' + hs : '');
+            if (typeof history !== 'undefined' && history && typeof history.replaceState === 'function') {
+                history.replaceState(history.state, '', clean);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    async function handleGoogleLinkFallback() {
+        if (!sb) return;
+        const u = await user();
+        if (u && u.is_anonymous) await saveTransferTicket();
+        const options = { redirectTo: location.origin + location.pathname };
+        await sb.auth.signInWithOAuth({ provider: 'google', options });
+    }
+
     function init() {
         if (sb) return true;
         if (!window.supabase || !window.supabase.createClient || SUPABASE_URL.includes('YOUR-PROJECT')) {
             return false;
         }
+        const cbErr = readOAuthCallbackError();
+        if (cbErr) cleanOAuthErrorUrl(cbErr);
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
         });
         sb.auth.onAuthStateChange((event) => {
             if (event === 'SIGNED_IN') { flushQueue(); setTimeout(() => { finishGuestTransfer().catch(() => {}); }, 0); }
-            document.dispatchEvent(new CustomEvent('circart:auth', { detail: { event } }));
+            emitAuth(event);
         });
         window.addEventListener('online', flushQueue);
+        if (cbErr && isIdentityExistsErr(cbErr)) {
+            handleGoogleLinkFallback().catch(() => {});
+        }
         flushQueue();
         return true;
     }
@@ -125,15 +190,26 @@
         return data.user;
     }
 
+    async function saveTransferTicket() {
+        try {
+            const tok = await rpc('start_guest_transfer');
+            if (tok) storage(() => localStorage.setItem(TRANSFER_KEY, JSON.stringify({ tok, at: Date.now() })));
+        } catch (e) { /* no ticket: sign-in still works, the games just stay behind */ }
+    }
+
     // Google. A guest keeps the same account (history, running games),
     // which needs "Manual linking" switched on in Supabase.
     async function signInWithGoogle() {
         if (!sb) throw fail('offline');
         const u = await user();
         const options = { redirectTo: location.origin + location.pathname };
-        const { error } = u && u.is_anonymous
-            ? await sb.auth.linkIdentity({ provider: 'google', options })
-            : await sb.auth.signInWithOAuth({ provider: 'google', options });
+        if (u && u.is_anonymous) {
+            const { error } = await sb.auth.linkIdentity({ provider: 'google', options });
+            if (!error) return;
+            if (!isIdentityExistsErr(error)) throw fail(error);
+            await saveTransferTicket();
+        }
+        const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options });
         if (error) throw fail(error);
     }
 
@@ -159,12 +235,7 @@
         }
         // signing in to an existing account: get a ticket first, so the guest's
         // games on this device can follow (migration 026)
-        if (u && u.is_anonymous) {
-            try {
-                const tok = await rpc('start_guest_transfer');
-                storage(() => localStorage.setItem(TRANSFER_KEY, JSON.stringify({ tok, at: Date.now() })));
-            } catch (e) { /* no ticket: sign-in still works, the games just stay behind */ }
-        }
+        if (u && u.is_anonymous) await saveTransferTicket();
         const { error } = await sb.auth.signInWithOtp({ email, options: back });
         if (error) throw fail(error);
         return u && u.is_anonymous ? 'existing' : 'signin';
@@ -172,14 +243,38 @@
 
     // After signing in to a real account: hand in the guest ticket, if any.
     // Called after the code, and on any sign-in (the email link reloads the page).
-    async function finishGuestTransfer() {
-        const t = storage(() => JSON.parse(localStorage.getItem(TRANSFER_KEY) || 'null'), null);
-        if (!t || !t.tok) return null;
-        const u = await user();
-        if (!u || u.is_anonymous) return null;
-        storage(() => localStorage.removeItem(TRANSFER_KEY));           // one try only
-        if (Date.now() - (t.at || 0) > 15 * 60 * 1000) return null;
-        try { return await rpc('finish_guest_transfer', { p_token: t.tok }); } catch (e) { return null; }
+    let transferPromise = null;
+    function finishGuestTransfer() {
+        if (transferPromise) return transferPromise;
+        transferPromise = (async () => {
+            try {
+                const t = storage(() => JSON.parse(localStorage.getItem(TRANSFER_KEY) || 'null'), null);
+                if (!t || !t.tok) return null;
+                if (Date.now() - (t.at || 0) > 15 * 60 * 1000) {
+                    storage(() => localStorage.removeItem(TRANSFER_KEY));
+                    return null;
+                }
+                const u = await user();
+                if (!u || u.is_anonymous) return null;
+                try {
+                    const res = await rpc('finish_guest_transfer', { p_token: t.tok });
+                    storage(() => localStorage.removeItem(TRANSFER_KEY));
+                    if (res && res.moved) emitAuth('GUEST_TRANSFER');
+                    return res;
+                } catch (e) {
+                    const raw = e && e.raw;
+                    const msg = [e && e.code, e && e.message, raw && raw.code, raw && raw.message]
+                        .filter(Boolean).join(' ');
+                    if (/expired|used|invalid/i.test(msg)) {
+                        storage(() => localStorage.removeItem(TRANSFER_KEY));
+                    }
+                    return null;
+                }
+            } finally {
+                transferPromise = null;
+            }
+        })();
+        return transferPromise;
     }
 
     // The code from the email. Works on any device, unlike the link, which
@@ -196,7 +291,15 @@
     }
 
     async function signOut() {
-        if (sb) await sb.auth.signOut();
+        try {
+            if (sb) {
+                try { await disablePush(); } catch (e) { /* best-effort */ }
+                await sb.auth.signOut();
+            }
+        } finally {
+            storage(() => localStorage.removeItem(QUEUE_KEY));
+            storage(() => localStorage.removeItem(TRANSFER_KEY));
+        }
     }
 
     const getProfile = () => rpc('get_my_profile');
@@ -207,7 +310,9 @@
         try { await disablePush(); } catch (e) {}   // don't leave the browser's push subscription behind
         await rpc('delete_my_account');
         storage(() => localStorage.removeItem(QUEUE_KEY));
-        await sb.auth.signOut();
+        storage(() => localStorage.removeItem(TRANSFER_KEY));
+        storage(() => localStorage.removeItem('circart-collection'));
+        try { await sb.auth.signOut(); } catch (e) { /* account already deleted */ }
     }
 
     // ─── solo games ───────────────────────────────────────────────────────
@@ -232,25 +337,42 @@
         flushQueue();
     }
 
-    let flushing = false;
-    async function flushQueue() {
-        if (!sb || flushing || (navigator.onLine === false)) return;
-        if (!(await user())) return;          // kept until the player signs in
-        flushing = true;
-        try {
-            let queue = storage(() => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'), []);
-            while (queue.length) {
-                try {
-                    await rpc('submit_solo_game', { p: queue[0] });
-                } catch (e) {
-                    if (e.code !== 'bad_game') break;   // network trouble: try again later
+    let flushPromise = null;
+    function flushQueue() {
+        if (!sb || (navigator.onLine === false)) return Promise.resolve();
+        if (flushPromise) return flushPromise;
+        flushPromise = (async () => {
+            try {
+                if (!(await user())) return;          // kept until the player signs in
+                const done = new Set();
+                while (true) {
+                    const queue = storage(() => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'), [])
+                        .filter(item => item && !done.has(item.client_id));
+                    if (!queue.length) break;
+                    const head = queue[0];
+                    try {
+                        await rpc('submit_solo_game', { p: head });
+                    } catch (e) {
+                        if (e.code !== 'bad_game') break;   // network trouble: try again later
+                    }
+                    if (head.client_id != null) done.add(head.client_id);
+                    const raw = storage(() => JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'), []);
+                    let dropped = head.client_id != null;
+                    const fresh = raw.filter(item => {
+                        if (!item) return false;
+                        if (item.client_id != null) return !done.has(item.client_id);
+                        if (!dropped) { dropped = true; return false; }
+                        return true;
+                    });
+                    if (storage(() => localStorage.getItem(QUEUE_KEY), null) !== null) {
+                        storage(() => localStorage.setItem(QUEUE_KEY, JSON.stringify(fresh)));
+                    }
                 }
-                queue = queue.slice(1);               // saved, or permanently invalid
-                storage(() => localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)));
+            } finally {
+                flushPromise = null;
             }
-        } finally {
-            flushing = false;
-        }
+        })();
+        return flushPromise;
     }
 
     // Cards dealt to this player recently on any device (artline.json ids).
@@ -358,8 +480,10 @@
     }
     async function pushSubscription() {
         if (!pushSupported()) return null;
-        const reg = await navigator.serviceWorker.ready;
-        return reg.pushManager.getSubscription();
+        const reg = navigator.serviceWorker.getRegistration
+            ? await navigator.serviceWorker.getRegistration()
+            : await navigator.serviceWorker.ready;
+        return reg && reg.pushManager ? reg.pushManager.getSubscription() : null;
     }
     // Asks for permission (must follow a tap), subscribes this device, saves it.
     async function enablePush() {
@@ -412,7 +536,7 @@
 
     window.CircOnline = {
         init, available, user, ensureGuest,
-        signInWithGoogle, signInWithEmail, verifyEmailCode, signOut,
+        signInWithGoogle, signInWithEmail, verifyEmailCode, finishGuestTransfer, signOut,
         getProfile, updateProfile, usernameAvailable, deleteAccount,
         saveSoloGame, flushQueue, recentlySeen, soloStats,
         sendFeedback,

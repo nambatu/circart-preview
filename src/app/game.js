@@ -71,7 +71,7 @@
         const artistPool = artists.size >= 4 ? deck : [...deck, ...baseDeck];
 
         window.CircDealer.markSeen([startCard.id]);
-        if (window.CircCollection) window.CircCollection.record(startCard.id, false);
+        if (window.CircCollection) window.CircCollection.record(soloSourceId(startCard, packId), false);
 
         G = {
             id: null,
@@ -144,81 +144,148 @@
 
     // ─── refresh: one server round-trip, then draw ────────────────────────
     async function refresh() {
-        if (!G || (G.st && G.st.kind === 'solo') || !G.id) return;
+        const cur = G;
+        if (!cur || (cur.st && cur.st.kind === 'solo') || !cur.id) return;
         if (refreshing) { again = true; return; }
         refreshing = true;
         try {
-            const st = G.st = await O().getGame(G.id);
+            const st = await O().getGame(cur.id);
+            if (G !== cur) return;
+            cur.st = st;
+            if (unwatch && (st.kind === 'daily' || st.kind === 'run')) {
+                unwatch();
+                unwatch = null;
+            }
             const live = st.kind === 'live';
-            if (st.kind === 'daily' && O().dailyStory && (G.story === undefined || G.storyAt !== st.me.answered)) {
-                try { G.story = await O().dailyStory(st.challenge_date || null); } catch (e) { G.story = null; }
-                G.storyAt = st.me.answered;
+            if (st.kind === 'daily' && O().dailyStory && (cur.story === undefined || cur.storyAt !== st.me.answered)) {
+                try {
+                    const story = await O().dailyStory(st.challenge_date || null);
+                    if (G !== cur) return;
+                    cur.story = story;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.story = null;
+                }
+                cur.storyAt = st.me.answered;
             }
 
-            // a new live round or async turn: forget the previous card
-            if (G.answer && live && (st.phase === 'play' || st.phase === 'reveal') && G.answer.turn !== st.current_turn) {
-                G.answer = null; G.card = null;
+            // a new live round or async turn: forget the previous card and any stale reveal
+            if (live && st.phase !== 'reveal') {
+                cur.rev = null; cur.revFor = null;
             }
-            if (live && st.phase === 'reveal' && G.revFor !== st.current_turn) {
-                G.answer = null; G.card = null;
+            if (live && cur.card && cur.cardTurn !== st.current_turn) {
+                cur.card = null;
+            }
+            if (cur.answer && live && (st.phase === 'play' || st.phase === 'reveal') && cur.answer.turn !== st.current_turn) {
+                cur.answer = null; cur.card = null; cur.picked = false; cur.sel = {}; cur.bonusRes = null;
+            }
+            if (live && st.phase === 'reveal' && cur.revFor !== st.current_turn) {
+                cur.answer = null; cur.card = null;
                 try {
-                    G.rev = await O().reveal(G.id, st.current_turn); G.revFor = st.current_turn;
-                    if (!G.rev.mine.timed_out || G.rev.mine.slot != null) feel(liveGrade(G.rev.mine).level, !!G.rev.mine.correct);
-                } catch (e) { G.rev = null; }
+                    const rev = await O().reveal(cur.id, st.current_turn);
+                    if (G !== cur) return;
+                    cur.rev = rev; cur.revFor = st.current_turn;
+                    if (!cur.rev.mine.timed_out || cur.rev.mine.slot != null) feel(liveGrade(cur.rev.mine).level, !!cur.rev.mine.correct);
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.rev = null;
+                }
             }
             // live deals the card to everyone at once; async waits for "Ready"
-            if (st.phase === 'play' && !G.answer && (!G.card || G.card.wait) && (live || G.wantCard)) {
-                G.card = await O().nextCard(G.id);
-                G.cardTurn = st.current_turn;
+            if (st.phase === 'play' && !cur.answer && (!cur.card || cur.card.wait) && (live || cur.wantCard)) {
+                const card = await O().nextCard(cur.id);
+                if (G !== cur) return;
+                cur.card = card;
+                cur.cardTurn = st.current_turn;
             }
-            if ((st.kind === 'live' || st.kind === 'async') && (st.phase === 'lobby' || !G.opts)) {
-                try { G.opts = await O().gameOptions(G.id); } catch (e) { G.opts = null; }
+            if ((st.kind === 'live' || st.kind === 'async') && (st.phase === 'lobby' || !cur.opts)) {
+                try {
+                    const opts = await O().gameOptions(cur.id);
+                    if (G !== cur) return;
+                    cur.opts = opts;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.opts = null;
+                }
             }
-            if ((st.phase === 'finished' || st.phase === 'done') && !G.answer && !G.results) {
-                try { G.results = await O().myResults(G.id); } catch (e) { G.results = []; }
+            if ((st.phase === 'finished' || st.phase === 'done') && !cur.answer && !cur.results) {
+                try {
+                    const results = await O().myResults(cur.id);
+                    if (G !== cur) return;
+                    cur.results = results;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.results = [];
+                }
             }
             if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') {
-                try { G.rematch = await O().rematchInfo(G.id); } catch (e) { G.rematch = null; }
+                try {
+                    const rematch = await O().rematchInfo(cur.id);
+                    if (G !== cur) return;
+                    cur.rematch = rematch;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.rematch = null;
+                }
             }
-            if (st.kind === 'run' && st.phase === 'finished' && !G.answer && !G.board) {
-                try { G.board = await O().monthlyLeaderboard(); } catch (e) { G.board = { entries: [] }; }
+            if (st.kind === 'run' && st.phase === 'finished' && !cur.answer && !cur.board) {
+                try {
+                    const board = await O().monthlyLeaderboard();
+                    if (G !== cur) return;
+                    cur.board = board;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.board = { entries: [] };
+                }
             }
-            if (st.kind === 'daily' && st.phase === 'done' && !G.answer && !G.board) {
-                try { G.board = await O().dailyLeaderboard(); G.challengeNo = G.board.challenge_no; } catch (e) { G.board = { entries: [] }; }
+            if (st.kind === 'daily' && st.phase === 'done' && !cur.answer && !cur.board) {
+                try {
+                    const board = await O().dailyLeaderboard();
+                    if (G !== cur) return;
+                    cur.board = board;
+                    cur.challengeNo = cur.board.challenge_no;
+                } catch (e) {
+                    if (G !== cur) return;
+                    cur.board = { entries: [] };
+                }
             }
+            if (G !== cur) return;
             draw();
             schedule();
         } catch (e) {
+            if (G !== cur) return;
             $('go-body').innerHTML = `<p class="muted" style="padding:2rem">${esc(e.message)}</p>`;
         } finally {
             refreshing = false;
-            if (again) { again = false; refresh(); }
+            if (again) { again = false; if (G) refresh(); }
         }
     }
 
     // timers: countdown redraws, and a re-fetch when a deadline passes
     function schedule() {
         clearInterval(tick); clearInterval(poll);
-        if (!G || !G.st || G.st.kind === 'solo') return;
-        const st = G.st;
+        const cur = G;
+        if (!cur || !cur.st || cur.st.kind === 'solo') return;
+        const st = cur.st;
         const live = st.kind === 'live';
         let due = null, bonusDue = false;
-        if (st.phase === 'play' && G.card && G.card.ends_at && !G.answer && timed()) due = G.card.ends_at;
-        else if (G.answer && !G.picked && G.answer.bonusEnds && st.kind !== 'live') { due = new Date(G.answer.bonusEnds).toISOString(); bonusDue = true; }
+        if (st.phase === 'play' && cur.card && cur.card.ends_at && !cur.answer && timed()) due = cur.card.ends_at;
+        else if (cur.answer && !cur.picked && cur.answer.bonusEnds && st.kind !== 'live') { due = new Date(cur.answer.bonusEnds).toISOString(); bonusDue = true; }
         else if (st.phase === 'reveal') due = st.next_round_at;
         else if (live && st.phase === 'waiting') due = st.turn_deadline;
         if (due) {
             tick = setInterval(() => {
+                if (G !== cur) { clearInterval(tick); return; }
                 const ms = left(due);
                 document.querySelectorAll('[data-countdown]').forEach(el => { el.textContent = Math.ceil(ms / 1000); });
                 const bar = $('go-bar');
-                const total = bonusDue ? G.answer.bonusTotal : (G.card && G.card.seconds ? G.card.seconds * 1000 : 0);
+                const total = bonusDue ? (cur.answer && cur.answer.bonusTotal) : (cur.card && cur.card.seconds ? cur.card.seconds * 1000 : 0);
                 if (bar && total) bar.style.width = Math.max(0, Math.min(100, 100 * ms / total)) + '%';
-                if (ms <= 0) { clearInterval(tick); if (bonusDue) pick(); else setTimeout(refresh, 400); }   // bonus time up: send what's picked
+                if (ms <= 0) { clearInterval(tick); if (bonusDue) pick(); else setTimeout(() => { if (G === cur) refresh(); }, 400); }   // bonus time up: send what's picked
             }, 200);
         }
         // realtime is primary; this catches a dropped connection
-        const pollIfVisible = () => { if (!document.hidden) refresh(); };    // no requests while the app is in the background
+        const pollIfVisible = () => { if (G === cur && !document.hidden) refresh(); };    // no requests while the app is in the background
         if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(pollIfVisible, live ? 4000 : 30000);
         else if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') poll = setInterval(pollIfVisible, 10000);   // a rematch may appear
     }
@@ -766,14 +833,32 @@
         body.querySelectorAll('[data-movement]').forEach(b => b.addEventListener('click', () => choose('movement', b.dataset.movement)));
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
         body.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', async () => {
+            const cur = G;
+            if (!cur) return;
             const o = c.dataset.opt === 'artist' ? { artistBonus: c.checked }
                     : c.dataset.opt === 'timer' ? { timer: c.checked } : { movementBonus: c.checked };
-            try { G.opts = await O().setGameOptions(G.id, o); } catch (e) { window.CircShell.toast(e.message); }
-            draw();
+            try {
+                const opts = await O().setGameOptions(cur.id, o);
+                if (G !== cur) return;
+                cur.opts = opts;
+            } catch (e) {
+                if (G !== cur) return;
+                window.CircShell.toast(e.message);
+            }
+            if (G === cur) draw();
         }));
         body.querySelectorAll('[data-secs]').forEach(b => b.addEventListener('click', async () => {
-            try { G.opts = await O().setGameOptions(G.id, { seconds: Number(b.dataset.secs) }); } catch (e) { window.CircShell.toast(e.message); }
-            draw();
+            const cur = G;
+            if (!cur) return;
+            try {
+                const opts = await O().setGameOptions(cur.id, { seconds: Number(b.dataset.secs) });
+                if (G !== cur) return;
+                cur.opts = opts;
+            } catch (e) {
+                if (G !== cur) return;
+                window.CircShell.toast(e.message);
+            }
+            if (G === cur) draw();
         }));
     }
 
@@ -818,64 +903,78 @@
     }
 
     async function place(slot) {
-        if (!G.card || G.answer) return;
-        if (G.st.kind === 'solo') {
-            const raw = G.local.currentRaw;
-            const tl = G.st.timeline;
+        const cur = G;
+        if (!cur || !cur.card || cur.answer) return;
+        if (cur.st.kind === 'solo') {
+            const raw = cur.local.currentRaw;
+            const tl = cur.st.timeline;
             const lo = tl[slot - 1], hi = tl[slot];
             const ok = (!lo || raw.year >= lo.year) && (!hi || raw.year <= hi.year);
             if (ok) tl.splice(slot, 0, formatTlCard(raw));
-            G.st.me.answered += 1;
+            cur.st.me.answered += 1;
             if (ok) {
-                G.st.me.correct += 1;
-                G.st.me.score += 1;
-                G.st.me.streak += 1;
-                G.st.me.best_streak = Math.max(G.st.me.best_streak, G.st.me.streak);
+                cur.st.me.correct += 1;
+                cur.st.me.score += 1;
+                cur.st.me.streak += 1;
+                cur.st.me.best_streak = Math.max(cur.st.me.best_streak, cur.st.me.streak);
             } else {
-                G.st.me.streak = 0;
+                cur.st.me.streak = 0;
             }
-            if (window.CircCollection) window.CircCollection.record(raw.id, ok);
-            const scoreBefore = G.st.me.score - (ok ? 1 : 0);
+            if (window.CircCollection) window.CircCollection.record(soloSourceId(raw, cur.local.packId), ok);
+            const scoreBefore = cur.st.me.score - (ok ? 1 : 0);
             const res = {
                 correct: ok,
                 timed_out: false,
                 points: ok ? 1 : 0,
-                streak: G.st.me.streak,
-                artist_options: window.CircDealer.artistOptions(raw, G.local.artistPool),
+                streak: cur.st.me.streak,
+                artist_options: window.CircDealer.artistOptions(raw, cur.local.artistPool),
                 movement_options: window.CircDealer.movementOptions(raw),
             };
-            G.answer = { position: G.card.position, turn: G.st.current_turn, res, slot, scoreBefore, bonusEnds: null, bonusTotal: 0 };
-            G.picked = !hasBonus(res);
-            G.sel = {};
-            G.bonusRes = null;
-            G.rev = null;
-            if (G.picked) { finalizeSoloCard(); feel(gradeNow().level, !!G.answer.res.correct); }
+            cur.answer = { position: cur.card.position, turn: cur.st.current_turn, res, slot, scoreBefore, bonusEnds: null, bonusTotal: 0 };
+            cur.picked = !hasBonus(res);
+            cur.sel = {};
+            cur.bonusRes = null;
+            cur.rev = null;
+            if (cur.picked) { finalizeSoloCard(); feel(gradeNow().level, !!cur.answer.res.correct); }
             $('go-body').scrollTop = 0;
             draw();
             return;
         }
+        const cardPos = cur.card.position;
+        const turn = cur.st.current_turn;
+        const kind = cur.st.kind;
+        const cardEndsAt = cur.card.ends_at;
+        const cardSeconds = cur.card.seconds;
         document.querySelectorAll('[data-gap]').forEach(b => { b.disabled = true; });
         const scoreBefore = G.st.me.score;
         try {
-            const res = await O().answer(G.id, G.card.position, slot);
-            G.answer = { position: G.card.position, turn: G.st.current_turn, res, slot, scoreBefore,
-                         bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? (G.st.kind === 'daily' && G.card.ends_at ? new Date(G.card.ends_at).getTime() : O().serverNow() + 19000) : null,
-                         bonusTotal: G.st.kind === 'daily' && G.card.seconds ? G.card.seconds * 1000 : 19000 };
-            G.picked = !hasBonus(res);
-            G.sel = {}; G.bonusRes = null;
-            G.rev = null;
-            if (G.st.kind !== 'live' && G.picked) {
-                G.rev = await O().reveal(G.id, G.answer.position);
-                feel(gradeNow().level, !!G.answer.res.correct);                     // no questions to answer: judge right away
+            const res = await O().answer(cur.id, cardPos, slot);
+            if (G !== cur) return;
+            if (kind === 'live' && cur.st && cur.st.current_turn !== turn) {
+                refresh();
+                return;
+            }
+            cur.answer = { position: cardPos, turn, res, slot, scoreBefore,
+                         bonusEnds: kind !== 'live' && timed() && hasBonus(res) ? (kind === 'daily' && cardEndsAt ? new Date(cardEndsAt).getTime() : O().serverNow() + 19000) : null,
+                         bonusTotal: kind === 'daily' && cardSeconds ? cardSeconds * 1000 : 19000 };
+            cur.picked = !hasBonus(res);
+            cur.sel = {}; cur.bonusRes = null;
+            cur.rev = null;
+            if (kind !== 'live' && cur.picked) {
+                const rev = await O().reveal(cur.id, cur.answer.position);
+                if (G !== cur) return;
+                cur.rev = rev;
+                feel(gradeNow().level, !!cur.answer.res.correct);                     // no questions to answer: judge right away
             }
         } catch (e) {
+            if (G !== cur) return;
             window.CircShell.toast(e.message);
         }
-        refresh();
+        if (G === cur) refresh();
     }
 
     function choose(kind, name) {
-        if (!G.answer || G.picked) return;                  // nothing is revealed until lock-in, so changing is fine
+        if (!G || !G.answer || G.picked) return;                  // nothing is revealed until lock-in, so changing is fine
         G.sel[kind] = name;
         // only the buttons change: no redraw, so nothing flickers or re-animates
         document.querySelectorAll(`#go-body [data-${kind}]`).forEach(b => {
@@ -888,54 +987,76 @@
     }
 
     async function pick() {
-        if (!G.answer || G.picked) return;
-        G.picked = true;
-        if (G.st.kind === 'solo') {
-            const raw = G.local.currentRaw;
+        const cur = G;
+        if (!cur || !cur.answer || cur.picked) return;
+        cur.picked = true;
+        if (cur.st.kind === 'solo') {
+            const raw = cur.local.currentRaw;
             const realArtist = (raw.artist || raw.artistDisplayName || '').trim();
             const realGroup = window.CircStyles ? window.CircStyles.groupOf(raw.movement) : null;
-            const aOk = !!(G.sel.artist && realArtist && G.sel.artist === realArtist);
-            const mOk = !!(G.sel.movement && realGroup && G.sel.movement === realGroup);
+            const aOk = !!(cur.sel.artist && realArtist && cur.sel.artist === realArtist);
+            const mOk = !!(cur.sel.movement && realGroup && cur.sel.movement === realGroup);
             const gained = (aOk ? 1 : 0) + (mOk ? 1 : 0);
-            G.st.me.score += gained;
-            G.local.bonusPoints += gained;
-            G.bonusRes = {
+            cur.st.me.score += gained;
+            cur.local.bonusPoints += gained;
+            cur.bonusRes = {
                 artist_correct: aOk,
-                artist: G.sel.artist ? realArtist : null,
+                artist: cur.sel.artist ? realArtist : null,
                 movement_correct: mOk,
-                movement: G.sel.movement ? realGroup : null,
+                movement: cur.sel.movement ? realGroup : null,
             };
             finalizeSoloCard();
-            feel(gradeNow().level, !!G.answer.res.correct);
+            feel(gradeNow().level, !!cur.answer.res.correct);
             draw();
             return;
         }
+        const ansPos = cur.answer.position;
+        const kind = cur.st.kind;
         try {
-            const r = await O().pickBonus(G.id, G.answer.position, G.sel.artist || null, G.sel.movement || null);
-            if (r && ('artist_correct' in r)) G.bonusRes = r;
-        } catch (e) { if (G.st.kind !== 'live') G.bonusRes = { closed: true }; }   // the window closed: no bonus points
-        if (G.st.kind !== 'live') { try { G.rev = await O().reveal(G.id, G.answer.position); } catch (e) { /* ignore */ } }
-        if (G.st.kind === 'daily' && G.story) { try { G.story = await O().dailyStory(G.st.challenge_date || null); } catch (e) { /* keep */ } }
-        if (G.bonusRes && G.bonusRes.closed && G.rev) {
-            G.bonusRes.artist = G.rev.card.artist;
-            G.bonusRes.movement = G.rev.card.movement_group;
+            const r = await O().pickBonus(cur.id, ansPos, cur.sel.artist || null, cur.sel.movement || null);
+            if (G !== cur) return;
+            if (r && ('artist_correct' in r)) cur.bonusRes = r;
+        } catch (e) {
+            if (G !== cur) return;
+            if (kind !== 'live') cur.bonusRes = { closed: true };
+        }   // the window closed: no bonus points
+        if (kind !== 'live') {
+            try {
+                const rev = await O().reveal(cur.id, ansPos);
+                if (G !== cur) return;
+                cur.rev = rev;
+            } catch (e) { if (G !== cur) return; /* ignore */ }
+        }
+        if (kind === 'daily' && cur.story) {
+            try {
+                const story = await O().dailyStory(cur.st.challenge_date || null);
+                if (G !== cur) return;
+                cur.story = story;
+            } catch (e) { if (G !== cur) return; /* keep */ }
+        }
+        if (G !== cur) return;
+        if (cur.bonusRes && cur.bonusRes.closed && cur.rev) {
+            cur.bonusRes.artist = cur.rev.card.artist;
+            cur.bonusRes.movement = cur.rev.card.movement_group;
         }
         if (G.st.kind !== 'live') feel(gradeNow().level, !!G.answer.res.correct);   // the one and only verdict for this card
         refresh();
     }
 
     async function act(a) {
+        const cur = G;
+        if (!cur || !cur.st) return;
         try {
             if (a === 'skip' || a === 'lock') return pick();
-            if (G.st.kind === 'solo' && a === 'next') {
-                G.answer = null; G.card = null; G.rev = null; G.picked = false; G.sel = {}; G.bonusRes = null;
-                G.local.index += 1;
-                if (G.local.index < G.local.pile.length) {
+            if (cur.st.kind === 'solo' && a === 'next') {
+                cur.answer = null; cur.card = null; cur.rev = null; cur.picked = false; cur.sel = {}; cur.bonusRes = null;
+                cur.local.index += 1;
+                if (cur.local.index < cur.local.pile.length) {
                     openSoloCard();
                 } else {
-                    G.local.currentRaw = null;
-                    G.st.phase = 'finished';
-                    G.st.status = 'finished';
+                    cur.local.currentRaw = null;
+                    cur.st.phase = 'finished';
+                    cur.st.status = 'finished';
                     saveSoloOnce();
                     $('go-body').scrollTop = 0;
                 }
@@ -944,64 +1065,73 @@
             }
             if (a === 'soloAgain') {
                 return openSolo({
-                    rounds: G.local.rounds,
-                    cards: G.local.packId ? G.local.allCards : null,
-                    packId: G.local.packId,
-                    packTitle: G.local.packTitle,
+                    rounds: cur.local.rounds,
+                    cards: cur.local.packId ? cur.local.allCards : null,
+                    packId: cur.local.packId,
+                    packTitle: cur.local.packTitle,
                 });
             }
             if (a === 'shareSolo') {
-                const st = G.st;
-                return shareText(t(G.local.packTitle ? 'solo.packShareText' : 'solo.shareText', {
-                    pack: G.local.packTitle || '',
+                const st = cur.st;
+                return shareText(t(cur.local.packTitle ? 'solo.packShareText' : 'solo.shareText', {
+                    pack: cur.local.packTitle || '',
                     correct: st.me.correct,
                     total: st.card_count,
                     score: st.me.score.toLocaleString(),
                 }) + '\n' + squares());
             }
-            if (a === 'next' || a === 'ready') { G.answer = null; G.card = null; G.rev = null; G.wantCard = true; return refresh(); }
-            if (a === 'start') { await O().startGame(G.id); return refresh(); }
-            if (a === 'leave') { await O().leaveGame(G.id); return close(); }
+            if (a === 'next' || a === 'ready') { cur.answer = null; cur.card = null; cur.rev = null; cur.wantCard = true; return refresh(); }
+            if (a === 'start') { await O().startGame(cur.id); if (G !== cur) return; return refresh(); }
+            if (a === 'leave') { await O().leaveGame(cur.id); if (G !== cur) return; return close(); }
             if (a === 'home') return close();
             if (a === 'shareDaily') {
-                const st = G.st;
-                return shareText(t('game.dailyShareText', { no: G.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
+                const st = cur.st;
+                return shareText(t('game.dailyShareText', { no: cur.challengeNo || '', correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
             }
             if (a === 'runAgain') {
-                const best = Math.max(G.prevBest || 0, G.st.me.score);
+                const best = Math.max(cur.prevBest || 0, cur.st.me.score);
                 const g = await O().startRun();
+                if (G !== cur) return;
                 return open(g.id, { prevBest: best });
             }
             if (a === 'shareRun') {
-                const st = G.st, month = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' });
+                const st = cur.st, month = new Date().toLocaleString(window.CircI18n.lang, { month: 'long' });
                 return shareText(t('run.share', { month, score: st.me.score.toLocaleString(), n: st.me.answered }) + '\n' + squares());
             }
             if (a === 'shareGame') {
-                const st = G.st, rank = st.players.findIndex(p => p.is_me) + 1;
+                const st = cur.st, rank = st.players.findIndex(p => p.is_me) + 1;
                 return shareText(t('game.shareGame', { rank: '#' + rank, players: st.players.length, correct: st.me.correct, total: st.card_count, score: st.me.score.toLocaleString() }) + '\n' + squares());
             }
-            if (a === 'rematch') { const r = await O().rematch(G.id); return open(r.id); }
-            if (a === 'openRematch') return open(G.rematch.id);
+            if (a === 'rematch') { const r = await O().rematch(cur.id); if (G !== cur) return; return open(r.id); }
+            if (a === 'openRematch') return open(cur.rematch.id);
             if (a === 'pushLater' || a === 'pushOn') {
                 try { localStorage.setItem('circart-push-asked', '1'); } catch (e) { /* ignore */ }
-                if (a === 'pushOn') { await O().enablePush(); window.CircShell.toast(t('push.done')); }
-                return draw();
+                if (a === 'pushOn') {
+                    await O().enablePush();
+                    if (G !== cur) return;
+                    window.CircShell.toast(t('push.done'));
+                }
+                if (G === cur) return draw();
+                return;
             }
-            if (a === 'leaveYes') { await O().leaveGame(G.id); return close(); }
+            if (a === 'leaveYes') { await O().leaveGame(cur.id); if (G !== cur) return; return close(); }
             if (a === 'share') {
-                const url = location.origin + location.pathname + '?join=' + G.st.code;
-                const text = t('game.shareText', { code: G.st.code });
+                const url = location.origin + location.pathname + '?join=' + cur.st.code;
+                const text = t('game.shareText', { code: cur.st.code });
                 if (navigator.share) await navigator.share({ title: 'CIRCArt', text, url }).catch(() => {});
                 else { await navigator.clipboard.writeText(text + ' ' + url); window.CircShell.toast(t('game.copied')); }
             }
-        } catch (e) { window.CircShell.toast(e.message); }
+        } catch (e) {
+            if (G === cur) window.CircShell.toast(e.message);
+        }
     }
 
     // the ✕: an unfinished solo or live game asks first, everything else just goes home
     function leaveAsk() {
-        if (!G || !G.st) return close();
-        const isSolo = G.st.kind === 'solo' && G.st.phase === 'play';
-        const isLive = G.st.kind === 'live' && ['play', 'reveal', 'waiting'].includes(G.st.phase);
+        const cur = G;
+        if (!cur || !cur.st) return close();
+        const isSolo = cur.st.kind === 'solo' && cur.st.phase === 'play';
+        const isLive = cur.st.kind === 'live' && ['play', 'reveal', 'waiting'].includes(cur.st.phase);
         if (!isSolo && !isLive) return close();
         const m = document.createElement('div');
         m.className = 'modal';
@@ -1015,8 +1145,8 @@
             if (e.target === m || (x && x.dataset.x === 'no')) return m.remove();
             if (x && x.dataset.x === 'yes') {
                 m.remove();
-                if (!isSolo) { try { await O().leaveGame(G.id); } catch (err) { /* already gone */ } }
-                close();
+                if (!isSolo) { try { await O().leaveGame(cur.id); } catch (err) { /* already gone */ } }
+                if (G === cur) close();
             }
         });
         document.body.appendChild(m);
@@ -1028,25 +1158,37 @@
         if (!G || !G.st) return null;
         if (G.st.kind === 'solo') {
             const raw = G.local && G.local.currentRaw;
-            return raw ? {
-                sourceId: soloSourceId(raw, G.local.packId),
-                title: raw.title,
-                artist: raw.artist,
-                year: raw.year,
-                movement: raw.movement,
-                medium: raw.medium,
-                location: raw.location,
-                revealed: !!G.rev,
+            if (!raw) return null;
+            if (G.rev && G.rev.card) {
+                return {
+                    sourceId: soloSourceId(raw, G.local.packId),
+                    title: G.rev.card.title,
+                    artist: G.rev.card.artist,
+                    year: G.rev.card.year,
+                    movement: raw.movement,
+                    medium: raw.medium,
+                    location: raw.location,
+                    revealed: true,
+                    round: G.card ? G.card.position : null,
+                    total: G.st.card_count,
+                };
+            }
+            return {
+                sourceId: null,
+                revealed: false,
                 round: G.card ? G.card.position : null,
                 total: G.st.card_count,
-            } : null;
+            };
         }
-        if (G.rev && G.rev.card) {
+        if (G.rev && G.rev.card && !(G.st.kind === 'live' && G.st.phase !== 'reveal')) {
             return {
                 sourceId: null,
                 title: G.rev.card.title,
                 artist: G.rev.card.artist,
                 year: G.rev.card.year,
+                movement: G.rev.card.movement_group || null,
+                medium: G.rev.card.medium || null,
+                location: G.rev.card.location || null,
                 revealed: true,
                 round: G.rev.position || (G.card && G.card.position) || null,
                 total: G.st.card_count,

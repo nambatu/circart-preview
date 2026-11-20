@@ -13,20 +13,25 @@ const src = fs.readFileSync(path.join(MIG, "..", "..", "web", "online.js"), "utf
   .replace("'https://YOUR-PROJECT.supabase.co'", "'https://test.supabase.co'");
 
 // ─── fake auth server ───
-function makeWorld() {
+function makeWorld(opts = {}) {
   const accounts = new Map();                 // email -> { id }
   const calls = [];
   const sent = [];                            // { email, type }
-  let session = null;                         // { user }
+  const events = [];
+  let session = opts.initialSession || null;  // { user }
   let n = 0;
+  const store = Object.assign({}, opts.initialStore || {});
   const auth = {
-    async getSession() { return { data: { session } }; },
+    async getSession() {
+      if (opts.onGetSession) await opts.onGetSession();
+      return { data: { session } };
+    },
     onAuthStateChange() {},
     async signInAnonymously() { session = { user: { id: "guest" + (++n), is_anonymous: true } }; calls.push("anon"); return { data: { user: session.user }, error: null }; },
-    async updateUser({ email }, opts) {
+    async updateUser({ email }, uOpts) {
       calls.push("updateUser");
       if (accounts.has(email)) return { error: { code: "email_exists", message: "A user with this email address has already been registered" } };
-      sent.push({ email, type: "email_change", redirect: opts && opts.emailRedirectTo });
+      sent.push({ email, type: "email_change", redirect: uOpts && uOpts.emailRedirectTo });
       return { error: null };
     },
     async signInWithOtp({ email, options }) {
@@ -42,27 +47,55 @@ function makeWorld() {
       else { if (!accounts.has(email)) accounts.set(email, { id: "acct" + (++n) }); session = { user: { id: accounts.get(email).id, is_anonymous: false, email } }; }
       return { error: null };
     },
-    async signOut() { session = null; },
+    async linkIdentity(params) {
+      calls.push("linkIdentity:" + params.provider);
+      if (opts.onLinkIdentity) return opts.onLinkIdentity(params);
+      return { error: null };
+    },
+    async signInWithOAuth(params) {
+      calls.push("signInWithOAuth:" + params.provider);
+      if (opts.onSignInWithOAuth) return opts.onSignInWithOAuth(params);
+      return { error: null };
+    },
+    async signOut() {
+      calls.push("signOut");
+      if (opts.onSignOut) await opts.onSignOut();
+      session = null;
+    },
   };
-  const store = {};
   const window = {
     supabase: { createClient: () => ({ auth, rpc: async (fn, args) => {
       calls.push("rpc:" + fn);
+      if (opts.onRpc) {
+        const res = await opts.onRpc(fn, args, { session });
+        if (res !== undefined) return res;
+      }
       if (fn === "start_guest_transfer") return { data: session && session.user.is_anonymous ? "TICKET" : null, error: null };
-      if (fn === "finish_guest_transfer") return { data: { moved: args.p_token === "TICKET" && !session.user.is_anonymous }, error: null };
+      if (fn === "finish_guest_transfer") return { data: { moved: args.p_token === "TICKET" && !!session && !session.user.is_anonymous }, error: null };
       return { data: null, error: null };
     } }) },
     addEventListener() {}, crypto: { randomUUID: () => "u" + (++n) },
   };
+  if (opts.pushSub !== undefined) window.PushManager = function () {};
+  const nav = { onLine: true, userAgent: "test" };
+  if (opts.pushSub !== undefined) {
+    nav.serviceWorker = {
+      getRegistration: async () => opts.pushSub ? ({ pushManager: { getSubscription: async () => opts.pushSub } }) : null,
+    };
+  }
   const ctx = {
     window, console, URL, setTimeout, clearTimeout,
-    location: { origin: "https://nambatu.github.io", pathname: "/circart-preview/" },
+    location: opts.location || { origin: "https://nambatu.github.io", pathname: "/circart-preview/" },
     localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
-    navigator: { onLine: true, userAgent: "test" }, document: { dispatchEvent() {} }, CustomEvent: class {},
+    navigator: nav,
+    document: { dispatchEvent(ev) { events.push(ev); } },
+    CustomEvent: class CustomEvent { constructor(type, init) { this.type = type; this.detail = init && init.detail; } },
   };
+  if (opts.history) ctx.history = opts.history;
+  const codeSrc = opts.vapidKey ? src.replace("const VAPID_PUBLIC_KEY = '';", `const VAPID_PUBLIC_KEY = '${opts.vapidKey}';`) : src;
   vm.createContext(ctx);
-  vm.runInContext(src, ctx);
-  return { o: window.CircOnline, accounts, calls, sent, me: () => session && session.user };
+  vm.runInContext(codeSrc, ctx);
+  return { o: window.CircOnline, accounts, calls, sent, events, store, me: () => session && session.user, setSession: s => { session = s; } };
 }
 const code = async f => { try { await f(); return null; } catch (e) { return e.code; } };
 
@@ -114,6 +147,205 @@ const code = async f => { try { await f(); return null; } catch (e) { return e.c
   await w.o.signInWithEmail("x@example.com");
   ok(await code(() => w.o.verifyEmailCode("x@example.com", "999999", "signin")) === "otp_expired", "a wrong code gives a clear message");
   ok(await code(() => w.o.verifyEmailCode("x@example.com", "12", "signin")) === "otp_expired", "a too-short code is refused");
+}
+
+// 5. signOut: best-effort disablePush before signOut, always clears queue & transfer keys
+{
+  let unsubscribed = false;
+  const sub = { endpoint: "https://push.test/1", unsubscribe: async () => { unsubscribed = true; } };
+  const w = makeWorld({
+    vapidKey: "BTestVapid",
+    pushSub: sub,
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    initialStore: {
+      "circart-pending-games": JSON.stringify([{ client_id: "g1" }]),
+      "circart-guest-transfer": JSON.stringify({ tok: "T1", at: Date.now() }),
+    },
+  });
+  await w.o.signOut();
+  ok(unsubscribed && w.calls.includes("rpc:remove_push_subscription"), "signOut: unsubscribes push best-effort");
+  ok(w.calls.indexOf("rpc:remove_push_subscription") < w.calls.indexOf("signOut"), "signOut: disables push before signing out");
+  ok(w.store["circart-pending-games"] === undefined && w.store["circart-guest-transfer"] === undefined, "signOut: clears pending games and guest transfer ticket");
+
+  const wFail = makeWorld({
+    initialSession: { user: { id: "acct-2", is_anonymous: false } },
+    initialStore: {
+      "circart-pending-games": JSON.stringify([{ client_id: "g2" }]),
+      "circart-guest-transfer": JSON.stringify({ tok: "T2", at: Date.now() }),
+    },
+    onSignOut: async () => { throw new Error("network down"); },
+  });
+  let threw = false;
+  try { await wFail.o.signOut(); } catch (e) { threw = true; }
+  ok(threw && wFail.store["circart-pending-games"] === undefined && wFail.store["circart-guest-transfer"] === undefined,
+    "signOut: clears queue and transfer keys even when auth.signOut fails");
+}
+
+// 6. deleteAccount: clears queue, transfer ticket, and circart-collection
+{
+  const w = makeWorld({
+    initialSession: { user: { id: "acct-del", is_anonymous: false } },
+    initialStore: {
+      "circart-pending-games": JSON.stringify([{ client_id: "g1" }]),
+      "circart-guest-transfer": JSON.stringify({ tok: "T1", at: Date.now() }),
+      "circart-collection": JSON.stringify({ seen: ["c1"], correct: ["c1"] }),
+    },
+  });
+  await w.o.deleteAccount();
+  ok(w.calls.includes("rpc:delete_my_account") && w.calls.includes("signOut"), "deleteAccount: calls delete_my_account and signOut");
+  ok(w.store["circart-pending-games"] === undefined
+    && w.store["circart-guest-transfer"] === undefined
+    && w.store["circart-collection"] === undefined, "deleteAccount: clears queue, transfer ticket, and collection");
+}
+
+// 7. finishGuestTransfer: deduplication, retry retention, expiry removal, and circart:auth event
+{
+  let transferCalls = 0;
+  let releaseRpc;
+  const gate = new Promise(r => { releaseRpc = r; });
+  const w = makeWorld({
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    initialStore: { "circart-guest-transfer": JSON.stringify({ tok: "TICKET", at: Date.now() }) },
+    onRpc: async (fn) => {
+      if (fn !== "finish_guest_transfer") return undefined;
+      transferCalls++;
+      await gate;
+      return { data: { moved: true, solo_games: 1 }, error: null };
+    },
+  });
+  const p1 = w.o.finishGuestTransfer();
+  const p2 = w.o.finishGuestTransfer();
+  releaseRpc();
+  const [r1, r2] = await Promise.all([p1, p2]);
+  ok(transferCalls === 1 && r1 && r1.moved && r2 && r2.moved, "finishGuestTransfer: deduplicates concurrent calls via transferPromise");
+  ok(w.store["circart-guest-transfer"] === undefined, "finishGuestTransfer: removes ticket after RPC succeeds");
+  ok(w.events.some(ev => ev.type === "circart:auth"), "finishGuestTransfer: dispatches circart:auth when items moved");
+
+  let failOnce = true;
+  const wRetry = makeWorld({
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    initialStore: { "circart-guest-transfer": JSON.stringify({ tok: "TICKET", at: Date.now() }) },
+    onRpc: async (fn) => {
+      if (fn !== "finish_guest_transfer") return undefined;
+      if (failOnce) { failOnce = false; return { data: null, error: { message: "Failed to fetch" } }; }
+      return { data: { moved: true }, error: null };
+    },
+  });
+  const first = await wRetry.o.finishGuestTransfer();
+  ok(first === null && wRetry.store["circart-guest-transfer"] !== undefined && wRetry.events.length === 0,
+    "finishGuestTransfer: retains ticket on transient network error");
+  const retry = await wRetry.o.finishGuestTransfer();
+  ok(retry && retry.moved && wRetry.store["circart-guest-transfer"] === undefined && wRetry.events.some(e => e.type === "circart:auth"),
+    "finishGuestTransfer: retry succeeds, clears ticket, and dispatches circart:auth");
+
+  const wInvalid = makeWorld({
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    initialStore: { "circart-guest-transfer": JSON.stringify({ tok: "BAD", at: Date.now() }) },
+    onRpc: async (fn) => fn === "finish_guest_transfer" ? { data: null, error: { message: "Token expired or invalid" } } : undefined,
+  });
+  await wInvalid.o.finishGuestTransfer();
+  ok(wInvalid.store["circart-guest-transfer"] === undefined && wInvalid.events.length === 0,
+    "finishGuestTransfer: clears ticket when server reports expired/invalid and skips circart:auth");
+}
+
+// 8. flushQueue: async mutex before first await + concurrent saveSoloGame not clobbered
+{
+  let releaseSess;
+  const sessGate = new Promise(r => { releaseSess = r; });
+  const submitted = [];
+  const wLock = makeWorld({
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    initialStore: { "circart-pending-games": JSON.stringify([{ client_id: "c1", score: 1, cards: [] }]) },
+    onGetSession: () => sessGate,
+    onRpc: async (fn, args) => {
+      if (fn === "submit_solo_game") { submitted.push(args.p.client_id); return { data: null, error: null }; }
+      return undefined;
+    },
+  });
+  const f1 = wLock.o.flushQueue();
+  const f2 = wLock.o.flushQueue();
+  releaseSess();
+  await Promise.all([f1, f2]);
+  ok(submitted.length === 1 && submitted[0] === "c1", "flushQueue: acquires lock before first await (no duplicate submissions)");
+
+  let releaseFirstSubmit;
+  const firstSubmitGate = new Promise(r => { releaseFirstSubmit = r; });
+  const submittedConcurrent = [];
+  const wConc = makeWorld({
+    initialSession: { user: { id: "acct-1", is_anonymous: false } },
+    onRpc: async (fn, args) => {
+      if (fn !== "submit_solo_game") return undefined;
+      submittedConcurrent.push(args.p.client_id);
+      if (submittedConcurrent.length === 1) await firstSubmitGate;
+      return { data: null, error: null };
+    },
+  });
+  wConc.o.saveSoloGame({ score: 5, cards: [{ id: "card-1" }, { id: "card-2", correct: true }] });
+  await new Promise(r => setTimeout(r, 0));
+  wConc.o.saveSoloGame({ score: 7, cards: [{ id: "card-3" }, { id: "card-4", correct: true }] });
+  releaseFirstSubmit();
+  await wConc.o.flushQueue();
+  const remaining = JSON.parse(wConc.store["circart-pending-games"] || "[]");
+  ok(submittedConcurrent.length === 2 && remaining.length === 0,
+    "flushQueue: concurrent saveSoloGame during in-flight RPC is never clobbered");
+}
+
+// 9. Google linkIdentity fallback (identity_already_exists) in signInWithGoogle and OAuth callback
+{
+  const wDirect = makeWorld({
+    initialSession: { user: { id: "guest-g1", is_anonymous: true } },
+    onLinkIdentity: async () => ({ error: { code: "identity_already_exists", message: "Identity is already linked to another user" } }),
+  });
+  await wDirect.o.signInWithGoogle();
+  ok(wDirect.calls.includes("linkIdentity:google")
+    && wDirect.calls.includes("rpc:start_guest_transfer")
+    && wDirect.calls.includes("signInWithOAuth:google")
+    && wDirect.calls.indexOf("rpc:start_guest_transfer") < wDirect.calls.indexOf("signInWithOAuth:google"),
+    "Google linkIdentity collision: saves guest transfer ticket before signInWithOAuth fallback");
+  ok(!!wDirect.store["circart-guest-transfer"], "Google linkIdentity collision: stores transfer ticket in localStorage");
+
+  const replaced = [];
+  const hist = { state: { keep: 1 }, replaceState(s, t, u) { replaced.push(u); } };
+  const wCbQuery = makeWorld({
+    initialSession: { user: { id: "guest-g2", is_anonymous: true } },
+    location: {
+      origin: "https://nambatu.github.io",
+      pathname: "/circart-preview/",
+      href: "https://nambatu.github.io/circart-preview/?error=server_error&error_code=identity_already_exists&error_description=Identity+is+already+linked+to+another+user",
+    },
+    history: hist,
+  });
+  await new Promise(r => setTimeout(r, 10));
+  ok(replaced.length === 1 && replaced[0] === "/circart-preview/", "OAuth query callback error: cleans URL search params via history.replaceState");
+  ok(wCbQuery.calls.includes("rpc:start_guest_transfer") && wCbQuery.calls.includes("signInWithOAuth:google")
+    && wCbQuery.calls.indexOf("rpc:start_guest_transfer") < wCbQuery.calls.indexOf("signInWithOAuth:google"),
+    "OAuth query callback error: saves guest transfer ticket and triggers signInWithOAuth fallback");
+
+  const wCbHashNoHist = makeWorld({
+    initialSession: { user: { id: "guest-g3", is_anonymous: true } },
+    location: {
+      origin: "https://nambatu.github.io",
+      pathname: "/circart-preview/",
+      href: "https://nambatu.github.io/circart-preview/#error=access_denied&error_code=identity_already_exists&error_description=Identity+is+already+linked",
+    },
+  });
+  await new Promise(r => setTimeout(r, 10));
+  ok(wCbHashNoHist.calls.includes("rpc:start_guest_transfer") && wCbHashNoHist.calls.includes("signInWithOAuth:google"),
+    "OAuth hash callback error without history global: safely falls back without crashing");
+
+  const replacedOther = [];
+  const wCbDenied = makeWorld({
+    initialSession: { user: { id: "guest-g4", is_anonymous: true } },
+    location: {
+      origin: "https://nambatu.github.io",
+      pathname: "/circart-preview/",
+      href: "https://nambatu.github.io/circart-preview/?error=access_denied&error_description=User+cancelled",
+    },
+    history: { state: null, replaceState(s, t, u) { replacedOther.push(u); } },
+  });
+  await new Promise(r => setTimeout(r, 10));
+  ok(replacedOther.length === 1 && !wCbDenied.calls.includes("signInWithOAuth:google"),
+    "OAuth non-collision callback error: cleans URL and does not re-trigger signInWithOAuth");
 }
 
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");

@@ -237,6 +237,9 @@ try {
   ok((await text(cleo)).includes('7 of 10 placed right'), "daily done: 7 of 10 right, score shown");
   ok(((await text(cleo)).match(/🟥/g) || []).length === 3 && ((await text(cleo)).match(/🟩/g) || []).length === 7, "daily done: 7 green and 3 red squares");
   await shot(cleo, '12-daily-done');
+  const cleoCol = await cleo.evaluate(() => window.CircOnline.myCollection());
+  ok(cleoCol && cleoCol.seen.length === 11 && cleoCol.correct.length === 7 && cleoCol.seen.every(id => /^daily:e2e:\d+$/.test(id)),
+     `daily collection: returns 11 seen and 7 correct source_ids (${cleoCol?.seen?.length}/${cleoCol?.correct?.length})`);
   await cleo.click('[data-act="home"]'); await cleo.waitForTimeout(800);
   ok((await cleo.textContent('#home-daily')).includes('A walk through the cathedral'), "home: the daily card shows the story's title");
   ok((await cleo.textContent('#home-daily')).includes('See results'), "home: daily shows 'See results' after playing");
@@ -397,6 +400,9 @@ try {
           await p.click('#go-flag');
           await p.waitForSelector('#report-modal:not(.hidden)');
           const repTxt = await p.textContent('#report-modal');
+          const privHref = await p.getAttribute('#report-hint a', 'href').catch(() => null);
+          ok(!!privHref && /^privacy-(en|de)\.html$/.test(privHref),
+             "report modal: #report-hint contains a clickable privacy policy link");
           ok(!repTxt.includes(String(card.year)) && !repTxt.includes(card.artist),
              "solo: #go-flag opens #report-modal without leaking hidden card year or artist");
           await p.click('#cancel-report-btn');
@@ -632,6 +638,19 @@ try {
   await off.click('#round-chips [data-rounds="5"]');
   await off.click('#start-btn');
   await off.waitForSelector('#game-online-screen.active');
+  await waitText(off, 'Tap where it belongs');
+  const { card: offFirstCard } = await readActiveCard(off, baseDeck);
+  ok(!!offFirstCard, "offline solo: first active card read before offline report check");
+  await off.click('#go-flag');
+  await off.waitForSelector('#report-modal:not(.hidden)');
+  await off.fill('#report-text', 'Looks cropped before placement');
+  await off.click('#send-report-btn');
+  await off.waitForSelector('#report-fallback:not(.hidden)');
+  const offFbTxt = await off.inputValue('#report-fallback-text');
+  ok(!!offFbTxt && !offFbTxt.includes('Card ID:') && !offFbTxt.includes(String(offFirstCard.year)) && !offFbTxt.includes(offFirstCard.artist) && !offFbTxt.includes(offFirstCard.id),
+     "offline solo: fallback report before placing card hides year, artist, and card id");
+  await off.click('#cancel-report-btn');
+  await off.waitForSelector('#report-modal', { state: 'hidden' });
   const offRes = await playSoloCards(off, baseDeck, 5, {
     wantWrong: false, testBonusLock: true, shotsPrefix: 'dark',
   });

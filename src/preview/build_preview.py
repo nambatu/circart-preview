@@ -27,13 +27,19 @@ preview.json:
 """
 
 import argparse
+import base64
+import hashlib
 import html
 import json
+import os
 import re
 import shutil
+import stat
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "dealer.js", "collection.js", "styles.js"]
 OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "packs.js"]          # copied when present
@@ -41,6 +47,56 @@ OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "packs.js"]          # copied
 
 def log(msg):
     print("  " + msg)
+
+
+def clean_dir(path):
+    """Remove all files and subdirectories under path, tolerating empty OneDrive reparse stubs."""
+    p = str(path)
+    if not os.path.exists(p):
+        return
+    for root, dirs, files in os.walk(p, topdown=False):
+        for name in files:
+            fp = os.path.join(root, name)
+            for attempt in range(5):
+                try:
+                    os.chmod(fp, stat.S_IWRITE)
+                    os.unlink(fp)
+                    break
+                except FileNotFoundError:
+                    break
+                except PermissionError:
+                    if attempt == 4:
+                        raise
+                    time.sleep(0.2 * (attempt + 1))
+        for name in dirs:
+            dp = os.path.join(root, name)
+            if os.path.islink(dp):
+                os.unlink(dp)
+                continue
+            for attempt in range(3):
+                try:
+                    os.chmod(dp, stat.S_IWRITE)
+                    os.rmdir(dp)
+                    break
+                except FileNotFoundError:
+                    break
+                except PermissionError:
+                    if attempt < 2:
+                        time.sleep(0.2 * (attempt + 1))
+                    elif os.listdir(dp):
+                        raise
+    for attempt in range(3):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            os.rmdir(p)
+            break
+        except FileNotFoundError:
+            break
+        except PermissionError:
+            if attempt < 2:
+                time.sleep(0.2 * (attempt + 1))
+            elif os.listdir(p):
+                raise
 
 
 def main():
@@ -60,24 +116,12 @@ def main():
 
     # 1. fresh copy of the published site
     docs = out / "docs"
-    if docs.exists():
-        shutil.rmtree(docs)
-    shutil.copytree(src_docs, docs)
+    clean_dir(docs)
+    shutil.copytree(src_docs, docs, dirs_exist_ok=True)
     (docs / "CNAME").unlink(missing_ok=True)          # never claim the real domain
     (docs / ".nojekyll").write_text("")               # serve files as they are
-    app_js = docs / "app.js"
-    if app_js.exists():
-        aj = app_js.read_text(encoding="utf-8")
-        aj = re.sub(r"const REPORT_EMAIL = '[^']*';", "const REPORT_EMAIL = '';", aj)
-        aj = aj.replace(
-            "reportFallbackText.value = 'To: ' + REPORT_EMAIL + '\\r\\nSubject: ' + subject + '\\r\\n\\r\\n' + body;",
-            "reportFallbackText.value = 'Subject: ' + subject + '\\r\\n\\r\\n' + body;",
-        )
-        aj = aj.replace(
-            "window.location.href = 'mailto:' + REPORT_EMAIL",
-            "if (REPORT_EMAIL) window.location.href = 'mailto:' + REPORT_EMAIL",
-        )
-        app_js.write_text(aj, encoding="utf-8")
+    for stale in (docs / "app.js", docs / "Abstract Painting Loader.json"):
+        stale.unlink(missing_ok=True)
     log(f"base: {src_docs} ({len(list((docs / 'images').glob('*')))} images)")
 
     # 2. new app files
@@ -90,6 +134,7 @@ def main():
         shutil.copy2(claude / "legal" / "impressum-template.html", docs / "impressum.html")
     if (claude / "app" / "vendor").is_dir():              # self-hosted fonts + libraries
         shutil.copytree(claude / "app" / "vendor", docs / "vendor", dirs_exist_ok=True)
+    (docs / "vendor" / "lottie-player.js").unlink(missing_ok=True)
     for name in OPTIONAL_WWW:
         if (claude / "app" / name).exists():
             shutil.copy2(claude / "app" / name, docs / name)
@@ -134,35 +179,21 @@ def main():
 
     # 4. it's a preview, and it says so
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    sw = docs / "sw.js"
-    if sw.exists():
-        s = sw.read_text(encoding="utf-8")
-        s = re.sub(r"const CACHE_VERSION = '[^']*';", f"const CACHE_VERSION = 'preview-{stamp}';", s, count=1)
-        # strip unused legacy files so the service worker does not precache dead paths
-        s = re.sub(r"[ \t]*['\"]\./(?:app\.js|Abstract Painting Loader\.json)['\"],?[ \t]*\r?\n?", "", s)
-        extra_assets = [
-            "shell.css", "shell.js", "strings.js", "strings-de.js", "game.js",
-            "dealer.js", "collection.js", "styles.js", "onboarding.js",
-            "onboarding.css", "packs.js", "online.js", "preview.js",
-        ]
-        extra = "".join(f"\n    './{f}'," for f in extra_assets if f"'./{f}'" not in s)
-        s = s.replace("const SHELL_ASSETS = [", "const SHELL_ASSETS = [" + extra, 1)
-        # cache year-free and pack artwork under art/ alongside legacy images/
-        if "url.pathname.includes('/art/')" not in s:
-            s = s.replace("url.pathname.includes('/images/')",
-                          "(url.pathname.includes('/images/') || url.pathname.includes('/art/'))")
-        # a preview must never serve yesterday's build: shell files network-first
-        s = s.replace("event.respondWith(cacheFirst(request, SHELL_CACHE));",
-                      "event.respondWith(networkFirst(request, SHELL_CACHE));")
-        s += (claude / "app" / "sw-push.js").read_text(encoding="utf-8")   # push + notification taps
-        sw.write_text(s, encoding="utf-8")
     man = docs / "manifest.webmanifest"
     if man.exists():
         m = json.loads(man.read_text(encoding="utf-8"))
+        m["id"] = "./"
         m["name"], m["short_name"] = "CIRCArt Preview", "CIRCArt β"
         man.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
     idx = docs / "index.html"
     s = idx.read_text(encoding="utf-8")
+    sb_host = urlparse(cfg["supabase_url"]).netloc
+    if not re.fullmatch(r"[a-z0-9-]+\.supabase\.co", sb_host):
+        sys.exit(f"build_preview: invalid supabase_url host {sb_host!r}")
+    s = re.sub(r"connect-src\s+[^;\"]+", f"connect-src 'self' https://{sb_host} wss://{sb_host}", s, count=1)
+    s = re.sub(r"img-src\s+[^;\"]+", "img-src 'self' data: blob:", s, count=1)
+    if "*.supabase.co" in s or f"https://{sb_host} wss://{sb_host}" not in s or "img-src 'self' data: blob:" not in s:
+        sys.exit("build_preview: failed to tighten CSP in docs/index.html")
     s = s.replace("<title>CIRCArt</title>", "<title>CIRCArt Preview</title>")
     s = s.replace('content="CIRCArt">', 'content="CIRCArt β">')
     s = s.replace('<script src="pwa.js"></script>', '<script src="pwa.js"></script>\n    <script src="preview.js"></script>')
@@ -170,6 +201,62 @@ def main():
     shutil.copy2(claude / "preview" / "preview.js", docs / "preview.js")
     (docs / "preview.json").write_text(json.dumps({"label": cfg.get("label", stamp)}), encoding="utf-8")
     (docs / "changes.html").write_text(changes_page(cfg), encoding="utf-8")
+
+    sw = docs / "sw.js"
+    if sw.exists():
+        s = sw.read_text(encoding="utf-8")
+        s = re.sub(r"const CACHE_VERSION = '[^']*';", f"const CACHE_VERSION = 'preview-{stamp}';", s, count=1)
+        s = re.sub(r"[ \t]*const VENDOR_CACHE\s*=[^\n]*\r?\n?", "", s)
+        s = re.sub(r"const ALL_CACHES\s*=\s*\[[^\]]*\];", "const ALL_CACHES   = [SHELL_CACHE, IMAGE_CACHE];", s, count=1)
+        # strip unused legacy files so the service worker does not precache dead paths
+        s = re.sub(r"[ \t]*['\"]\./(?:app\.js|Abstract Painting Loader\.json)['\"],?[ \t]*\r?\n?", "", s)
+        vendor_assets = []
+        if (docs / "vendor").is_dir():
+            vendor_assets = sorted(p.relative_to(docs).as_posix() for p in (docs / "vendor").rglob("*") if p.is_file())
+        extra_assets = [
+            "shell.css", "shell.js", "strings.js", "strings-de.js", "game.js",
+            "dealer.js", "collection.js", "styles.js", "onboarding.js",
+            "onboarding.css", "packs.js", "online.js", "preview.js",
+            "privacy-en.html", "privacy-de.html", "impressum.html", "changes.html",
+        ] + vendor_assets
+        extra = "".join(f"\n    './{f}'," for f in dict.fromkeys(extra_assets) if (docs / f).exists() and f"'./{f}'" not in s)
+        s = s.replace("const SHELL_ASSETS = [", "const SHELL_ASSETS = [" + extra, 1)
+        nav_re = re.compile(r"if\s*\(\s*request\.mode\s*===\s*'navigate'\s*\)\s*\{.*?\n\s*return;\s*\n\s*\}", re.DOTALL)
+        nav_repl = """if (request.mode === 'navigate') {
+        event.respondWith((async () => {
+            const cache = await caches.open(SHELL_CACHE);
+            try {
+                const fresh = await fetch(request);
+                if (fresh && fresh.ok) cache.put(request, fresh.clone());
+                return fresh;
+            } catch (e) {
+                return (await cache.match(request, { ignoreSearch: true })) ||
+                       (await cache.match('./index.html')) ||
+                       Response.error();
+            }
+        })());
+        return;
+    }"""
+        if not nav_re.search(s):
+            sys.exit("build_preview: could not find navigate handler in sw.js")
+        s = nav_re.sub(nav_repl, s, count=1)
+        # cache year-free and pack artwork under art/ alongside legacy images/
+        if "url.pathname.includes('/art/')" not in s:
+            s = s.replace("url.pathname.includes('/images/')",
+                          "(url.pathname.includes('/images/') || url.pathname.includes('/art/'))")
+        # strip dead Google Fonts / unpkg fetch rule
+        s = re.sub(r"\n[ \t]*// Fonts and the Lottie player\..*?// Everything else[^\n]*", "", s, flags=re.DOTALL)
+        s = re.sub(r"\n[ \t]*if\s*\([^\n]*fonts[^\n]*\|\|[^\n]*unpkg\.com[^\n]*\)\s*\{[^}]*\}\s*", "\n", s, flags=re.DOTALL)
+        if any(dead in s for dead in ("googleapis", "gstatic", "unpkg.com", "VENDOR_CACHE")):
+            sys.exit("build_preview: dead Google Fonts / unpkg / VENDOR_CACHE code still present in sw.js")
+        # a preview must never serve yesterday's build: shell files network-first
+        s = s.replace("event.respondWith(cacheFirst(request, SHELL_CACHE));",
+                      "event.respondWith(networkFirst(request, SHELL_CACHE));")
+        s += (claude / "app" / "sw-push.js").read_text(encoding="utf-8")   # push + notification taps
+        sw.write_text(s, encoding="utf-8")
+    (docs / "CNAME").unlink(missing_ok=True)
+    if (docs / "CNAME").exists():
+        sys.exit("build_preview: CNAME must never exist in preview docs/")
 
     # every script and stylesheet the page loads must really be there
     # (6 Nov: packs.js was missing from the build for a day and nobody noticed)
@@ -216,7 +303,28 @@ def sql_q(v):
         return "true" if v else "false"
     if isinstance(v, int):
         return str(v)
-    return "'" + str(v).replace("'", "''") + "'"
+    s = str(v)
+    if "\x00" in s:
+        raise ValueError("NUL byte not allowed in SQL string")
+    if "\\" in s or any(ord(ch) < 32 or ord(ch) == 127 for ch in s):
+        out = []
+        for ch in s:
+            if ch == "\\":
+                out.append("\\\\")
+            elif ch == "'":
+                out.append("''")
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\t":
+                out.append("\\t")
+            elif ord(ch) < 32 or ord(ch) == 127:
+                out.append(f"\\x{ord(ch):02x}")
+            else:
+                out.append(ch)
+        return "E'" + "".join(out) + "'"
+    return "'" + s.replace("'", "''") + "'"
 
 
 def build_packs(claude, out, docs, card_keys, site):
@@ -299,8 +407,8 @@ def build_dailies(claude, out, docs, card_keys, site, images):
                        + ", ".join(sql_q(v) for v in [key, "daily:" + th["slug"] + ":" + c["_id"], c["title"], c["artist"], c["year"],
                                                       c.get("date_note"), c.get("movement"), c.get("medium"), c.get("location"),
                                                       int(c.get("tier", 2)), c.get("visual_type") or "object",
-                                                      # not downloaded yet (pack-images Action) → load straight from Wikimedia for now
-                                                      f"{site}/art/{key}.jpg" if (art_cache / f"{key}.jpg").exists() else (urls[0] if urls else None),
+                                                      # never emit raw upload.wikimedia.org URLs; always use year-free site art/
+                                                      f"{site}/art/{key}.jpg" if (art_cache / f"{key}.jpg").exists() or urls else None,
                                                       c.get("trivia"), False])
                        + ") on conflict (id) do update set title = excluded.title, artist = excluded.artist, year = excluded.year, "
                          "date_note = excluded.date_note, movement = excluded.movement, medium = excluded.medium, "
@@ -322,18 +430,37 @@ def build_dailies(claude, out, docs, card_keys, site, images):
                        + ", ".join(sql_q(v) for v in [day, pos, keys[c["_id"]], c.get("chapter"), c.get("chapter_de"), c.get("credit")]) + ");")
         summary.append(f"{day} {th['slug']} ({len(cards) - 1} cards, {have}/{len(cards)} images)")
     (out / "supabase").mkdir(exist_ok=True)
-    (out / "supabase" / "dailies.sql").write_text("\n".join(sql) + "\n", encoding="utf-8")
+    dailies_sql = "\n".join(sql) + "\n"
+    if "upload.wikimedia.org" in dailies_sql:
+        sys.exit("build_preview: upload.wikimedia.org URL leaked into supabase/dailies.sql")
+    (out / "supabase" / "dailies.sql").write_text(dailies_sql, encoding="utf-8")
     (out / "pack_images.json").write_text(json.dumps(images, indent=1), encoding="utf-8")
     return ", ".join(summary) or "none"
 
 
 def changes_page(cfg):
     li = lambda xs: "".join(f"<li>{html.escape(x)}</li>" for x in xs) or "<li>—</li>"
+    theme_js = "try{var t=localStorage.getItem('circart-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}"
+    script_hash = base64.b64encode(hashlib.sha256(theme_js.encode("utf-8")).digest()).decode("ascii")
+    csp = (
+        f"default-src 'self'; "
+        f"script-src 'self' 'sha256-{script_hash}'; "
+        f"style-src 'self' 'unsafe-inline'; "
+        f"img-src 'self' data: blob:; "
+        f"font-src 'self'; "
+        f"connect-src 'self'; "
+        f"object-src 'none'; "
+        f"base-uri 'self'; "
+        f"form-action 'self'"
+    )
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>CIRCArt Preview · What's new</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="{csp}">
+<meta name="referrer" content="no-referrer">
+<title>CIRCArt Preview · What's new</title>
 <link rel="stylesheet" href="shell.css"><style>body{{margin:0;font-family:Inter,system-ui,sans-serif}}
 .page{{max-width:560px}} li{{margin:6px 0;line-height:1.45}} h2{{margin-top:12px}}</style>
-<script>try{{var t=localStorage.getItem('circart-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}}catch(e){{}}</script>
+<script>{theme_js}</script>
 </head><body><div class="page">
 <p class="eyebrow">PREVIEW · {html.escape(cfg.get('label', ''))}</p>
 <h1 class="serif" style="font-size:28px">What's new</h1><ul>{li(cfg.get('changes', []))}</ul>
@@ -341,7 +468,9 @@ def changes_page(cfg):
 <p class="note">Something wrong? In the app: Profile → Send feedback, or the flag during a game.
 It lands in the preview database and the next evening build reads it.</p>
 <p class="note">This is a test version with its own database. Your live game is not affected.</p>
-<p><a class="btn primary" href="./">Open the preview</a></p></div></body></html>
+<p><a class="btn primary" href="./">Open the preview</a></p>
+<p class="muted"><a href="privacy-en.html">Privacy policy</a> · <a href="privacy-de.html">Datenschutz</a> · <a href="impressum.html">Imprint</a></p>
+</div></body></html>
 """
 
 

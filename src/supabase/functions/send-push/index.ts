@@ -17,40 +17,112 @@ type Job = { id: number; endpoint: string; p256dh: string; auth: string; title: 
 // Only the real push services (same rule as _push_host_ok() in migration 022).
 const PUSH_HOST = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)*push\.apple\.com|([a-z0-9-]+\.)*notify\.windows\.com)\//;
 
-Deno.serve(async (req: Request) => {
-  const secret = req.headers.get("x-cron-secret");
-  if (!secret) return new Response("unauthorized", { status: 401 });
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, key, { auth: { persistSession: false } });
-  const { data: b, error } = await sb.rpc("push_batch", { p_secret: secret });
-  if (error && /push_forbidden/.test(error.message)) return new Response("unauthorized", { status: 401 });
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
-  const jobs: Job[] = b.jobs || [];
-  if (!jobs.length) return Response.json({ jobs: 0 });
-  if (!b.vapid_private) return Response.json({ error: "no VAPID keys in private.settings" }, { status: 500 });
-  webpush.setVapidDetails(b.vapid_subject, b.vapid_public, b.vapid_private);
+const CRON_SECRET_RE = /^[0-9a-f]{32,128}$/i;
+const CONCURRENCY = 15;
 
-  const done = new Set<number>();
-  const gone: string[] = [];
-  const failed: string[] = [];
-  const withTimeout = <T>(pr: Promise<T>, ms: number) =>
-    Promise.race([pr, new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
-  const sendAll = Promise.all(jobs.map(async (j) => {
-    if (!PUSH_HOST.test(j.endpoint)) { done.add(j.id); return; }   // never call anything else
-    const payload = JSON.stringify({ title: j.title, body: j.body, url: (b.site || "") + "/" + j.url, tag: j.tag });
-    try {
-      await withTimeout(webpush.sendNotification({ endpoint: j.endpoint, keys: { p256dh: j.p256dh, auth: j.auth } }, payload,
-        { TTL: 12 * 3600, urgency: "high" }), 10_000);   // 10 s per device
-      done.add(j.id);
-    } catch (e) {
-      const code = (e as { statusCode?: number }).statusCode || 0;
-      if (code === 404 || code === 410) gone.push(j.endpoint);
-      if (code >= 400 && code < 500) done.add(j.id);       // won't get better by retrying
-      else failed.push(code + " " + String((e as Error).message).slice(0, 120));
+type JobStatus = "done" | "gone" | "failed";
+
+Deno.serve(async (req: Request) => {
+  try {
+    const secret = req.headers.get("x-cron-secret");
+    if (!secret || !CRON_SECRET_RE.test(secret)) return new Response("unauthorized", { status: 401 });
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, key, { auth: { persistSession: false } });
+    const { data: b, error } = await sb.rpc("push_batch", { p_secret: secret });
+    if (error && /push_forbidden/.test(error.message)) return new Response("unauthorized", { status: 401 });
+    if (error) {
+      console.error("push_batch error:", error.message);
+      return Response.json({ error: "internal_error" }, { status: 500 });
     }
-  }));
-  // 25 s overall: whatever isn't finished by then is retried next time, and push_done() always runs
-  await Promise.race([sendAll, new Promise((res) => setTimeout(res, 25_000))]);
-  const r = await sb.rpc("push_done", { p_ids: [...done], p_gone: gone });
-  return Response.json({ jobs: jobs.length, done: done.size, gone: gone.length, failed, error: r.error?.message });
+    const jobs: Job[] = b.jobs || [];
+    if (!jobs.length) return Response.json({ jobs: 0 });
+    if (!b.vapid_private) {
+      console.error("missing VAPID private key");
+      return Response.json({ error: "internal_error" }, { status: 500 });
+    }
+    webpush.setVapidDetails(b.vapid_subject, b.vapid_public, b.vapid_private);
+
+    const statusById = new Map<number, JobStatus>();
+    const gone = new Set<string>();
+    let failedCount = 0;
+    let nextIdx = 0;
+    const deadline = Date.now() + 25_000;
+
+    const recordStatus = (id: number, status: JobStatus) => {
+      const cur = statusById.get(id);
+      if (cur === "done" || (cur === "gone" && status === "failed")) return;
+      statusById.set(id, status);
+    };
+
+    const withTimeout = <T>(pr: Promise<T>, ms: number): Promise<T> => {
+      let timer: number | undefined;
+      return Promise.race([
+        pr.finally(() => { if (timer !== undefined) clearTimeout(timer); }),
+        new Promise<T>((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), ms); }),
+      ]);
+    };
+
+    const worker = async () => {
+      while (nextIdx < jobs.length && Date.now() < deadline) {
+        const j = jobs[nextIdx++];
+        if (!PUSH_HOST.test(j.endpoint)) {
+          recordStatus(j.id, "done");   // never call anything else
+          continue;
+        }
+        const payload = JSON.stringify({
+          title: j.title,
+          body: j.body,
+          url: (b.site || "") + "/" + j.url,
+          tag: j.tag,
+        });
+        try {
+          const remaining = Math.max(1, Math.min(10_000, deadline - Date.now()));
+          await withTimeout(
+            webpush.sendNotification(
+              { endpoint: j.endpoint, keys: { p256dh: j.p256dh, auth: j.auth } },
+              payload,
+              { TTL: 12 * 3600, urgency: "high" },
+            ),
+            remaining,
+          );
+          recordStatus(j.id, "done");
+        } catch (e) {
+          const code = (e as { statusCode?: number }).statusCode || 0;
+          if (code === 404 || code === 410) {
+            gone.add(j.endpoint);
+            recordStatus(j.id, "gone");
+          } else if (code >= 400 && code < 500) {
+            recordStatus(j.id, "done");   // won't get better by retrying
+          } else {
+            failedCount++;
+            recordStatus(j.id, "failed");
+            console.error("push send failed", { id: j.id, code });
+          }
+        }
+      }
+    };
+
+    const pool = Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, () => worker()),
+    );
+    let overallTimer: number | undefined;
+    await Promise.race([
+      pool.finally(() => { if (overallTimer !== undefined) clearTimeout(overallTimer); }),
+      new Promise<void>((res) => { overallTimer = setTimeout(res, 25_000); }),
+    ]);
+
+    const doneIds: number[] = [];
+    for (const [id, st] of statusById) {
+      if (st === "done" || st === "gone") doneIds.push(id);
+    }
+    const r = await sb.rpc("push_done", { p_ids: doneIds, p_gone: [...gone] });
+    if (r.error) {
+      console.error("push_done error:", r.error.message);
+      return Response.json({ error: "internal_error" }, { status: 500 });
+    }
+    return Response.json({ jobs: jobs.length, done: doneIds.length, gone: gone.size, failed: failedCount });
+  } catch (err) {
+    console.error("send-push error:", err);
+    return Response.json({ error: "internal_error" }, { status: 500 });
+  }
 });

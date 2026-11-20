@@ -10,10 +10,13 @@ on:
       category: { description: "Commons category (without 'Category:')", required: true }
       depth:    { description: "subcategory depth", required: false, default: "2" }
 permissions:
-  contents: write
+  contents: read
 jobs:
   lookup:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Query Commons
@@ -21,6 +24,7 @@ jobs:
           CAT: ${{ inputs.category }}
           DEPTH: ${{ inputs.depth }}
         run: |
+          set -euo pipefail
           python3 - <<'PY'
           import json, os, re, time, urllib.parse, urllib.request
           API = "https://commons.wikimedia.org/w/api.php"
@@ -30,7 +34,8 @@ jobs:
               req = urllib.request.Request(API + "?" + urllib.parse.urlencode(params), headers=UA)
               for i in range(4):
                   try:
-                      return json.load(urllib.request.urlopen(req, timeout=60))
+                      with urllib.request.urlopen(req, timeout=60) as resp:
+                          return json.load(resp)
                   except Exception as e:
                       print("request failed:", repr(e)[:200]); time.sleep(3 * (i + 1))
               return {}
@@ -43,7 +48,8 @@ jobs:
                   out += [m["title"] for m in r.get("query", {}).get("categorymembers", [])]
                   if "continue" not in r: return out
                   cont = r["continue"]
-          root, depth = os.environ["CAT"], int(os.environ.get("DEPTH") or 2)
+          root = os.environ["CAT"]
+          depth = max(0, min(5, int(os.environ.get("DEPTH") or 2)))
           # "search:<words>" → the best matching categories
           if root.startswith("search:"):
               r = get(dict(action="query", list="search", srsearch=root[7:], srnamespace=14, srlimit=8))
@@ -73,16 +79,18 @@ jobs:
                                "artist": strip(md.get("Artist", {}).get("value"))[:120],
                                "desc": strip(md.get("ImageDescription", {}).get("value"))[:200]})
           os.makedirs("commons-lookup", exist_ok=True)
-          name = re.sub(r"[^A-Za-z0-9_-]+", "_", root)
-          json.dump(sorted(rows, key=lambda x: (x["category"] or "", x["file"])),
-                    open(f"commons-lookup/{name}.json", "w"), ensure_ascii=False, indent=1)
+          name = re.sub(r"[^A-Za-z0-9_-]+", "_", root).strip("_") or "lookup"
+          with open(f"commons-lookup/{name}.json", "w", encoding="utf-8") as fh:
+              json.dump(sorted(rows, key=lambda x: (x["category"] or "", x["file"])), fh, ensure_ascii=False, indent=1)
           print(len(rows), "files from", len(seen), "categories")
           PY
       - name: Commit
         env:
           CAT: ${{ inputs.category }}
         run: |
+          set -euo pipefail
           git config user.name "circart-bot"; git config user.email "bot@users.noreply.github.com"
           git add commons-lookup
-          git commit -m "commons lookup: $CAT" || echo "nothing new"
+          cat_clean="${CAT//$'\n'/ }"
+          git commit -m "commons lookup: $cat_clean" || echo "nothing new"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

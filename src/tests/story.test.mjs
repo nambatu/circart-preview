@@ -92,6 +92,11 @@ for (let k = 1; k <= 10; k++) {
   await advance(4);
   await call("ana", "answer", g.id, c.position, rs.slot);
   if (k === 3) {
+    const pre = await call("ana", "daily_story", null);
+    ok(pre.chapters.length === 2, "before pick_bonus: chapter 3 is not yet exposed");
+  }
+  await call("ana", "pick_bonus", g.id, c.position, null, null);
+  if (k === 3) {
     st = await call("ana", "daily_story", null);
     ok(st.chapters.length === 3 && st.chapters[2].chapter === "Chapter 3" && st.chapters[0].credit.includes("CC BY-SA"),
        "after 3 cards: exactly 3 chapters (with credits)");
@@ -126,6 +131,7 @@ for (let k = 1; k <= 4; k++) {
   await advance(4);
   const ra = await call("ana", "answer", gs.id, c.position, rs.slot);
   if (k === 1) ok(ra.artist_options && ra.artist_options.length === 4, "theme cards get the artist question too (4 names)");
+  await call("ana", "pick_bonus", gs.id, c.position, null, null);
 }
 sum = await call("ana", "daily_summary");
 ok(sum.status === "done", "after 4 cards the short daily is done");

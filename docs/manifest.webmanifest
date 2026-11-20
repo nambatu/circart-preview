@@ -2,7 +2,7 @@
   "name": "CIRCArt Preview",
   "short_name": "CIRCArt β",
   "description": "Place masterpieces of art history in the correct chronological order on the timeline.",
-  "id": "/",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -7,17 +7,23 @@ on:
     paths: [".github/workflows/pages-unstick.yml"]
   workflow_dispatch:
 permissions:
-  pages: write
-  deployments: write
   contents: read
 jobs:
   unstick:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      deployments: write
+      contents: read
     steps:
       - name: Cancel stuck Pages deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
+          set -euo pipefail
           for sha in 6cd1b001dd13347a6a7e73aa1e3a3c11e4620df6 5f99addb1e3fb9f698378870f69ecacf27b149af; do
-            echo "cancel $sha"; gh api -X POST "repos/${{ github.repository }}/pages/deployments/$sha/cancel" || true
+            echo "cancel $sha"
+            gh api -X POST "repos/${REPO}/pages/deployments/${sha}/cancel" || true
           done

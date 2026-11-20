@@ -122,5 +122,34 @@ console.log("028: my_achievements");
   ok(!got.includes("perfect_daily") && !(await call("ach2", "my_achievements")).some(x => x.key === "photo_finish"), "no badge without the deed");
 }
 
+console.log("030: push endpoint, push_batch secret, leave_game, create_game, submit_solo_game");
+{
+  ok((await err(() => call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/a b", "k", "a", null))).includes("bad_settings"), "push endpoint with space rejected");
+  ok((await err(() => call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/a\nb", "k", "a", null))).includes("bad_settings"), "push endpoint with newline rejected");
+  ok((await err(() => call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/a\u0007b", "k", "a", null))).includes("bad_settings"), "push endpoint with control char rejected");
+  ok((await err(() => call("ana", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/a\u007fb", "k", "a", null))).includes("bad_settings"), "push endpoint with DEL rejected");
+
+  const secret = (await db.query(`select value from private.settings where key = 'push_cron_secret'`)).rows[0].value;
+  ok((await err(() => db.query(`select public.push_batch('')`))).includes("push_forbidden"), "empty secret rejected");
+  ok((await err(() => db.query(`select public.push_batch($1)`, ["0".repeat(secret.length)]))).includes("push_forbidden"), "same-length wrong secret rejected");
+  ok(typeof (await db.query(`select public.push_batch($1) r`, [secret])).rows[0].r === "object", "valid secret works with constant-time check");
+
+  const dg = await call("ana", "play_daily", "Ana");
+  ok((await err(() => call("ana", "leave_game", dg.id))).includes("bad_settings"), "cannot leave_game on daily");
+  const rg = await call("ana", "start_run");
+  ok((await err(() => call("ana", "leave_game", rg.id))).includes("bad_settings"), "cannot leave_game on run");
+
+  ok((await err(() => call("cy", "create_game", "live", 31, null, "Cy"))).includes("bad_settings"), "create_game > 30 cards rejected");
+  ok((await err(() => call("cy", "create_game", "live", 2, null, "Cy"))).includes("bad_settings"), "create_game < 3 cards rejected");
+  ok(typeof (await call("cy", "create_game", "live", 30, null, "Cy")).id === "string", "create_game 30 cards accepted");
+
+  ok((await err(() => call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), cards: cards(3) }))).includes("bad_game"), "missing score rejected");
+  ok((await err(() => call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), mode: "Bad Mode!", score: 1, cards: cards(3) }))).includes("bad_game"), "invalid mode rejected");
+  ok((await err(() => call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), score: 2, best_streak: 3, cards: cards(3) }))).includes("bad_game"), "best_streak > n_rounds rejected");
+  ok((await err(() => call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), score: 2, bonus_points: 0, best_streak: 1, cards: [{ id: "x0" }, { id: "x1", correct: true }, { id: "x2", correct: false }] }))).includes("bad_game"), "score > n_correct + bonus_points rejected");
+  ok((await err(() => call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), score: -1, bonus_points: 0, cards: cards(3) }))).includes("bad_game"), "negative score rejected");
+  ok(typeof (await call("ana", "submit_solo_game", { client_id: crypto.randomUUID(), mode: "pack_1-a", score: 2, bonus_points: 1, best_streak: 1, cards: [{ id: "x0" }, { id: "x1", correct: true }, { id: "x2", correct: false }] })) === "object", "valid mode + score <= n_correct + bonus_points accepted");
+}
+
 console.log(failures ? `\nFAILED: ${failures}` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

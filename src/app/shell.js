@@ -611,7 +611,7 @@
     }
 
     // ─── profile ──────────────────────────────────────────────────────────
-    let deleteArmed = false;
+    let deleteArmed = false, deleteTimer = null;
 
     async function renderProfile() {
         const box = $('profile-body');
@@ -723,6 +723,7 @@
 
         document.querySelectorAll('#profile-body [data-lang]').forEach(b => b.addEventListener('click', () => {
             window.CircI18n.setLanguage(b.dataset.lang);
+            renderReportHint();
             renderProfile();
         }));
         document.querySelectorAll('#profile-body .seg button[data-theme]').forEach(b => b.addEventListener('click', () => {
@@ -792,10 +793,32 @@
             else await o.updateProfile({ displayName: v });
             cachedProfile = null; toast(t('profile.saved')); renderProfile();
         }));
-        on('pf-signout', guard(async () => { await o.signOut(); cachedProfile = null; renderProfile(); }));
-        on('pf-delete', guard(async () => {
-            if (!deleteArmed) { deleteArmed = true; renderProfile(); setTimeout(() => { deleteArmed = false; }, 8000); return; }
+        on('pf-signout', guard(async () => {
             deleteArmed = false;
+            clearTimeout(deleteTimer);
+            deleteTimer = null;
+            await o.signOut();
+            cachedProfile = null;
+            renderProfile();
+        }));
+        on('pf-delete', guard(async () => {
+            if (!deleteArmed) {
+                deleteArmed = true;
+                clearTimeout(deleteTimer);
+                deleteTimer = setTimeout(() => {
+                    deleteArmed = false;
+                    deleteTimer = null;
+                    const btn = $('pf-delete');
+                    const span = btn && btn.querySelector('span');
+                    if (span) span.textContent = t('profile.delete');
+                    else if ($('profile-screen') && $('profile-screen').classList.contains('active')) renderProfile();
+                }, 8000);
+                renderProfile();
+                return;
+            }
+            deleteArmed = false;
+            clearTimeout(deleteTimer);
+            deleteTimer = null;
             await o.deleteAccount();
             cachedProfile = null;
             renderProfile();
@@ -831,8 +854,23 @@
         reportCtx = null;
     }
 
+    function renderReportHint() {
+        const hint = $('report-hint');
+        if (!hint) return;
+        const tpl = t('feedback.hint');
+        const parts = tpl.split('{privacy}');
+        const a = document.createElement('a');
+        a.href = window.CircI18n.lang === 'de' ? 'privacy-de.html' : 'privacy-en.html';
+        a.textContent = t('feedback.privacyLink');
+        hint.textContent = '';
+        hint.appendChild(document.createTextNode(parts[0]));
+        hint.appendChild(a);
+        if (parts.length > 1) hint.appendChild(document.createTextNode(parts.slice(1).join('')));
+    }
+
     function openFeedback() {
         resetFeedback();
+        renderReportHint();
         const inGame = $('game-online-screen') && $('game-online-screen').classList.contains('active');
         reportCtx = (inGame && window.CircGame && window.CircGame.reportContext) ? window.CircGame.reportContext() : null;
         const ctxBox = $('report-card-context'), ctxSum = $('report-card-summary');
@@ -859,17 +897,18 @@
                 if (ctx.movement) lines.push('Movement: ' + ctx.movement);
                 if (ctx.medium) lines.push('Medium: ' + ctx.medium);
                 if (ctx.location) lines.push('Location: ' + ctx.location);
+                if (ctx.sourceId) lines.push('Card ID: ' + ctx.sourceId);
             }
-            if (ctx.sourceId) lines.push('Card ID: ' + ctx.sourceId);
             if (ctx.round != null && ctx.total != null) lines.push('Round: ' + ctx.round + ' of ' + ctx.total);
         }
-        try { lines.push('Page: ' + window.location.href); } catch (e) { /* ignore */ }
+        try { lines.push('Page: ' + (window.location.origin ? window.location.origin + window.location.pathname : window.location.pathname)); } catch (e) { /* ignore */ }
         return lines.join('\r\n');
     }
 
     function setupFeedback() {
         const modal = $('report-modal');
         if (!modal) return;
+        renderReportHint();
         const cancel = $('cancel-report-btn'), send = $('send-report-btn'), copyBtn = $('report-copy-btn');
         if (cancel) cancel.addEventListener('click', closeFeedback);
         modal.addEventListener('click', e => { if (e.target === modal) closeFeedback(); });
@@ -892,9 +931,9 @@
                     busy = true;
                     send.disabled = true;
                     try {
-                        await o.sendFeedback(topic, text, reportCtx ? reportCtx.sourceId : null, {
+                        await o.sendFeedback(topic, text, (reportCtx && reportCtx.revealed) ? reportCtx.sourceId : null, {
                             round: reportCtx ? reportCtx.round : null,
-                            page: location.href,
+                            page: location.pathname,
                             ua: navigator.userAgent.slice(0, 200),
                         });
                         closeFeedback();
@@ -1048,7 +1087,15 @@
     }
 
     // ─── public shell API & start ─────────────────────────────────────────
-    let serverSeen = new Set();
+    let serverSeen = new Set(), seenSeq = 0;
+    function refreshServerSeen(o) {
+        const seq = ++seenSeq;
+        if (!o) { serverSeen = new Set(); return; }
+        o.recentlySeen(24).then(ids => {
+            if (seq !== seenSeq) return;
+            serverSeen = ids ? new Set(ids) : new Set();
+        }).catch(() => {});
+    }
     window.CircShell = {
         // Finished solo game → saved for signed-in players (queued while offline).
         soloGameFinished(game) {
@@ -1095,12 +1142,20 @@
 
         document.addEventListener('circart:auth', () => {
             cachedProfile = null;
+            packsCache = null;
+            openPack = null;
+            serverSeen = new Set();
+            deleteArmed = false;
+            clearTimeout(deleteTimer);
+            deleteTimer = null;
+            refreshServerSeen(online());
             if ($('profile-screen').classList.contains('active')) renderProfile();
+            if ($('gallery-screen') && $('gallery-screen').classList.contains('active')) setGalleryView(galleryView);
             renderHome();
         });
 
         const o = online();
-        if (o) o.recentlySeen(24).then(ids => { if (ids) serverSeen = new Set(ids); }).catch(() => {});
+        refreshServerSeen(o);
 
         // A new version took over (sw.js skips waiting): reload so the page and its
         // files match again — straight away on a tab, otherwise after the game.
@@ -1118,8 +1173,15 @@
 
         // a tapped notification while the app is already open
         if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
-            if (!e.data || e.data.type !== 'circart:open') return;
-            const id = new URL(e.data.url).searchParams.get('game');
+            if (!e.data || e.data.type !== 'circart:open' || !e.data.url) return;
+            let id = null;
+            try {
+                const target = new URL(e.data.url, location.href);
+                if (target.origin !== location.origin) return;
+                id = target.searchParams.get('game');
+            } catch (err) {
+                return;
+            }
             if (id && o) window.CircGame.open(id);
         });
 

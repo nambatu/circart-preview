@@ -91,7 +91,8 @@
             'about.close': 'Close',
 
             'feedback.sent': 'Thanks! Your feedback has been sent.',
-            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, you can copy your message and use the contact details in the Imprint (Profile). Please don\'t put personal details in your message. How it is stored is explained in the privacy policy (Profile).',
+            'feedback.hint': 'This goes straight to the CIRCArt team. If sending fails, you can copy your message and use the contact details in the Imprint (Profile). Please don\'t put personal details in your message. How it is stored is explained in the {privacy}.',
+            'feedback.privacyLink': 'privacy policy',
             'feedback.flag': 'Report this card',
 
             'friends.title': 'Play with friends',
@@ -417,20 +418,22 @@
     };
 
     const LANG_KEY = 'circart-lang';
+    const has = (obj, key) => !!obj && Object.prototype.hasOwnProperty.call(obj, key);
 
     function current() {
         let lang = null;
         try { lang = localStorage.getItem(LANG_KEY); } catch (e) { /* ignore */ }
-        if (lang && STRINGS[lang]) return lang;
+        if (lang && has(STRINGS, lang)) return lang;
         const nav = (navigator.language || 'en').slice(0, 2);
-        return STRINGS[nav] ? nav : 'en';
+        return has(STRINGS, nav) ? nav : 'en';
     }
 
     let lang = current();
 
     function t(key, vars) {
-        const s = (STRINGS[lang] && STRINGS[lang][key]) || STRINGS.en[key] || key;
-        return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
+        const dict = has(STRINGS, lang) ? STRINGS[lang] : null;
+        const s = has(dict, key) ? dict[key] : has(STRINGS.en, key) ? STRINGS.en[key] : key;
+        return vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (has(vars, k) ? vars[k] : m)) : s;
     }
 
     function apply(root) {
@@ -441,18 +444,19 @@
     }
 
     function setLanguage(code) {
-        if (!STRINGS[code]) return;
+        if (!has(STRINGS, code)) return;
         lang = code;
         try { localStorage.setItem(LANG_KEY, code); } catch (e) { /* ignore */ }
         apply();
     }
 
     const NAMES = { en: 'English', de: 'Deutsch' };
-    const languages = () => Object.keys(STRINGS).map(code => ({ code, name: NAMES[code] || code }));
+    const languages = () => Object.keys(STRINGS).map(code => ({ code, name: has(NAMES, code) ? NAMES[code] : code }));
 
     // more languages register themselves: strings-de.js calls extend('de', {...}, 'Deutsch')
     function extend(code, dict, name) {
-        STRINGS[code] = Object.assign(STRINGS[code] || {}, dict);
+        if (!code || code === '__proto__' || code === 'constructor' || code === 'prototype') return;
+        STRINGS[code] = Object.assign(has(STRINGS, code) ? STRINGS[code] : {}, dict);
         if (name) NAMES[code] = name;
         lang = current();
     }

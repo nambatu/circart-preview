@@ -102,7 +102,7 @@ ok(ren && !ren.unlocked && ren.needed === 5, "Renaissance Masters needs 5 solo g
 ok(/permission denied/.test(await err(() => as("ben", "select * from player_packs"))), "unlock records aren't writable from the app");
 
 // a solo game with a pack card saves fine
-const saved = await call("ana", "submit_solo_game", { client_id: "00000000-0000-4000-8000-000000000001", score: 2, cards: [{ id: "pack:baroque-masters:1" }, { id: "pack:baroque-masters:1", correct: true }] });
+const saved = await call("ana", "submit_solo_game", { client_id: "00000000-0000-4000-8000-000000000001", score: 1, cards: [{ id: "pack:baroque-masters:1" }, { id: "pack:baroque-masters:1", correct: true }] });
 ok(saved.unknown_cards === 0, "solo games with pack cards are saved");
 
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");

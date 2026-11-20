@@ -13,20 +13,23 @@ on:
     - cron: "37 23 * * *"
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: daily-history
   cancel-in-progress: false
 jobs:
   export:
     runs-on: ubuntu-latest
-    env:
-      DB: ${{ secrets.SUPABASE_DB_URL }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Export finished dailies
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p src/dailies/history
           psql "$DB" -v ON_ERROR_STOP=1 -tAq -c "
             select coalesce(jsonb_pretty(jsonb_agg(d order by d->>'date')), '[]') from (
@@ -42,9 +45,10 @@ jobs:
                 left join public.daily_themes t on t.day = g.challenge_date
                where g.kind = 'daily' and g.challenge_date < public._today()) x" \
             > src/dailies/history/preview.json
-          echo "$(grep -c '"date"' src/dailies/history/preview.json) dailies exported"
+          echo "$(grep -c '"date"' src/dailies/history/preview.json || true) dailies exported"
       - name: Commit if changed
         run: |
+          set -euo pipefail
           git config user.name "circart-preview-bot"
           git config user.email "circart-preview-bot@users.noreply.github.com"
           git add src/dailies/history/preview.json

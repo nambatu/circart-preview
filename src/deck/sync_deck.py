@@ -26,16 +26,32 @@ What it does
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from card_keys import load_keys, image_name  # noqa: E402
+try:
+    import deck_fixes  # noqa: E402
+except ImportError:
+    deck_fixes = None
 
 SITE = "https://YOUR-GAME-DOMAIN"     # same domain as build_deploy.py
 TIER_BY_LABEL = {"icon": 1, "recognisable": 2, "recognizable": 2, "obscure": 3}
 TEXT_FIELDS = ("title", "artist", "date_note", "movement", "medium", "location", "trivia")
+
+
+def validate_site(site):
+    s = (site or "").strip().rstrip("/")
+    if not s or not re.fullmatch(r"https://[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?:/[A-Za-z0-9._~/-]*)?", s):
+        sys.exit(f"Invalid --site URL: {site!r} (expected https://domain/...)")
+    lower = s.lower()
+    for bad in ("your-game-domain", "owner.github.io", "xxxx", "placeholder"):
+        if bad in lower:
+            sys.exit(f"Refusing placeholder --site URL: {s!r}")
+    return s
 
 
 def fix_mojibake(s):
@@ -105,7 +121,28 @@ def q(v):
         return "true" if v else "false"
     if isinstance(v, int):
         return str(v)
-    return "'" + str(v).replace("'", "''") + "'"
+    s = str(v)
+    if "\x00" in s:
+        raise ValueError("NUL byte not allowed in SQL string")
+    if "\\" in s or any(ord(ch) < 32 or ord(ch) == 127 for ch in s):
+        out = []
+        for ch in s:
+            if ch == "\\":
+                out.append("\\\\")
+            elif ch == "'":
+                out.append("''")
+            elif ch == "\n":
+                out.append("\\n")
+            elif ch == "\r":
+                out.append("\\r")
+            elif ch == "\t":
+                out.append("\\t")
+            elif ord(ch) < 32 or ord(ch) == 127:
+                out.append(f"\\x{ord(ch):02x}")
+            else:
+                out.append(ch)
+        return "E'" + "".join(out) + "'"
+    return "'" + s.replace("'", "''") + "'"
 
 
 def to_sql(rows):
@@ -127,6 +164,8 @@ def push(rows):
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
     if not url or not key:
         sys.exit("Set SUPABASE_URL and SUPABASE_SERVICE_KEY first (see the top of this file).")
+    if not re.fullmatch(r"https://[a-z0-9-]+\.supabase\.co", url):
+        sys.exit(f"Invalid SUPABASE_URL: {url!r}")
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
     def call(method, path, body, extra=None):
@@ -151,9 +190,17 @@ def main():
     ap.add_argument("--site", default=SITE, help="where docs/ is published")
     a = ap.parse_args()
 
+    site = a.site.rstrip("/")
+    if a.sql or a.push or site != SITE:
+        site = validate_site(site)
+
     cards = json.loads(Path(a.deck).read_text(encoding="utf-8"))
+    if deck_fixes is not None:
+        fixed = deck_fixes.apply(cards)
+        if fixed:
+            print(f"deck fixes applied: {fixed} card style update(s)")
     keys, added, key_file = load_keys([c for c in cards if c.get("id")])
-    rows, problems, repaired = build_rows(cards, keys, a.site.rstrip("/"))
+    rows, problems, repaired = build_rows(cards, keys, site)
 
     tiers = {t: sum(1 for r in rows if r["tier"] == t) for t in (1, 2, 3)}
     print(f"{len(rows)} cards ready · icon {tiers[1]} · recognisable {tiers[2]} · obscure {tiers[3]}"

@@ -9,12 +9,11 @@
    for you, so you normally never touch this file.
    ============================================================ */
 
-const CACHE_VERSION = 'preview-20261120-181649';
+const CACHE_VERSION = 'preview-20261120-194255';
 
 const SHELL_CACHE  = `circart-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE  = `circart-images-${CACHE_VERSION}`;
-const VENDOR_CACHE = `circart-vendor-${CACHE_VERSION}`;
-const ALL_CACHES   = [SHELL_CACHE, IMAGE_CACHE, VENDOR_CACHE];
+const ALL_CACHES   = [SHELL_CACHE, IMAGE_CACHE];
 
 const SHELL_ASSETS = [
     './shell.css',
@@ -30,6 +29,19 @@ const SHELL_ASSETS = [
     './packs.js',
     './online.js',
     './preview.js',
+    './privacy-en.html',
+    './privacy-de.html',
+    './impressum.html',
+    './changes.html',
+    './vendor/fonts.css',
+    './vendor/fonts/inter-latin-300-normal.woff2',
+    './vendor/fonts/inter-latin-400-normal.woff2',
+    './vendor/fonts/inter-latin-500-normal.woff2',
+    './vendor/fonts/inter-latin-600-normal.woff2',
+    './vendor/fonts/playfair-display-latin-400-italic.woff2',
+    './vendor/fonts/playfair-display-latin-400-normal.woff2',
+    './vendor/fonts/playfair-display-latin-600-normal.woff2',
+    './vendor/supabase.js',
     './',
     './index.html',
     './style.css',
@@ -111,11 +123,15 @@ self.addEventListener('fetch', (event) => {
     // fall back to the cached shell when offline.
     if (request.mode === 'navigate') {
         event.respondWith((async () => {
+            const cache = await caches.open(SHELL_CACHE);
             try {
-                return await fetch(request);
+                const fresh = await fetch(request);
+                if (fresh && fresh.ok) cache.put(request, fresh.clone());
+                return fresh;
             } catch (e) {
-                const cache = await caches.open(SHELL_CACHE);
-                return (await cache.match('./index.html')) || Response.error();
+                return (await cache.match(request, { ignoreSearch: true })) ||
+                       (await cache.match('./index.html')) ||
+                       Response.error();
             }
         })());
         return;
@@ -140,16 +156,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Fonts and the Lottie player. If these are missing offline the game
-    // still plays, just with fallback type and no loading animation, so a
-    // failure here must never reject the request chain.
-    if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname) ||
-        url.hostname === 'unpkg.com') {
-        event.respondWith(
-            cacheFirst(request, VENDOR_CACHE).catch(() => fetch(request))
-        );
-    }
-    // Everything else (analytics beacons) goes straight to the network.
 });
 
 // ─── CIRCArt push notifications (appended to sw.js by the build) ─────────────

@@ -98,6 +98,13 @@ ok(ex.feedback.length === 1 && ex.feedback[0].message === "The timer froze", "ow
 ok(ex.push_devices.length === 1 && ex.push_devices[0].user_agent === "Mozilla/5.0 test" && !JSON.stringify(ex).includes("auth-secret"), "push device listed, keys left out");
 const exs = JSON.stringify(ex);
 ok(!exs.includes(users.ben) && !exs.includes("benny") && !exs.includes("ben@example.org"), "nothing about other players");
+ok(Array.isArray(ex.join_failures) && Array.isArray(ex.guest_transfers) && ex.stored_on_this_device.includes("gallery collection") && ex.stored_on_this_device.includes("transfer ticket"), "030: export includes join_failures, guest_transfers, and device storage details");
+await signUp("exp_guest", true);
+await call("exp_guest", "join_game", "ZZZZ", null);
+const expTok = await call("exp_guest", "start_guest_transfer");
+const gx = await call("exp_guest", "export_my_data");
+ok(gx.join_failures.length === 1 && typeof gx.join_failures[0].at === "string", "030: join_failures timestamps exported");
+ok(gx.guest_transfers.length === 1 && typeof gx.guest_transfers[0].created_at === "string" && !JSON.stringify(gx).includes(expTok), "030: guest_transfers timestamps exported without token");
 ok((await err(() => as(null, `select public.export_my_data()`, [], "anon"))).includes("permission denied"), "anon can't export");
 const bx = await call("ben", "export_my_data");
 ok(bx.feedback.length === 0 && bx.solo_games.length === 0 && bx.games.length === 1, "ben's export has only ben's data");
@@ -140,7 +147,13 @@ console.log("privacy_cleanup");
 await realClock();
 await signUp("old_guest", true); await signUp("new_guest", true); await signUp("old_member", false, "m@example.org");
 await signUp("busy_guest", true);
+const oauthFallbackId = (await q(`insert into auth.users (is_anonymous, email, raw_user_meta_data) values (false, 'oauth@example.org', '{"full_name":"System: evil"}') returning id`))[0].id;
+await q(`update profiles set last_seen_at = now() - interval '200 days', created_at = now() - interval '300 days' where id = $1`, [oauthFallbackId]);
 for (const n of ["old_guest", "new_guest", "old_member", "busy_guest"]) await call(n, "get_my_profile");
+await signUp("old_tok_guest", true);
+const oldTok = await call("old_tok_guest", "start_guest_transfer");
+const freshTok = await call("new_guest", "start_guest_transfer");
+await q(`update guest_transfers set created_at = now() - interval '2 days' where token = $1`, [oldTok]);
 await call("old_member", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/old", "k", "a", null);
 await call("ben", "save_push_subscription", "https://fcm.googleapis.com/fcm/send/ben", "k", "a", null);
 await call("busy_guest", "submit_solo_game", soloGame());
@@ -162,6 +175,9 @@ ok(await count(`select count(*) from auth.users where id = $1`, [users.old_guest
 ok(await count(`select count(*) from auth.users where id = $1`, [users.new_guest]) === 1, "active guest kept");
 ok(await count(`select count(*) from auth.users where id = $1`, [users.busy_guest]) === 1, "guest who played recently (solo save) kept");
 ok(await count(`select count(*) from auth.users where id = $1`, [users.old_member]) === 1, "idle account with email kept");
+ok(await count(`select count(*) from auth.users where id = $1`, [oauthFallbackId]) === 1, "030: idle OAuth account with Guest fallback name kept");
+ok(await count(`select count(*) from guest_transfers where token = $1`, [oldTok]) === 0
+   && await count(`select count(*) from guest_transfers where token = $1`, [freshTok]) === 1, "030: expired guest_transfers deleted, fresh kept");
 ok(await count(`select count(*) from push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/old'`) === 0
    && await count(`select count(*) from push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/ben'`) === 1, "push device of idle player removed, active kept");
 const titles = (await q(`select title from push_outbox where player_id = $1`, [users.ben])).map(x => x.title);

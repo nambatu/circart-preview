@@ -77,5 +77,24 @@ ok((await call("acct", "finish_guest_transfer", tok2)).moved === false, "a ticke
 ok((await q1(`select count(*)::int n from auth.users where id = $1`, [users.g2])).n === 1, "and that guest stays untouched");
 ok((await err(() => as("acct", `select * from guest_transfers`))).includes("permission denied"), "tickets can't be read directly");
 
+console.log("030: guest transfer hardening");
+await signUp("g3", true);
+const sharedLobby = await call("g3", "create_game", "live", 3, null, "G3");
+await call("acct", "join_game", sharedLobby.code, "Acct");
+for (let i = 0; i < 7; i++) {
+  await call("acct", "save_push_subscription", `https://fcm.googleapis.com/fcm/send/acct-${i}`, "k", "a", null);
+}
+for (let i = 0; i < 6; i++) {
+  await call("g3", "save_push_subscription", `https://fcm.googleapis.com/fcm/send/g3-${i}`, "k", "a", null);
+}
+const tok3 = await call("g3", "start_guest_transfer");
+await db.exec("begin");
+const r3a = await call("acct", "finish_guest_transfer", tok3);
+const r3b = await call("acct", "finish_guest_transfer", tok3);
+await db.exec("commit");
+ok(r3a.moved === true && r3b.moved === false, "030: double finish_guest_transfer in one transaction is idempotent");
+ok((await q1(`select status from games where id = $1`, [sharedLobby.id])).status === "cancelled", "030: unmoved lobby hosted by guest is cancelled");
+ok((await q1(`select count(*)::int n from push_subscriptions where player_id = $1`, [users.acct])).n === 10, "030: push_subscriptions capped at 10 after transfer");
+
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

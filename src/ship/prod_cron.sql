@@ -1,8 +1,9 @@
 -- CIRCArt PRODUCTION database: scheduled jobs.
--- Run once in the production project's SQL editor, AFTER migrations 001–007
--- and after the send-push Edge Function is deployed.
--- (Production equivalent of preview/zz_preview_cron.sql + zz_preview_push.sql;
---  do not run those preview files here.)
+-- Run once in the production project's SQL editor, AFTER all migrations in
+-- supabase/migrations/ (001 up to the newest, in order) and AFTER deploying
+-- the send-push Edge Function (`supabase functions deploy send-push --no-verify-jwt`).
+-- (Production equivalent of preview/zz_preview_*.sql; never run any
+--  zz_preview_*.sql file on production.)
 --
 -- Before running: replace PROJECT-REF below with the production project's
 -- reference (Project Settings → General, the xxxx in https://xxxx.supabase.co).
@@ -22,7 +23,7 @@ select cron.schedule('circart-push', '* * * * *',
                           body := '{}'::jsonb,
                           headers := jsonb_build_object('Content-Type', 'application/json',
                                        'x-cron-secret', (select value from private.settings where key = 'push_cron_secret')),
-                          timeout_milliseconds := 20000)
+                          timeout_milliseconds := 30000)
       where public._push_pending() $$);
 
 -- every 10 minutes: queue "closes in 3 h" reminders

@@ -12,6 +12,7 @@ set -eu
 SRC="$(cd "$(dirname "$0")/.." && pwd)"          # …/circart-preview/src
 OUT="$(cd "$SRC/.." && pwd)"                     # …/circart-preview (the repo)
 PV="${PV:-$(mktemp -d)}"                         # temporary build folder
+trap 'rm -rf "$PV"' EXIT
 GAME="${GAME:-$HOME/circart-game}"
 MSG="${1:?commit message}"
 REPO=nambatu/circart-preview

@@ -8,54 +8,72 @@ on:
     paths: ["pack_images.json", ".github/workflows/pack-images.yml"]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: pack-images
   cancel-in-progress: false
 jobs:
   images:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Install Pillow
         run: pip install --quiet pillow
       - name: Download missing images
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p pack-art docs/art
           python3 - <<'PY'
-          import json, os, subprocess, time
-          items = json.load(open("pack_images.json"))
+          import json, os, re, shutil, subprocess, tempfile, time
+          with open("pack_images.json", encoding="utf-8") as fh:
+              items = json.load(fh)
           ua = "CIRCArtPreview/1.0 (https://github.com/nambatu/circart-preview; art quiz game)"
           ok = fail = 0
           for it in items:
               key, urls = it["key"], it.get("urls") or [it.get("url")]
+              if not re.fullmatch(r"[a-z0-9_-]+", key or ""):
+                  print("SKIP invalid key", repr(key)); fail += 1; continue
               dst = f"pack-art/{key}.jpg"
               if os.path.exists(dst) or not any(urls):
                   continue
-              tmp = f"/tmp/{key}"
-              got = False
-              for url in [u for u in urls if u]:          # thumbnail → original → Special:FilePath
-                  r = subprocess.run(["curl", "-sSfL", "--retry", "2", "-A", ua, "-o", tmp, url])
-                  if r.returncode == 0:
-                      got = True; break
-                  time.sleep(1)
-              if not got:
-                  print("FAILED", key, urls); fail += 1; continue
+              fd, tmp = tempfile.mkstemp(prefix=f"{key}-")
+              os.close(fd)
               try:
-                  from PIL import Image, ImageOps
-                  im = ImageOps.exif_transpose(Image.open(tmp)).convert("RGB")
-                  im.thumbnail((1000, 1000))
-                  im.save(dst, "JPEG", quality=82, optimize=True, progressive=True)
-              except Exception as e:
-                  print("CONVERT FAILED", key, e); fail += 1; continue
-              subprocess.run(["cp", dst, f"docs/art/{key}.jpg"])
-              ok += 1
-              time.sleep(0.5)          # be polite to Wikimedia
+                  got = False
+                  for url in [u for u in urls if isinstance(u, str) and u.startswith("https://")]:
+                      r = subprocess.run([
+                          "curl", "--fail", "--show-error", "--silent", "--location",
+                          "--proto", "=https", "--proto-redir", "=https", "--tlsv1.2",
+                          "--max-time", "30", "--connect-timeout", "10", "--retry", "2",
+                          "-A", ua, "-o", tmp, url,
+                      ])
+                      if r.returncode == 0:
+                          got = True; break
+                      time.sleep(1)
+                  if not got:
+                      print("FAILED", key, urls); fail += 1; continue
+                  try:
+                      from PIL import Image, ImageOps
+                      with Image.open(tmp) as raw_im:
+                          im = ImageOps.exif_transpose(raw_im).convert("RGB")
+                          im.thumbnail((1000, 1000))
+                          im.save(dst, "JPEG", quality=82, optimize=True, progressive=True)
+                  except Exception as e:
+                      print("CONVERT FAILED", key, e); fail += 1; continue
+                  shutil.copy2(dst, f"docs/art/{key}.jpg")
+                  ok += 1
+                  time.sleep(0.5)          # be polite to Wikimedia
+              finally:
+                  if os.path.exists(tmp):
+                      os.unlink(tmp)
           print(f"downloaded {ok}, failed {fail}")
           PY
       - name: Commit
         run: |
+          set -euo pipefail
           git config user.name "circart-preview-bot"
           git config user.email "circart-preview-bot@users.noreply.github.com"
           git add pack-art docs/art
