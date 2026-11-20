@@ -1,0 +1,38 @@
+[
+  {
+    "week_start": "2026-11-16",
+    "card_id": "1665-johannes-vermeer-girl-with-a-pearl-earring",
+    "title": "Girl with a Pearl Earring",
+    "artist": "Johannes Vermeer",
+    "year": 1665,
+    "story": "Vermeer painted this head study in Delft rather than a real portrait of a named sitter. Just two dabs of white paint make the pearl seem to glow out of the dark background.",
+    "story_de": "Vermeer malte dieses Charakterbild in Delft und kein Porträt einer bestimmten Person. Nur zwei kleine weiße Farbtupfer lassen die Perle vor dem dunklen Hintergrund leuchten."
+  },
+  {
+    "week_start": "2026-11-23",
+    "card_id": "1889-vincent-van-gogh-the-starry-night",
+    "title": "The Starry Night",
+    "artist": "Vincent van Gogh",
+    "year": 1889,
+    "story": "Van Gogh painted this swirling night sky from memory while looking out of his room in Saint-Rémy. The dark cypress tree and the quiet village spire anchor the restless sky.",
+    "story_de": "Van Gogh malte diesen wirbelnden Nachthimmel aus dem Gedächtnis nach dem Blick aus seinem Zimmer in Saint-Rémy. Die dunkle Zypresse und der Kirchturm geben dem unruhigen Himmel Halt."
+  },
+  {
+    "week_start": "2026-11-30",
+    "card_id": "1485-sandro-botticelli-the-birth-of-venus",
+    "title": "The Birth of Venus",
+    "artist": "Sandro Botticelli",
+    "year": 1485,
+    "story": "Botticelli painted the goddess arriving ashore on a scallop shell blown by gentle winds. His flowing lines and bright tempera colours look more like a dream than a heavy oil painting.",
+    "story_de": "Botticelli malte die Göttin auf einer Muschel, die vom Wind ans Ufer getragen wird. Seine fließenden Linien und hellen Temperafarben lassen das Werk wie einen Traum wirken."
+  },
+  {
+    "week_start": "2026-12-07",
+    "card_id": "1818-caspar-david-friedrich-wanderer-above-the-sea-of-fog",
+    "title": "Wanderer above the Sea of Fog",
+    "artist": "Caspar David Friedrich",
+    "year": 1818,
+    "story": "Friedrich placed the lone traveller with his back turned so that you step straight into his boots. The misty peaks around him come from sketches he drew in the Elbe Sandstone Mountains.",
+    "story_de": "Friedrich zeigt den einsamen Wanderer von hinten, damit du selbst an seiner Stelle stehst. Die nebligen Gipfel ringsum entstanden nach Skizzen aus dem Elbsandsteingebirge."
+  }
+]

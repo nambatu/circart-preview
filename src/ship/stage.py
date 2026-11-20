@@ -29,8 +29,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 WWW_FROM_APP = ["index.html", "shell.js", "shell.css", "strings.js", "game.js", "sw-push.js",
-                "strings-de.js", "dealer.js", "collection.js", "styles.js", "onboarding.js", "onboarding.css", "packs.js"]
-ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py", "deck_fixes.py"]
+                "strings-de.js", "dealer.js", "collection.js", "styles.js", "onboarding.js", "onboarding.css", "packs.js",
+                "streak.js", "price-deck.json"]
+ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py", "deck_fixes.py", "extra_modes.py"]
 
 
 PREVIEW_SITE = "https://nambatu.github.io/circart-preview"
@@ -177,6 +178,8 @@ def main():
     ap.add_argument("--preview-repo", help="clone of circart-preview: its built packs, pack photos (pack-art/) and packs.sql "
                                            "go into the game, so pack images are served from the real site")
     ap.add_argument("--packs-sql", help="where to write packs.sql for the production database (with --preview-repo)")
+    ap.add_argument("--price-sql", help="where to write price.sql for the production database")
+    ap.add_argument("--weekly-sql", help="where to write weekly.sql for the production database")
     a = ap.parse_args()
     game, be = Path(a.game).resolve(), Path(a.backend).resolve()
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8"))
@@ -185,7 +188,7 @@ def main():
         sys.exit(f"{game} is not the game repo (no www/artline.json)")
     if a.packs_sql and not a.preview_repo:
         sys.exit("--packs-sql requires --preview-repo")
-    for out_sql in (a.deck_sql, a.packs_sql):
+    for out_sql in (a.deck_sql, a.packs_sql, a.price_sql, a.weekly_sql):
         if out_sql and Path(out_sql).resolve().is_relative_to(game):
             sys.exit(f"Keep generated SQL outside the game repo: {out_sql}")
 
@@ -230,6 +233,14 @@ def main():
     shutil.copy2(be / "web" / "online.js", game / "www" / "online.js")   # placeholders; build fills them
     for f in ROOT_FROM_DECK:
         shutil.copy2(be / "deck" / f, game / f)
+    weekly_src = be / "weekly" / "paintings.json"
+    if not weekly_src.exists() and a.preview_repo:
+        cand_weekly = Path(a.preview_repo).resolve() / "src" / "weekly" / "paintings.json"
+        if cand_weekly.exists():
+            weekly_src = cand_weekly
+    if weekly_src.exists():
+        (game / "weekly").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(weekly_src, game / "weekly" / "paintings.json")
     for sub in ("migrations", "functions"):
         dst = game / "supabase" / sub
         if dst.exists():
@@ -251,6 +262,10 @@ def main():
         build_cmd += ["--preview-config", str(Path(a.preview_config).resolve())]
     if a.preview_repo:
         build_cmd += ["--preview-repo", str(Path(a.preview_repo).resolve())]
+    if a.price_sql:
+        build_cmd += ["--price-sql", str(Path(a.price_sql).resolve())]
+    if a.weekly_sql:
+        build_cmd += ["--weekly-sql", str(Path(a.weekly_sql).resolve())]
     subprocess.run(build_cmd, cwd=game, check=True)
 
     if a.deck_sql:
@@ -266,6 +281,15 @@ def main():
                 ["CNAME", "index.html", "online.js", "shell.js", "game.js", "sw.js", "strings.js", "shell.css",
                  "packs.js", "vendor/supabase.js", "vendor/fonts.css", "privacy-en.html", "privacy-de.html", "impressum.html"]
                 if not (docs / f).exists()]
+    if (be / "app" / "streak.js").exists() and not (docs / "streak.js").exists():
+        problems.append("missing docs/streak.js")
+    if (be / "app" / "price-deck.json").exists():
+        if not (docs / "price-deck.json").exists():
+            problems.append("missing docs/price-deck.json")
+        elif "upload.wikimedia.org" in (docs / "price-deck.json").read_text(encoding="utf-8"):
+            problems.append("docs/price-deck.json contains raw Wikimedia URLs")
+    if (game / "weekly" / "paintings.json").exists() and not list((docs / "art").glob("wk-*-varnish.jpg")):
+        problems.append("docs/art/ is missing weekly restoration images")
     problems += [f"preview/legacy file in docs/: {f}" for f in
                  ["preview.js", "preview.json", "changes.html", "app.js", "Abstract Painting Loader.json", "vendor/lottie-player.js"]
                  if (docs / f).exists()]

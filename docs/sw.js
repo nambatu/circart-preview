@@ -9,7 +9,7 @@
    for you, so you normally never touch this file.
    ============================================================ */
 
-const CACHE_VERSION = 'preview-20261120-194255';
+const CACHE_VERSION = 'preview-20261120-205353';
 
 const SHELL_CACHE  = `circart-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE  = `circart-images-${CACHE_VERSION}`;
@@ -24,9 +24,11 @@ const SHELL_ASSETS = [
     './dealer.js',
     './collection.js',
     './styles.js',
+    './streak.js',
     './onboarding.js',
     './onboarding.css',
     './packs.js',
+    './price-deck.json',
     './online.js',
     './preview.js',
     './privacy-en.html',

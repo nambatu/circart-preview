@@ -39,7 +39,7 @@ async function rpc(who, fn, args) {
   try { return Object.values((await db.query(`select public.${fn}(${keys.map((k,i)=>`${k} => $${i+1}`).join(',')}) r`, vals)).rows[0])[0]; }
   finally { await db.exec('reset role'); }
 }
-const types = {".js":"text/javascript",".css":"text/css",".json":"application/json",".jpg":"image/jpeg",".html":"text/html"};
+const types = {".js":"text/javascript",".css":"text/css",".json":"application/json",".jpg":"image/jpeg",".png":"image/png",".html":"text/html"};
 const srv = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/rpc') {
     let body = ''; req.on('data', c => body += c); req.on('end', () => run(async () => {
@@ -683,6 +683,132 @@ try {
      "pack solo: #game-online-screen opens with 'Baroque Masters' in #go-title");
   await playSoloCards(dora, packDeck, 5, { wantWrong: false, verifyPackImage: true });
   ok(!!(await dora.$('[data-act="soloAgain"]')), "pack solo: plays cleanly on #game-online-screen to finished screen");
+
+  console.log("\nwave 1: streak + weekly painting + price mode + compact history + badges");
+  // Cleo finished today's daily (Fri 2026-11-20 -> day 4 of week 2026-11-16)
+  await cleo.goto('http://localhost:8772/?as=cleo'); await homeReady(cleo);
+  await cleo.waitForSelector('#home-painting .wk-card');
+  const cleoStreak = await cleo.textContent('#home-streak').catch(() => '');
+  ok(cleoStreak.includes('1') && (await cleo.locator('#home-painting .wk-patch').count()) === 1,
+     `weekly painting (Cleo): streak pill '${cleoStreak.trim()}' and 1 cleaned patch shown on home`);
+  await shot(cleo, 'w1-home-painting-light');
+
+  // Dora plays 3 days in week 2026-11-16 (Mon..Wed), guesses artist, finishes Sunday -> reveal + restorations
+  const finishDailyAt = async (who, iso) => {
+    await run(() => db.exec(`set circart.test_now = '${iso}'`));
+    const dg = await rpc(who, 'play_daily', {});
+    for (let i = 1; i <= dg.card_count; i++) {
+      const nc = await rpc(who, 'next_card', { p_game: dg.id });
+      const rs = await right(dg.id, nc.position);
+      await rpc(who, 'answer', { p_game: dg.id, p_position: nc.position, p_slot: rs.slot });
+      await rpc(who, 'pick_bonus', { p_game: dg.id, p_position: nc.position, p_artist: null, p_movement: null });
+    }
+  };
+  await finishDailyAt('dora', '2026-11-16T12:00:00+01:00');
+  await finishDailyAt('dora', '2026-11-17T12:00:00+01:00');
+  await finishDailyAt('dora', '2026-11-18T12:00:00+01:00');
+  await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
+  await dora.waitForSelector('[data-wk-guess]');
+  await dora.click('[data-wk-guess]');
+  await dora.waitForSelector('[data-wk-choice]');
+  await dora.click('[data-wk-choice]');
+  await dora.waitForSelector('#wk-guess-res:not(.hidden)');
+  ok((await dora.textContent('#wk-guess-res')).trim().length > 0, "weekly painting: 3-day artist guess saves and shows feedback");
+  await dora.click('body > .modal [data-close]');
+  await dora.waitForSelector('body > .modal', { state: 'detached' }).catch(() => {});
+  await finishDailyAt('dora', '2026-11-22T12:00:00+01:00');
+  await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
+  await dora.waitForSelector('[data-wk-restorations]');
+  ok((await dora.textContent('#home-painting')).includes('Vermeer'), "weekly painting: Sunday reveal displays artwork placard and story");
+  await dora.click('[data-wk-restorations]');
+  await dora.waitForSelector('#gallery-restorations .wk-rest-card');
+  ok((await dora.locator('#gallery-restorations .wk-rest-card').count()) >= 1, "Gallery -> Restorations lists completed weekly restoration");
+  await shot(dora, 'w1-restorations-light');
+  await run(() => db.exec('reset circart.test_now'));
+
+  // Dora (ranked username dora_2) plays Price Mode (3 right, 3 wrong -> score 3, Ledger, Ranks Price tab)
+  const priceDeck = JSON.parse(fs.readFileSync(path.join(E, 'site', 'price-deck.json'), 'utf8'));
+  const findPriceCard = async p => {
+    const src = await p.getAttribute('.price-chal .go-art img', 'src').catch(() => '');
+    const tit = (await p.textContent('.price-chal-title')).trim();
+    const norm = s => String(s || '').replace(/^\/+/, '');
+    return priceDeck.find(c => norm(c.image_local) === norm(src)) || priceDeck.find(c => c.title === tit);
+  };
+  const findRefCard = async p => {
+    const src = await p.getAttribute('.price-ref img', 'src').catch(() => '');
+    const tit = (await p.textContent('.price-ref-title')).trim();
+    const norm = s => String(s || '').replace(/^\/+/, '');
+    return priceDeck.find(c => norm(c.image_local) === norm(src)) || priceDeck.find(c => c.title === tit);
+  };
+  await dora.goto('http://localhost:8772/?as=dora'); await homeReady(dora);
+  await dora.waitForSelector('[data-price="play"]');
+  await dora.click('[data-price="play"]');
+  await dora.waitForSelector('[data-price-dir="higher"]');
+  const firstChal = await findPriceCard(dora);
+  ok(!!firstChal, "price mode: first challenger card loads with image and metadata");
+  await dora.click('#go-flag');
+  await dora.waitForSelector('#report-modal:not(.hidden)');
+  const prRepTxt = await dora.textContent('#report-modal');
+  ok(!prRepTxt.includes(firstChal.sale_price_display) && !prRepTxt.includes(firstChal.auction_house),
+     "price mode: report modal before reveal hides sale price and auction house");
+  await dora.click('#cancel-report-btn');
+  await dora.waitForSelector('#report-modal', { state: 'hidden' });
+  await shot(dora, 'w1-price-play-light');
+
+  for (let round = 1; round <= 6; round++) {
+    await dora.waitForSelector('[data-price-dir="higher"]');
+    const refC = await findRefCard(dora);
+    const chalC = await findPriceCard(dora);
+    const shouldRight = round <= 3;
+    const realHigher = chalC.price_usd_today >= refC.price_usd_today;
+    const dir = shouldRight ? (realHigher ? 'higher' : 'lower') : (realHigher ? 'lower' : 'higher');
+    await dora.click(`[data-price-dir="${dir}"]`);
+    await dora.waitForSelector('[data-act="priceNext"]');
+    if (round === 1) {
+      const prTxt = await text(dora);
+      ok(prTxt.includes('today') && prTxt.includes(String(chalC.sale_year)) && prTxt.includes(chalC.auction_house),
+         "price mode: reveal shows sale year, today's price, and auction story");
+      await shot(dora, 'w1-price-reveal-light');
+    }
+    await dora.click('[data-act="priceNext"]');
+  }
+  await dora.waitForSelector('.price-ledger-row');
+  ok((await dora.locator('.price-ledger-row').count()) === 7 && (await text(dora)).includes('3'),
+     "price mode: 3 mistakes ends run with score 3 and full 7-card auction ledger");
+  await dora.click('[data-act="home"]'); await homeReady(dora);
+
+  // Dark mode screenshot of Price Mode + Profile Compact History + Price Leaderboard
+  await ben.goto('http://localhost:8772/?as=ben'); await homeReady(ben);
+  await ben.waitForSelector('[data-price="play"]');
+  await ben.click('[data-price="play"]');
+  await ben.waitForSelector('[data-price-dir="higher"]');
+  await shot(ben, 'w1-price-play-dark');
+  await ben.click('.go-close');
+  await ben.waitForSelector('[data-x="yes"]');
+  await ben.click('[data-x="yes"]');
+  await homeReady(ben);
+  await ben.click('.tabbar [data-tab="profile"]');
+  await ben.waitForSelector('#pf-history .hist-row');
+  await shot(ben, 'w1-profile-history-dark');
+
+  await dora.click('.tabbar [data-tab="ranks"]');
+  await dora.waitForSelector('[data-rt="price"]');
+  await dora.click('[data-rt="price"]');
+  await dora.waitForFunction(() => (document.getElementById('ranks-board') || {}).innerText.includes('dora_2'));
+  ok(true, "ranks: Price tab ranks dora_2");
+
+  await dora.click('.tabbar [data-tab="profile"]');
+  await dora.waitForSelector('#pf-history .hist-row');
+  const compactCount = await dora.locator('#pf-history .hist-row').count();
+  ok(compactCount >= 1 && compactCount <= 3, `profile: shows compact recent history (${compactCount} <= 3 rows)`);
+  await dora.click('#pf-history-all');
+  await dora.waitForSelector('.hist-modal [data-hf="price"]');
+  await dora.click('.hist-modal [data-hf="price"]');
+  await dora.waitForSelector('#hist-modal-list .hist-row');
+  ok((await dora.locator('#hist-modal-list .hist-row').count()) >= 1, "profile: history modal filters by Price Mode cleanly");
+  await dora.keyboard.press('Escape');
+  await dora.evaluate(() => document.querySelectorAll('body > .modal').forEach(m => m.remove()));
+  await shot(dora, 'w1-profile-history-light');
 
   ok(errs.length === 0, "no script errors" + (errs.length ? ': ' + errs.join(' | ') : ''));
 } catch (e) { console.log("  ✗ " + e.message.split('\n')[0]); fails++; }

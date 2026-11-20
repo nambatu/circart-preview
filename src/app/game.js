@@ -14,6 +14,12 @@
     const imgUrl = raw => String((raw && (raw.image_local || raw.image || raw.image_source)) || '').replace(/\\/g, '/');
     const soloSourceId = (raw, packId) => (raw && (raw.pack || packId)) ? ('pack:' + (raw.pack || packId) + ':' + raw.id) : String(raw.id);
     const formatTlCard = raw => ({ year: raw.year, title: raw.title, artist: raw.artist || raw.artistDisplayName || '', image_url: imgUrl(raw) });
+    const priceSid = raw => String((raw && (raw.source_id || raw.id)) || '');
+    const priceVal = raw => Number(raw && raw.price_usd_today) || 0;
+    const priceImg = raw => {
+        const s = String((raw && (raw.image_local || raw.image)) || '').replace(/\\/g, '/');
+        return /^https?:/i.test(s) ? '' : s;
+    };
 
     let G = null;          // the open game: { id, st, card, answer, picked, rev, ... }
     let unwatch = null;
@@ -112,6 +118,88 @@
         draw();
     }
 
+    function shuffleCopy(list) {
+        const arr = (list || []).slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function pickPriceChallenger(refCard, remaining, avoidSid) {
+        if (!remaining.length) return null;
+        const refP = priceVal(refCard);
+        const fits = c => {
+            const p = priceVal(c);
+            return Math.abs(p - refP) / Math.max(1, Math.min(p, refP)) >= 0.10;
+        };
+        let idx = remaining.findIndex(c => fits(c) && (!avoidSid || priceSid(c) !== avoidSid));
+        if (idx < 0) idx = remaining.findIndex(fits);
+        if (idx < 0 && avoidSid) idx = remaining.findIndex(c => priceSid(c) !== avoidSid);
+        if (idx < 0) idx = 0;
+        return remaining.splice(idx, 1)[0] || null;
+    }
+
+    function openPrice(cards, { prevBest } = {}) {
+        close(true);
+        const valid = (cards || []).filter(c => c && priceImg(c) && priceVal(c) > 0);
+        if (valid.length < 2) {
+            if (window.CircShell && window.CircShell.toast) window.CircShell.toast(t('price.noCards'));
+            close();
+            return;
+        }
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        $('game-online-screen').classList.add('active');
+
+        const pool = shuffleCopy(valid);
+        let lastPair = null;
+        try { lastPair = JSON.parse(sessionStorage.getItem('circart-price-last-start') || 'null'); } catch (e) { lastPair = null; }
+        if (Array.isArray(lastPair) && lastPair[0] && pool.length > 2 && priceSid(pool[0]) === lastPair[0]) {
+            const swapIdx = pool.findIndex((c, i) => i > 0 && priceSid(c) !== lastPair[0]);
+            if (swapIdx > 0) [pool[0], pool[swapIdx]] = [pool[swapIdx], pool[0]];
+        }
+        const ref = pool[0];
+        const remaining = pool.slice(1);
+        const firstChal = pickPriceChallenger(ref, remaining, Array.isArray(lastPair) ? lastPair[1] : null);
+        try {
+            sessionStorage.setItem('circart-price-last-start', JSON.stringify([priceSid(ref), firstChal ? priceSid(firstChal) : null]));
+        } catch (e) { /* ignore */ }
+
+        if (window.CircCollection && priceSid(ref) && !priceSid(ref).startsWith('price:')) {
+            window.CircCollection.record(priceSid(ref), false);
+        }
+
+        G = {
+            id: null,
+            st: {
+                kind: 'price',
+                phase: 'play',
+                status: 'playing',
+                card_count: pool.length - 1,
+                current_turn: 1,
+                me: { score: 0, answered: 0, correct: 0, streak: 0, best_streak: 0 },
+            },
+            prevBest: prevBest === undefined ? null : prevBest,
+            results: [],
+            priceRev: null,
+            price: {
+                allCards: cards,
+                ref,
+                chal: firstChal,
+                remaining,
+                lives: 3,
+                round: 1,
+                startedAt: new Date().toISOString(),
+                logCards: [{ id: priceSid(ref) }],
+                ledger: [{ card: ref, start: true }],
+                saved: false,
+            },
+        };
+        $('go-body').scrollTop = 0;
+        draw();
+    }
+
     function openSoloCard() {
         const raw = G.local.pile[G.local.index];
         G.local.currentRaw = raw;
@@ -145,7 +233,7 @@
     // ─── refresh: one server round-trip, then draw ────────────────────────
     async function refresh() {
         const cur = G;
-        if (!cur || (cur.st && cur.st.kind === 'solo') || !cur.id) return;
+        if (!cur || (cur.st && (cur.st.kind === 'solo' || cur.st.kind === 'price')) || !cur.id) return;
         if (refreshing) { again = true; return; }
         refreshing = true;
         try {
@@ -265,7 +353,7 @@
     function schedule() {
         clearInterval(tick); clearInterval(poll);
         const cur = G;
-        if (!cur || !cur.st || cur.st.kind === 'solo') return;
+        if (!cur || !cur.st || cur.st.kind === 'solo' || cur.st.kind === 'price') return;
         const st = cur.st;
         const live = st.kind === 'live';
         let due = null, bonusDue = false;
@@ -294,13 +382,19 @@
     function draw() {
         const st = G.st;
         $('go-title').textContent = st.kind === 'solo' ? (G.local.packTitle || t('solo.title'))
+            : st.kind === 'price' ? t('price.title')
             : st.kind === 'live' ? t('game.live')
             : st.kind === 'daily' ? (G.challengeNo ? t('game.daily', { no: G.challengeNo }) : t('game.dailyShort'))
             : st.kind === 'run' ? t('run.short')
             : t('game.async');
         const shown = G.answer && !G.picked && G.answer.scoreBefore != null ? G.answer.scoreBefore : st.me.score;   // no hint before lock-in
-        $('go-score').textContent = (st.phase === 'lobby' || (st.kind === 'solo' && st.phase === 'finished')) ? '' : t('game.points', { n: shown.toLocaleString() });
+        $('go-score').textContent = (st.phase === 'lobby' || ((st.kind === 'solo' || st.kind === 'price') && st.phase === 'finished')) ? '' : t('game.points', { n: shown.toLocaleString() });
         const body = $('go-body');
+        if (st.kind === 'price') {
+            delete body.dataset.pickFor;
+            body.innerHTML = st.phase === 'finished' ? viewPriceDone() : G.priceRev ? viewPriceReveal() : viewPricePlay();
+            return wire();
+        }
         if (G.answer) {
             // while picking, polls and live updates must not rebuild the picker (it flickered on every update)
             const key = G.answer.key || (G.answer.key = String(Math.random()).slice(2));   // one key per card answer
@@ -692,6 +786,150 @@
         </div>`;
     }
 
+    function fmtUsd(n) {
+        const v = Number(n);
+        if (!Number.isFinite(v) || v <= 0) return '';
+        const isDe = window.CircI18n && window.CircI18n.lang === 'de';
+        if (v >= 1e9) {
+            const b = Math.round(v / 1e8) / 10;
+            return isDe ? `${String(b).replace('.', ',')} Mrd. $` : `$${b}B`;
+        }
+        if (v >= 1e6) {
+            const m = Math.round(v / 100000) / 10;
+            return isDe ? `${String(m).replace('.', ',')} Mio. $` : `$${m}M`;
+        }
+        if (v >= 1000) {
+            return isDe ? `${Math.round(v).toLocaleString('de-DE')} $` : `$${Math.round(v).toLocaleString('en-US')}`;
+        }
+        return isDe ? `${v} $` : `$${v}`;
+    }
+
+    function priceRefLine(c) {
+        const todayStr = t('price.todayAmount', { amount: fmtUsd(priceVal(c)) });
+        const origAmt = fmtUsd(c && (c.price_usd ?? c.sale_price_usd ?? c.price_original_usd));
+        const saleYr = c && (c.sale_year ?? c.auction_year);
+        if (origAmt && saleYr) return todayStr + ' · ' + t('price.inYear', { amount: origAmt, year: saleYr });
+        if (saleYr) return todayStr + ' · ' + t('price.soldIn', { year: saleYr });
+        return todayStr;
+    }
+
+    function priceRevLine(c) {
+        const parts = [t('price.todayAmount', { amount: fmtUsd(priceVal(c)) })];
+        const origAmt = fmtUsd(c && (c.price_usd ?? c.sale_price_usd ?? c.price_original_usd));
+        const saleYr = c && (c.sale_year ?? c.auction_year);
+        const house = c && (c.auction_house ?? c.house ?? c.venue ?? '');
+        if (origAmt && saleYr) parts.push(t('price.soldForIn', { amount: origAmt, year: saleYr }));
+        else if (saleYr) parts.push(t('price.soldIn', { year: saleYr }));
+        if (house) parts.push(house);
+        return parts.join(' · ');
+    }
+
+    function priceStatusRow() {
+        const pr = G.price;
+        const h = `<span class="run-hearts" aria-label="${esc(t('run.lives'))}: ${pr.lives}">${'❤️'.repeat(pr.lives)}${'🤍'.repeat(3 - pr.lives)}</span>`;
+        return `<div class="row price-bar">
+          <span>${h} <b>${esc(t('price.round', { n: pr.round }))}</b></span>
+          <span class="pill price-streak-pill">🔥 ${esc(t('price.bestStreakPill', { n: G.st.me.best_streak }))}</span>
+        </div>`;
+    }
+
+    function viewPricePlay() {
+        const pr = G.price, ref = pr.ref, chal = pr.chal;
+        const refTitle = de(ref, 'title') || ref.title || '';
+        const refMeta = [ref.artist || ref.artistDisplayName || '', ref.year].filter(Boolean).join(' · ');
+        const chalTitle = de(chal, 'title') || chal.title || '';
+        const chalMeta = [chal.artist || chal.artistDisplayName || '', chal.year].filter(Boolean).join(' · ');
+        return `<div class="page">
+          ${priceStatusRow()}
+          <section class="panel price-ref">
+            <img class="zoomable-img" src="${esc(priceImg(ref))}" alt="${esc(refTitle)}">
+            <div class="price-ref-body">
+              <span class="eyebrow">${esc(t('price.reference'))}</span>
+              <b class="serif price-ref-title">${esc(refTitle)}</b>
+              ${refMeta ? `<div class="note">${esc(refMeta)}</div>` : ''}
+              <div class="price-ref-amt">${esc(priceRefLine(ref))}</div>
+            </div>
+          </section>
+          <section class="panel strong price-chal">
+            <div class="hcard-top">
+              <span class="eyebrow">${esc(t('price.challenger'))}</span>
+              <span class="price-q" aria-hidden="true">?</span>
+            </div>
+            <div class="go-art"><img class="zoomable-img" src="${esc(priceImg(chal))}" alt="${esc(chalTitle)}"></div>
+            <div>
+              <h2 class="serif price-chal-title">${esc(chalTitle)}</h2>
+              ${chalMeta ? `<div class="muted">${esc(chalMeta)}</div>` : ''}
+            </div>
+            <div class="price-choices">
+              <button class="btn primary block" data-price-dir="higher">${esc(t('price.higher'))}</button>
+              <button class="btn outline block" data-price-dir="lower">${esc(t('price.lower'))}</button>
+            </div>
+          </section>
+        </div>`;
+    }
+
+    function viewPriceReveal() {
+        const pr = G.price, r = G.priceRev, c = r.card;
+        const title = de(c, 'title') || c.title || '';
+        const meta = [c.artist || c.artistDisplayName || '', c.year].filter(Boolean).join(' · ');
+        const story = de(c, 'story') || de(c, 'trivia') || '';
+        const isEnd = pr.lives <= 0 || pr.remaining.length === 0;
+        return `<div class="page">
+          ${priceStatusRow()}
+          <div class="go-vhead">
+            <h2 class="serif go-verdict ${r.ok ? 'ok' : 'bad'}">${esc(t(r.ok ? 'price.verdictOk' : 'price.verdictBad'))}</h2>
+            <b class="serif" style="font-size:26px">${r.ok ? '+1' : '+0'}</b>
+          </div>
+          <section class="go-yearbox ${r.ok ? 'ok' : 'bad'} price-res-badge">
+            <span>${esc(priceRevLine(c))}</span>
+          </section>
+          <section class="panel go-story">
+            <img class="zoomable-img" src="${esc(priceImg(c))}" alt="${esc(title)}">
+            <div>
+              <div class="serif"><b>${esc(title)}</b></div>
+              ${meta ? `<div class="muted">${esc(meta)}</div>` : ''}
+              ${story ? `<p class="go-trivia">${esc(story)}</p>` : ''}
+              ${c.credit ? `<p class="note go-credit">${esc(c.credit)}</p>` : ''}
+            </div>
+          </section>
+          <button class="btn primary block" data-act="priceNext">${esc(t(isEnd ? 'game.results' : 'price.next'))}</button>
+        </div>`;
+    }
+
+    function viewPriceDone() {
+        const st = G.st, me = st.me, pr = G.price;
+        const newBest = G.prevBest === null || (G.prevBest !== undefined && me.score > G.prevBest);
+        return `<div class="page">
+          <div style="text-align:center">
+            <div class="label">${esc(t('price.done'))}</div>
+            <h1 class="serif" style="font-size:40px">${me.score.toLocaleString()}</h1>
+            <p class="note" style="margin-top:-6px">${esc(t('price.rightLabel'))}</p>
+            ${newBest && me.score > 0 ? `<p class="run-best">🏆 ${esc(t('price.newBest'))}</p>` : ''}
+            <p style="font-size:20px;letter-spacing:2px;margin:4px 0;word-break:break-all">${squares()}</p>
+            <p class="muted">${esc(t('ranks.bestStreak'))} ${me.best_streak}</p>
+          </div>
+          <button class="btn primary block" data-act="priceAgain">${esc(t('game.playAgain'))}</button>
+          <button class="btn outline block" data-act="sharePrice">${esc(t('game.dailyShare'))}</button>
+          <h2 class="label">${esc(t('price.ledger'))}</h2>
+          <ol class="go-timeline price-ledger">${pr.ledger.map(item => {
+              const c = item.card;
+              const title = de(c, 'title') || c.title || '';
+              const mark = item.start ? esc(t('price.startLot')) : item.ok ? '✓' : '✗';
+              const markCls = item.start ? 'start' : item.ok ? 'ok' : 'bad';
+              return `<li class="go-tl price-ledger-row">
+                <img class="zoomable-img" src="${esc(priceImg(c))}" alt="${esc(title)}">
+                <span class="price-ledger-info">
+                  <b>${esc(title)}</b>
+                  <small>${esc([c.artist || c.artistDisplayName || '', c.year].filter(Boolean).join(' · '))}</small>
+                  <small class="price-ledger-val">${esc(priceRevLine(c))}</small>
+                </span>
+                <span class="price-mark ${markCls}">${mark}</span>
+              </li>`;
+          }).join('')}</ol>
+          <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
+        </div>`;
+    }
+
     function viewSoloDone() {
         const st = G.st, me = st.me;
         return `<div class="page">
@@ -829,6 +1067,7 @@
     function wire() {
         const body = $('go-body');
         body.querySelectorAll('[data-gap]').forEach(b => b.addEventListener('click', () => place(+b.dataset.gap)));
+        body.querySelectorAll('[data-price-dir]').forEach(b => b.addEventListener('click', () => guessPrice(b.dataset.priceDir)));
         body.querySelectorAll('[data-artist]').forEach(b => b.addEventListener('click', () => choose('artist', b.dataset.artist)));
         body.querySelectorAll('[data-movement]').forEach(b => b.addEventListener('click', () => choose('movement', b.dataset.movement)));
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
@@ -893,6 +1132,7 @@
         if (window.CircShell && window.CircShell.soloGameFinished) {
             window.CircShell.soloGameFinished({
                 mode: G.local.packId ? 'pack' : 'classic',
+                packTitle: G.local.packTitle || null,
                 startedAt: G.local.startedAt,
                 score: G.st.me.score,
                 bonusPoints: G.local.bonusPoints,
@@ -1043,11 +1283,91 @@
         refresh();
     }
 
+    function savePriceOnce() {
+        if (!G || !G.price || G.price.saved) return;
+        G.price.saved = true;
+        const payload = {
+            mode: 'price',
+            startedAt: G.price.startedAt,
+            score: G.st.me.score,
+            bonusPoints: 0,
+            bestStreak: G.st.me.best_streak,
+            cards: G.price.logCards,
+        };
+        if (window.CircShell && window.CircShell.soloGameFinished) {
+            window.CircShell.soloGameFinished(payload);
+        } else if (O() && O().saveSoloGame) {
+            O().saveSoloGame(payload);
+        }
+    }
+
+    function guessPrice(dir) {
+        const cur = G;
+        if (!cur || !cur.st || cur.st.kind !== 'price' || cur.st.phase !== 'play' || cur.priceRev) return;
+        const pr = cur.price;
+        const refP = priceVal(pr.ref), chalP = priceVal(pr.chal);
+        const ok = dir === 'higher' ? chalP >= refP : chalP <= refP;
+        cur.st.me.answered += 1;
+        if (ok) {
+            cur.st.me.score += 1;
+            cur.st.me.correct += 1;
+            cur.st.me.streak += 1;
+            cur.st.me.best_streak = Math.max(cur.st.me.best_streak, cur.st.me.streak);
+        } else {
+            pr.lives = Math.max(0, pr.lives - 1);
+            cur.st.me.streak = 0;
+        }
+        const sid = priceSid(pr.chal);
+        if (window.CircCollection && sid && !sid.startsWith('price:')) {
+            window.CircCollection.record(sid, ok);
+        }
+        cur.results.push({ correct: ok, timed_out: false, artist: false });
+        pr.logCards.push({ id: sid, correct: ok, artist: false, title: false, year: false });
+        pr.ledger.push({ card: pr.chal, ok, guessDir: dir });
+        cur.priceRev = { ok, dir, card: pr.chal };
+        feel(ok);
+        $('go-body').scrollTop = 0;
+        draw();
+    }
+
+    function priceNext() {
+        const cur = G;
+        if (!cur || !cur.st || cur.st.kind !== 'price' || !cur.priceRev) return;
+        const pr = cur.price;
+        if (pr.lives <= 0 || pr.remaining.length === 0) {
+            cur.priceRev = null;
+            cur.st.phase = 'finished';
+            cur.st.status = 'finished';
+            savePriceOnce();
+            $('go-body').scrollTop = 0;
+            draw();
+            return;
+        }
+        pr.ref = pr.chal;
+        pr.chal = pickPriceChallenger(pr.ref, pr.remaining, null);
+        pr.round += 1;
+        cur.st.current_turn = pr.round;
+        cur.priceRev = null;
+        $('go-body').scrollTop = 0;
+        draw();
+    }
+
     async function act(a) {
         const cur = G;
         if (!cur || !cur.st) return;
         try {
             if (a === 'skip' || a === 'lock') return pick();
+            if (a === 'priceNext') return priceNext();
+            if (a === 'priceAgain') {
+                return openPrice(cur.price.allCards, { prevBest: Math.max(cur.prevBest || 0, cur.st.me.score) });
+            }
+            if (a === 'sharePrice') {
+                const st = cur.st;
+                return shareText(t('price.shareText', {
+                    score: st.me.score.toLocaleString(),
+                    streak: st.me.best_streak,
+                }) + '\n' + squares());
+            }
             if (cur.st.kind === 'solo' && a === 'next') {
                 cur.answer = null; cur.card = null; cur.rev = null; cur.picked = false; cur.sel = {}; cur.bonusRes = null;
                 cur.local.index += 1;
@@ -1130,7 +1450,7 @@
     function leaveAsk() {
         const cur = G;
         if (!cur || !cur.st) return close();
-        const isSolo = cur.st.kind === 'solo' && cur.st.phase === 'play';
+        const isSolo = (cur.st.kind === 'solo' || cur.st.kind === 'price') && cur.st.phase === 'play';
         const isLive = cur.st.kind === 'live' && ['play', 'reveal', 'waiting'].includes(cur.st.phase);
         if (!isSolo && !isLive) return close();
         const m = document.createElement('div');
@@ -1156,6 +1476,32 @@
 
     function reportContext() {
         if (!G || !G.st) return null;
+        if (G.st.kind === 'price') {
+            const rev = G.priceRev;
+            const c = rev ? rev.card : (G.price && G.price.chal);
+            if (!c) return null;
+            const sid = priceSid(c);
+            if (rev) {
+                return {
+                    sourceId: sid && !sid.startsWith('price:') ? sid : null,
+                    title: c.title,
+                    artist: c.artist || c.artistDisplayName || '',
+                    year: c.year,
+                    revealed: true,
+                    round: G.price ? G.price.round : null,
+                    total: G.st.card_count,
+                };
+            }
+            return {
+                sourceId: null,
+                title: c.title,
+                artist: c.artist || c.artistDisplayName || '',
+                year: c.year,
+                revealed: false,
+                round: G.price ? G.price.round : null,
+                total: G.st.card_count,
+            };
+        }
         if (G.st.kind === 'solo') {
             const raw = G.local && G.local.currentRaw;
             if (!raw) return null;
@@ -1209,5 +1555,5 @@
     document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.go-close')) leaveAsk(); });
     // back from the background (phone locked, other app): catch up at once instead of waiting for the next poll
     document.addEventListener('visibilitychange', () => { if (!document.hidden && G) refresh(); });
-    window.CircGame = { open, openSolo, close, refresh, leaveAsk, reportContext };
+    window.CircGame = { open, openSolo, openPrice, close, refresh, leaveAsk, reportContext };
 })();

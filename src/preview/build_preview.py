@@ -41,8 +41,8 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "dealer.js", "collection.js", "styles.js"]
-OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "packs.js"]          # copied when present
+NEW_WWW = ["index.html", "shell.js", "shell.css", "strings.js", "strings-de.js", "game.js", "dealer.js", "collection.js", "styles.js", "streak.js"]
+OPTIONAL_WWW = ["onboarding.js", "onboarding.css", "packs.js", "price-deck.json"]          # copied when present
 
 
 def log(msg):
@@ -126,6 +126,8 @@ def main():
 
     # 2. new app files
     for name in NEW_WWW:
+        if name == "streak.js" and not (claude / "app" / name).exists():
+            continue
         shutil.copy2(claude / "app" / name, docs / name)
     for name in ("privacy-en.html", "privacy-de.html"):      # drafts until Admin fills in details
         if (claude / "legal" / name).exists():
@@ -176,6 +178,30 @@ def main():
     # 3c. story dailies: claude/dailies/<date>-<slug>.json → supabase/dailies.sql
     #     (their images join pack_images.json, so the same Action downloads them)
     log(f"story dailies: {build_dailies(claude, out, docs, card_keys, site, pack_images)}")
+    # 3d. price deck + weekly restoration paintings (extra_modes.py)
+    import extra_modes                                     # noqa: E402
+    price_json = claude / "app" / "price-deck.json"
+    if price_json.exists():
+        price_sql = extra_modes.process_price_deck(
+            price_json, docs, [docs / "art", out / "pack-art"], card_keys, site
+        )
+        (out / "supabase").mkdir(exist_ok=True)
+        (out / "supabase" / "price.sql").write_text(price_sql, encoding="utf-8")
+        log(f"price deck: {len(json.loads((docs / 'price-deck.json').read_text(encoding='utf-8')))} cards")
+    weekly_json = claude / "weekly" / "paintings.json"
+    if weekly_json.exists():
+        card_rows = {}
+        for c in cards:
+            row = dict(c)
+            row["active"] = True
+            card_rows[keys[c["id"]]] = row
+            card_rows[c["id"]] = row
+        weekly_sql = extra_modes.process_weekly_paintings(
+            weekly_json, docs, [docs / "art", out / "pack-art"], keys, card_rows, site
+        )
+        (out / "supabase").mkdir(exist_ok=True)
+        (out / "supabase" / "weekly.sql").write_text(weekly_sql, encoding="utf-8")
+        log(f"weekly paintings: {len(json.loads(weekly_json.read_text(encoding='utf-8')))} weeks")
 
     # 4. it's a preview, and it says so
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -215,8 +241,8 @@ def main():
             vendor_assets = sorted(p.relative_to(docs).as_posix() for p in (docs / "vendor").rglob("*") if p.is_file())
         extra_assets = [
             "shell.css", "shell.js", "strings.js", "strings-de.js", "game.js",
-            "dealer.js", "collection.js", "styles.js", "onboarding.js",
-            "onboarding.css", "packs.js", "online.js", "preview.js",
+            "dealer.js", "collection.js", "styles.js", "streak.js", "onboarding.js",
+            "onboarding.css", "packs.js", "price-deck.json", "online.js", "preview.js",
             "privacy-en.html", "privacy-de.html", "impressum.html", "changes.html",
         ] + vendor_assets
         extra = "".join(f"\n    './{f}'," for f in dict.fromkeys(extra_assets) if (docs / f).exists() and f"'./{f}'" not in s)

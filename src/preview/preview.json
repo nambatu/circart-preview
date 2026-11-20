@@ -2,15 +2,16 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 20 Nov, 19:42",
+  "label": "Fri 20 Nov, 20:54",
   "changes": [
-    "Signing out now clears your pending games and push settings on this device.",
-    "Reporting a hidden card stays spoiler-free even when you are offline.",
-    "Shared dailies expose less data and keep your Gallery unlocks in sync."
+    "Price mode lets you guess whether famous artworks sold for more or less at public auction until your third mistake.",
+    "A new fire streak and Painting of the Week clean away aged varnish each day until Sunday's full reveal in Gallery.",
+    "Profile now keeps only your three most recent games upfront with a full filterable history behind one tap.",
+    "All eleven badges and the updated privacy pages with the 24-month inactive-account reminder are live."
   ],
   "test": [
-    "Open a solo card before placing it and tap the flag icon to check the report box.",
-    "Tap the privacy link inside the report box and try signing out and back in."
+    "Try Price mode from the Play tab and check your best run on Ranks.",
+    "Finish today's daily to clean a patch on the Painting of the Week and check your recent games on Profile."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

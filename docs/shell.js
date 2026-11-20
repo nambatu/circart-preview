@@ -149,6 +149,58 @@
         return deckP;
     }
 
+    let priceDeck = null, priceDeckP = null;
+    async function loadPriceDeck() {
+        if (priceDeck) return priceDeck;
+        if (!priceDeckP) {
+            priceDeckP = fetch('price-deck.json', { cache: 'no-cache' })
+                .then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+                .then(d => {
+                    const list = Array.isArray(d) ? d : ((d && Array.isArray(d.cards)) ? d.cards : []);
+                    if (list.length) priceDeck = list;
+                    return list;
+                })
+                .catch(() => [])
+                .finally(() => { priceDeckP = null; });
+        }
+        return priceDeckP;
+    }
+
+    const LOCAL_HIST_KEY = 'circart-local-history';
+    const LOCAL_HIST_MAX = 50;
+    function readLocalHistory() {
+        try {
+            const d = JSON.parse(store.get(LOCAL_HIST_KEY) || '[]');
+            return Array.isArray(d) ? d : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    function pushLocalHistory(game) {
+        if (!game || !Array.isArray(game.cards) || game.cards.length < 2) return;
+        try {
+            const list = readLocalHistory();
+            const played = game.cards.slice(1);
+            const correct = played.filter(c => c && c.correct).length;
+            list.unshift({
+                kind: game.mode === 'price' ? 'price' : 'solo',
+                mode: game.mode || 'classic',
+                score: Number(game.score) || 0,
+                correct,
+                total: played.length,
+                best_streak: Number(game.bestStreak) || 0,
+                finished_at: new Date().toISOString(),
+                pack_title: game.packTitle || null,
+            });
+            store.set(LOCAL_HIST_KEY, JSON.stringify(list.slice(0, LOCAL_HIST_MAX)));
+        } catch (e) { /* ignore */ }
+    }
+    function localPriceBest() {
+        const items = readLocalHistory().filter(x => x && (x.kind === 'price' || x.mode === 'price'));
+        if (!items.length) return null;
+        return items.reduce((m, x) => Math.max(m, Number(x.score) || 0), 0);
+    }
+
     async function renderHome() {
         if (online() && FEATURES.daily && !$('home-daily').firstElementChild) drawDaily($('home-daily'), online(), null, null);
         document.querySelectorAll('#round-chips .chip').forEach(c => {
@@ -172,9 +224,27 @@
         const u = await safeUser(o);
         $('home-avatar').textContent = u ? (await profileName()).slice(0, 1).toUpperCase() : '?';
         renderDaily(o, u);
+        renderStreakAndPainting(o, u);
         renderRun(o, u);
+        renderPrice(o, u);
         checkPacks(o, u);
         renderOnlineHome(o, u);
+    }
+
+    async function renderStreakAndPainting(o, u) {
+        if (!window.CircStreak) return;
+        if (!o || !u) {
+            window.CircStreak.renderHeaderStreak(null);
+            window.CircStreak.renderWeeklyCard($('home-painting'), null, o);
+            return;
+        }
+        if (o.myStreak) {
+            o.myStreak().then(s => window.CircStreak.renderHeaderStreak(s)).catch(() => window.CircStreak.renderHeaderStreak(null));
+        }
+        if (o.myPainting) {
+            o.myPainting().then(p => window.CircStreak.renderWeeklyCard($('home-painting'), p, o, () => renderHome()))
+                .catch(() => window.CircStreak.renderWeeklyCard($('home-painting'), null, o));
+        }
     }
 
     // ─── home: daily challenge + this month's challenge ───────────────────
@@ -248,6 +318,52 @@
         });
     }
 
+    // ─── home: Price Mode (Auction Prices) ───────────────────────────────
+    async function renderPrice(o, u) {
+        const box = $('home-price');
+        if (!box) return;
+        const localBest = localPriceBest();
+        if (!box.firstElementChild) drawPrice(box, null, localBest);
+        let s = null;
+        if (o && u && o.priceSummary) {
+            try { s = await o.priceSummary(); } catch (e) { s = null; }
+        }
+        drawPrice(box, s, localBest);
+    }
+
+    function drawPrice(box, summary, localBest) {
+        if (!box) return;
+        const rawBest = summary ? (summary.best ?? summary.best_score) : null;
+        const serverBest = rawBest != null ? Number(rawBest) : null;
+        const best = serverBest != null ? serverBest : localBest;
+        const status = best == null
+            ? esc(t('home.price.none'))
+            : esc(t('home.price.best', { score: Number(best).toLocaleString() }));
+        box.innerHTML = hcard({
+            eyebrow: t('home.price.eyebrow'),
+            title: t('home.price.title'),
+            text: t('home.price.text'),
+            status,
+            button: `<button class="btn primary block" data-price="play">${esc(t('home.price.start'))}</button>`,
+        });
+        const btn = box.querySelector('[data-price="play"]');
+        if (btn) {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                try {
+                    const cards = await loadPriceDeck();
+                    if (!cards || cards.length < 2) {
+                        toast(t('price.noCards'));
+                        return;
+                    }
+                    window.CircGame.openPrice(cards, { prevBest: best == null ? null : best });
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        }
+    }
+
     // ─── card packs: unlock check on home, the collection in the Gallery ──
     let packsCache = null;          // my_packs() result
     let galleryView = 'works';      // 'works' | 'packs'
@@ -272,9 +388,11 @@
         if ($('gallery-count')) $('gallery-count').classList.toggle('hidden', v !== 'works');
         $('gallery-packs').classList.toggle('hidden', v !== 'packs');
         if ($('gallery-styles')) $('gallery-styles').classList.toggle('hidden', v !== 'styles');
+        if ($('gallery-restorations')) $('gallery-restorations').classList.toggle('hidden', v !== 'restorations');
         if (v === 'works' && window.CircCollection) window.CircCollection.renderGallery($('gallery-grid'));
         if (v === 'packs') renderGalleryPacks();
         if (v === 'styles' && window.CircStyles) window.CircStyles.renderGuide($('gallery-styles'));
+        if (v === 'restorations' && window.CircStreak) window.CircStreak.renderRestorations($('gallery-restorations'), online());
     }
 
     async function renderGalleryPacks() {
@@ -395,7 +513,14 @@
         let games = [];
         if (u) { try { games = await o.myGames(); } catch (e) { games = []; } }
         const mine = games.filter(g => !g.dropped);
-        const turns = mine.filter(g => g.my_turn).length;
+        const cutoff = o.serverNow() - 24 * 60 * 60 * 1000;
+        const active = mine.filter(g => g.status !== 'finished');
+        const recentDone = mine
+            .filter(g => g.status === 'finished' && (!g.finished_at || new Date(g.finished_at).getTime() >= cutoff))
+            .sort((a, b) => (b.finished_at ? new Date(b.finished_at).getTime() : 0) - (a.finished_at ? new Date(a.finished_at).getTime() : 0))
+            .slice(0, 2);
+        const shown = [...active, ...recentDone];
+        const turns = active.filter(g => g.my_turn).length;
         const left = iso => {
             const m = Math.max(0, Math.ceil((new Date(iso).getTime() - o.serverNow()) / 60000));
             return m >= 60 ? Math.floor(m / 60) + ' h' : m + ' min';
@@ -409,10 +534,10 @@
             : t('home.waitingOthers', { turn: g.turn, turns: g.turns });
 
         const gbox = $('home-games');
-        gbox.innerHTML = mine.length ? `
+        gbox.innerHTML = shown.length ? `
           <h2 class="label home-label row">${esc(t('home.yourGamesLabel'))}${turns ? `<span class="badge">${turns}</span>` : ''}</h2>
           <div class="home-games">
-            ${mine.map(g => `<button class="game-row" data-game="${esc(g.id)}">
+            ${shown.map(g => `<button class="game-row" data-game="${esc(g.id)}">
                 <span style="flex:1;min-width:0"><b style="display:block">${esc(names(g))}</b>
                   <span class="note">${esc(info(g))}</span></span>
                 ${g.my_turn ? `<span class="badge">${esc(t('game.yourTurn'))}</span>` : ''}</button>`).join('')}
@@ -514,7 +639,7 @@
         if (!o) { box.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`; return; }
         const u = await safeUser(o);
         if (!u) { box.innerHTML = `<p class="muted">${esc(t('ranks.signIn'))}</p>`; return; }
-        const tabs = ['today', 'month', 'allTime'];
+        const tabs = ['today', 'month', 'price', 'allTime'];
         box.innerHTML = `
           <div class="seg" role="group" aria-label="${esc(t('ranks.title'))}" style="align-self:flex-start">
             ${tabs.map(k => `<button data-rt="${k}" aria-pressed="${ranksTab === k}">${esc(t('ranks.' + k))}</button>`).join('')}
@@ -564,6 +689,17 @@
                     <p class="note">${esc(de(b, 'description'))} · ${esc(t('ranks.daysLeft', { n: b.days_left }))}</p></section>
                   ${boardList(b.entries, e => fmt(e.value))}
                   ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: fmt(b.me.value) }))}</p>` : ''}`;
+            } else if (ranksTab === 'price') {
+                const b = await o.priceLeaderboard();
+                const entries = (b && b.entries) || [];
+                const val = e => e.value ?? e.score ?? e.best ?? e.points ?? 0;
+                const meVal = b && b.me ? (b.me.value ?? b.me.score ?? b.me.best ?? b.me.points ?? null) : null;
+                const head = b && b.players != null
+                    ? `${t('ranks.priceInfo')} · ${b.players === 1 ? t('ranks.players1') : t('ranks.players', { n: b.players })}`
+                    : t('ranks.priceInfo');
+                el.innerHTML = `<p class="note" style="margin-bottom:8px">${esc(head)}</p>
+                  ${boardList(entries, e => pts(val(e)))}
+                  ${b && b.me && b.me.ranked !== false && !entries.some(e => e.is_me) && meVal != null ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: pts(meVal) }))}</p>` : ''}`;
             } else {
                 const b = await o.alltimeLeaderboard();
                 el.innerHTML = `${boardList(b.entries, e => pts(e.points))}
@@ -611,14 +747,188 @@
     }
 
     // ─── profile ──────────────────────────────────────────────────────────
-    let deleteArmed = false, deleteTimer = null;
+    let deleteArmed = false, deleteTimer = null, profileSeq = 0;
+
+    function normalizeHistoryRes(res, limit) {
+        const items = Array.isArray(res) ? res : ((res && (res.items || res.games || res.entries)) || []);
+        const hasMore = Array.isArray(res)
+            ? items.length >= limit
+            : (res && res.has_more != null ? !!res.has_more : items.length >= limit);
+        return { items, hasMore };
+    }
+
+    function filterLocalHistory(kind, limit, offset) {
+        const all = readLocalHistory();
+        const filtered = !kind || kind === 'all' ? all : all.filter(item => {
+            const k = item && (item.kind || item.mode || 'solo');
+            if (kind === 'price') return k === 'price';
+            if (kind === 'solo') return k === 'solo' || k === 'classic' || k === 'pack';
+            return k === kind;
+        });
+        const items = filtered.slice(offset, offset + limit);
+        return { items, hasMore: offset + items.length < filtered.length };
+    }
+
+    async function fetchHistoryPage(o, u, { kind = null, limit = 30, offset = 0 } = {}) {
+        if (o && u && o.myHistory) {
+            try {
+                const res = await o.myHistory({ kind: !kind || kind === 'all' ? null : kind, limit, offset });
+                return normalizeHistoryRes(res, limit);
+            } catch (e) {
+                /* fall back to local history */
+            }
+        }
+        return filterLocalHistory(kind, limit, offset);
+    }
+
+    function historyRowParts(item) {
+        const k = (item && (item.kind || item.mode)) || 'solo';
+        let title;
+        if (k === 'daily') title = item.challenge_no ? t('history.kind.dailyNo', { no: item.challenge_no }) : t('history.kind.daily');
+        else if (k === 'run') title = t('history.kind.run');
+        else if (k === 'price') title = t('history.kind.price');
+        else if (k === 'live' || k === 'async' || k === 'friends') {
+            title = (Array.isArray(item.others) && item.others.length)
+                ? item.others.slice(0, 2).join(' & ')
+                : (item.title || t('history.kind.friends'));
+        } else {
+            title = item.pack_title || de(item, 'title') || t('history.kind.solo');
+        }
+
+        const total = item.total ?? item.rounds ?? item.card_count ?? item.answered ?? null;
+        const correct = item.correct ?? item.placements_correct ?? null;
+        const rank = item.rank ?? item.final_rank ?? null;
+        const score = item.score ?? 0;
+
+        let mid = '';
+        let right = '';
+        if (k === 'price' || k === 'run') {
+            right = t('history.right', { n: Number(score).toLocaleString() });
+        } else {
+            if (rank != null && (k === 'live' || k === 'async' || k === 'friends')) {
+                mid = t('history.rank', { rank });
+            } else if (correct != null && total != null && Number(total) > 0) {
+                mid = `${correct}/${total}`;
+            }
+            right = Number(score).toLocaleString();
+        }
+        return { label: [title, mid].filter(Boolean).join(' · '), right };
+    }
+
+    function historyRowHtml(item) {
+        const p = historyRowParts(item);
+        return `<div class="hist-row"><span class="hist-lbl">${esc(p.label)}</span><b class="hist-val">${esc(p.right)}</b></div>`;
+    }
+
+    function weekMonday(d) {
+        const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+        return x;
+    }
+
+    function weekLabelFor(iso) {
+        const d = iso ? new Date(iso) : new Date();
+        if (Number.isNaN(d.getTime())) return '';
+        const mon = weekMonday(d);
+        const nowMon = weekMonday(new Date());
+        const lastMon = new Date(nowMon.getFullYear(), nowMon.getMonth(), nowMon.getDate() - 7);
+        if (mon.getTime() === nowMon.getTime()) return t('history.thisWeek');
+        if (mon.getTime() === lastMon.getTime()) return t('history.lastWeek');
+        const lang = (window.CircI18n && window.CircI18n.lang) || 'en';
+        const formatted = mon.toLocaleDateString(lang, { month: 'short', day: 'numeric' });
+        return t('history.weekOf', { date: formatted });
+    }
+
+    function openHistoryModal(o, u) {
+        const FILTERS = ['all', 'daily', 'run', 'price', 'friends', 'solo'];
+        const m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `<div class="modal-content hist-modal" role="dialog" aria-modal="true" style="display:flex;flex-direction:column;gap:12px">
+          <div class="row" style="justify-content:space-between">
+            <h2 class="serif" style="font-size:22px;margin:0">${esc(t('history.modalTitle'))}</h2>
+            <button class="btn link" data-close style="padding:0 4px">${esc(t('common.close'))}</button>
+          </div>
+          <div class="chips hist-chips" role="group" aria-label="${esc(t('history.modalTitle'))}">
+            ${FILTERS.map(f => `<button class="chip" data-hf="${f}" aria-pressed="${f === 'all'}">${esc(t('history.filter.' + f))}</button>`).join('')}
+          </div>
+          <div class="hist-modal-list" id="hist-modal-list"><p class="muted" style="text-align:center">…</p></div>
+          <button class="btn quiet block hidden" id="hist-load-more" type="button">${esc(t('history.loadMore'))}</button>
+        </div>`;
+        m.addEventListener('click', e => {
+            if (e.target === m || e.target.closest('[data-close]')) m.remove();
+        });
+        document.body.appendChild(m);
+
+        let kind = 'all', offset = 0, loaded = [], seq = 0;
+        const listEl = m.querySelector('#hist-modal-list');
+        const moreBtn = m.querySelector('#hist-load-more');
+
+        function renderGroups() {
+            if (!loaded.length) {
+                listEl.innerHTML = `<p class="muted" style="padding:12px 0;text-align:center">${esc(t('history.empty'))}</p>`;
+                return;
+            }
+            const groups = [];
+            let curLbl = null, curItems = [];
+            loaded.forEach(item => {
+                const lbl = weekLabelFor(item.finished_at || item.played_at || item.created_at || item.date);
+                if (lbl !== curLbl) {
+                    if (curItems.length) groups.push({ lbl: curLbl, items: curItems });
+                    curLbl = lbl;
+                    curItems = [item];
+                } else {
+                    curItems.push(item);
+                }
+            });
+            if (curItems.length) groups.push({ lbl: curLbl, items: curItems });
+            listEl.innerHTML = groups.map(g => `
+              <div class="hist-group">
+                ${g.lbl ? `<div class="label hist-wlbl">${esc(g.lbl)}</div>` : ''}
+                <div class="hist-list">${g.items.map(historyRowHtml).join('')}</div>
+              </div>`).join('');
+        }
+
+        async function loadPage(reset) {
+            const mySeq = ++seq;
+            if (reset) {
+                offset = 0;
+                loaded = [];
+                listEl.innerHTML = `<p class="muted" style="text-align:center">…</p>`;
+                moreBtn.classList.add('hidden');
+            }
+            moreBtn.disabled = true;
+            try {
+                const { items, hasMore } = await fetchHistoryPage(o, u, { kind, limit: 25, offset });
+                if (mySeq !== seq || !m.isConnected) return;
+                loaded = loaded.concat(items || []);
+                offset += (items || []).length;
+                renderGroups();
+                moreBtn.classList.toggle('hidden', !hasMore);
+            } finally {
+                moreBtn.disabled = false;
+            }
+        }
+
+        m.querySelectorAll('[data-hf]').forEach(b => b.addEventListener('click', () => {
+            kind = b.dataset.hf;
+            m.querySelectorAll('[data-hf]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.hf === kind)));
+            loadPage(true);
+        }));
+        moreBtn.addEventListener('click', () => loadPage(false));
+        loadPage(true);
+        const closeBtn = m.querySelector('[data-close]');
+        if (closeBtn) closeBtn.focus();
+    }
 
     async function renderProfile() {
+        const seq = ++profileSeq;
         const box = $('profile-body');
         const o = online();
         const u = await safeUser(o);
+        if (seq !== profileSeq) return;
         let p = null;
         if (u) { try { p = cachedProfile = await o.getProfile(); } catch (e) { p = null; } }
+        if (seq !== profileSeq) return;
         const theme = themeChoice();
 
         const account = !o ? `<p class="note">${esc(t('profile.offline'))}</p>`
@@ -653,6 +963,7 @@
         box.innerHTML = `
           ${account}
           <div id="pf-badges"></div>
+          <div id="pf-history"></div>
           <section class="panel list" aria-label="Settings">
             <div><span>${esc(t('profile.appearance'))}</span>
               <span class="seg" role="group" aria-label="${esc(t('profile.appearance'))}">
@@ -680,10 +991,23 @@
           </section>`;
         wireProfile(o);
         if (u && o.myBadges) Promise.all([o.myBadges().catch(() => []), o.myAchievements ? o.myAchievements().catch(() => []) : []]).then(([bs, ach]) => {
+            if (seq !== profileSeq) return;
             const el = $('pf-badges');
             bs = bs || []; ach = ach || [];
             if (!el || (!bs.length && !ach.length)) return;
-            const ICONS = { daily_streak: '🔥', perfect_daily: '🖼️', signature_spotter: '✍️', photo_finish: '📸' };
+            const ICONS = {
+                daily_streak: '🔥',
+                perfect_daily: '🖼️',
+                signature_spotter: '✍️',
+                movement_maker: '🎨',
+                photo_finish: '📸',
+                storyteller: '📖',
+                full_gallery: '🏛️',
+                sharp_eye: '👁️',
+                going_going_gone: '🔨',
+                restorer: '🖌️',
+                vernissage_guest: '🥂',
+            };
             // streak badges come in tiers (7 / 30 / 100): show only the highest
             const top = ach.filter(a => a.key !== 'daily_streak' || !ach.some(x => x.key === 'daily_streak' && x.tier > a.tier));
             el.innerHTML = `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
@@ -693,6 +1017,19 @@
               ${bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
                 <span><b>${esc(monthLabel(b.month))}</b> · ${esc(de(b, 'title'))}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
             </section>`;
+        }).catch(() => {});
+
+        fetchHistoryPage(o, u, { kind: null, limit: 3, offset: 0 }).then(({ items }) => {
+            if (seq !== profileSeq) return;
+            const el = $('pf-history');
+            if (!el || !items || !items.length) return;
+            el.innerHTML = `<section class="panel hist-card">
+              <h2 class="label" style="margin:0">${esc(t('history.title'))}</h2>
+              <div class="hist-list">${items.slice(0, 3).map(historyRowHtml).join('')}</div>
+              <button class="btn quiet block" type="button" id="pf-history-all">${esc(t('history.seeAll'))}</button>
+            </section>`;
+            const allBtn = $('pf-history-all');
+            if (allBtn) allBtn.addEventListener('click', () => openHistoryModal(o, u));
         }).catch(() => {});
     }
 
@@ -1097,10 +1434,15 @@
         }).catch(() => {});
     }
     window.CircShell = {
-        // Finished solo game → saved for signed-in players (queued while offline).
+        // Finished solo/price game → saved locally + queued for signed-in players.
         soloGameFinished(game) {
+            pushLocalHistory(game);
             const o = online();
             if (o && game && game.cards && game.cards.length > 1) o.saveSoloGame(game);
+        },
+        openRestorations() {
+            galleryView = 'restorations';
+            showTab('gallery');
         },
         // Cards this player saw on any device in the last day (artline ids).
         serverSeen: () => serverSeen,

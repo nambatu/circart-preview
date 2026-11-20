@@ -46,13 +46,18 @@
                 <div class="page">
                     <div class="home-head">
                         <div class="wordmark" aria-label="CIRCArt">CIRC<span>Art</span></div>
-                        <button id="home-avatar" class="avatar" data-i18n-label="tab.profile">?</button>
+                        <div class="home-head-right">
+                            <button id="home-streak" class="streak-pill hidden" type="button"></button>
+                            <button id="home-avatar" class="avatar" data-i18n-label="tab.profile">?</button>
+                        </div>
                     </div>
                     <p class="muted" data-i18n="home.tagline"></p>
 
                     <!-- Today: the daily challenge (shell.js) -->
                     <h2 class="label home-label" data-i18n="home.today"></h2>
                     <div id="home-daily"></div>
+                    <!-- Painting of the week: restoration studio (streak.js) -->
+                    <div id="home-painting"></div>
                     <!-- your running games with friends, only when there are any (shell.js) -->
                     <div id="home-games"></div>
 
@@ -80,6 +85,8 @@
                     </section>
                     <!-- Monthly Run (shell.js) -->
                     <div id="home-run"></div>
+                    <!-- Price mode: auction prices (shell.js) -->
+                    <div id="home-price"></div>
                     <!-- play with friends + join by code (shell.js) -->
                     <div id="home-online"></div>
                 </div>
@@ -96,12 +103,15 @@
                 <button data-gview="works" aria-pressed="true" data-i18n="gallery.works"></button>
                 <button data-gview="packs" aria-pressed="false" data-i18n="gallery.packs"></button>
                 <button data-gview="styles" aria-pressed="false" data-i18n="gallery.styles"></button>
+                <button data-gview="restorations" aria-pressed="false" data-i18n="gallery.restorations"></button>
             </div></div>
             <main class="gallery-main">
                 <!-- card packs (shell.js) -->
                 <div id="gallery-packs" class="gallery-packs hidden"></div>
                 <!-- how to spot a style (styles.js) -->
                 <div id="gallery-styles" class="gallery-styles hidden"></div>
+                <!-- weekly restorations (streak.js) -->
+                <div id="gallery-restorations" class="gallery-restorations hidden"></div>
                 <div id="gallery-grid" class="gallery-grid">
                     <!-- Gallery items go here -->
                 </div>
@@ -218,6 +228,7 @@
     <script src="dealer.js"></script>
     <script src="collection.js"></script>
     <script src="packs.js"></script>
+    <script src="streak.js"></script>
     <script src="shell.js"></script>
     <script src="game.js"></script>
     <script src="onboarding.js"></script>

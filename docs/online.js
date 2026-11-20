@@ -56,6 +56,12 @@
         otp_expired: 'That code is wrong or has expired. Ask for a new one.',
         email_address_invalid: 'That email address doesn\'t look right.',
         validation_failed: 'That email address doesn\'t look right.',
+        already_guessed_today: 'You already used today\'s guess. Try again tomorrow.',
+        already_guessed: 'You already guessed today. Try again tomorrow.',
+        already_revealed: 'This painting is already revealed.',
+        not_enough_patches: 'Clean at least three patches first before guessing.',
+        no_painting: 'There is no weekly painting active right now.',
+        too_early: 'Clean at least three patches first before guessing.',
     };
 
     function fail(error) {
@@ -312,6 +318,7 @@
         storage(() => localStorage.removeItem(QUEUE_KEY));
         storage(() => localStorage.removeItem(TRANSFER_KEY));
         storage(() => localStorage.removeItem('circart-collection'));
+        storage(() => localStorage.removeItem('circart-local-history'));
         try { await sb.auth.signOut(); } catch (e) { /* account already deleted */ }
     }
 
@@ -448,6 +455,14 @@
     // months where I made the top 3: [{month, title, rank, value}], newest first
     const myBadges           = () => rpc('my_badges');
     const myAchievements     = () => rpc('my_achievements');
+    const priceSummary       = () => rpc('price_summary');
+    const priceLeaderboard   = () => rpc('price_leaderboard');
+    const myStreak           = () => rpc('my_streak');
+    const myPainting         = (week = null) => rpc('my_painting', { p_week: week });
+    const guessPainting      = choice => rpc('guess_painting', { p_choice: choice });
+    const myRestorations     = () => rpc('my_restorations');
+    const myHistory          = ({ kind = null, limit = 30, offset = 0 } = {}) =>
+        rpc('my_history', { p_kind: kind, p_limit: limit, p_offset: offset });
     // card packs: [{id, title, title_de, description(_de), unlock_text(_de), progress, needed, unlocked, new, cards}]
     const myPacks            = () => rpc('my_packs');
     // Gallery: {seen: [card ids met], correct: [card ids placed right at least once]}
@@ -545,6 +560,7 @@
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
         monthlyWinners, myBadges, myAchievements, myPacks, myCollection, markPacksSeen, exportMyData,
+        priceSummary, priceLeaderboard, myStreak, myPainting, guessPainting, myRestorations, myHistory,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         dailyStory,

@@ -55,9 +55,11 @@ except ImportError:
     sys.exit("Pillow is not installed. Run:  pip install pillow")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import card_keys  # noqa: E402
 from card_keys import load_keys, image_name  # noqa: E402
 try:
     import deck_fixes  # noqa: E402
+    import extra_modes  # noqa: E402
     import sync_deck   # noqa: E402
 except ImportError as e:
     sys.exit(f"Missing required build helper next to build_deploy.py: {e}")
@@ -150,6 +152,9 @@ STATIC_FILES = [
     "privacy-en.html",
     "privacy-de.html",
     "impressum.html",
+    # added 2026-11-20: weekly streak + price mode
+    "streak.js",
+    "price-deck.json",
 ]
 
 # Copied wholesale (app icons and self-hosted vendor files; never raw www/packs/).
@@ -159,7 +164,7 @@ STATIC_DIRS = ["icons", "vendor"]
 SW_EXTRA_ASSETS = [
     "strings.js", "shell.css", "shell.js", "game.js", "online.js",
     "strings-de.js", "dealer.js", "collection.js", "styles.js",
-    "onboarding.js", "onboarding.css", "packs.js",
+    "onboarding.js", "onboarding.css", "packs.js", "streak.js", "price-deck.json",
     "privacy-en.html", "privacy-de.html", "impressum.html",
 ]
 # Push-notification handlers, appended to docs/sw.js (not published on its own).
@@ -334,6 +339,8 @@ def main():
     ap.add_argument("--preview-config", help="refuse to build if deploy_config matches preview")
     ap.add_argument("--preview-repo", help="clone of circart-preview containing docs/packs and pack-art/")
     ap.add_argument("--site", help="production target site URL (https://...)")
+    ap.add_argument("--price-sql", help="optional path to write SQL for price:* cards")
+    ap.add_argument("--weekly-sql", help="optional path to write SQL for weekly paintings")
     args = ap.parse_args()
 
     if not SRC.is_dir():
@@ -481,6 +488,49 @@ def main():
         print(f"  + art/ ({published} year-free copies, {added} new keys in {key_file.name})")
     except Exception as e:                            # noqa: BLE001
         sys.exit(f"could not process artline.json: {e}")
+
+    # 3b. Price Mode deck + Weekly Restoration paintings (extra_modes.py)
+    prod_site = site if args.site else f"https://{domain}"
+    preview_root = Path(args.preview_repo).resolve() if args.preview_repo else None
+    price_json = SRC / "price-deck.json"
+    if price_json.exists():
+        price_sources = {}
+        for p in (DST / "art").glob("*.jpg"):
+            price_sources[p.stem] = p
+            price_sources[p.name] = p
+        if preview_root and (preview_root / "pack-art").is_dir():
+            for p in (preview_root / "pack-art").glob("*.jpg"):
+                price_sources.setdefault(p.stem, p)
+                price_sources.setdefault(p.name, p)
+            if (preview_root / "card_keys.json").is_file():
+                prev_keys = json.loads((preview_root / "card_keys.json").read_text(encoding="utf-8"))
+                for cid, pk in prev_keys.items():
+                    cand = preview_root / "pack-art" / f"{pk}.jpg"
+                    if cand.is_file():
+                        price_sources.setdefault(cid, cand)
+        if (ROOT / "pack-art").is_dir():
+            for p in (ROOT / "pack-art").glob("*.jpg"):
+                price_sources.setdefault(p.stem, p)
+                price_sources.setdefault(p.name, p)
+        price_sql = extra_modes.process_price_deck(price_json, DST, price_sources, card_keys, prod_site)
+        if args.price_sql:
+            Path(args.price_sql).write_text(price_sql, encoding="utf-8")
+        print(f"  + price-deck.json ({len(json.loads((DST / 'price-deck.json').read_text(encoding='utf-8')))} cards)")
+
+    weekly_json = next((p for p in (ROOT / "weekly" / "paintings.json", SRC / "weekly" / "paintings.json") if p.exists()), None)
+    if weekly_json:
+        card_rows = {}
+        for c in cards:
+            row = dict(c)
+            row["active"] = True
+            card_rows[keys[c["id"]]] = row
+            card_rows[c["id"]] = row
+        weekly_sql = extra_modes.process_weekly_paintings(
+            weekly_json, DST, [DST / "art", DST / "images"], keys, card_rows, prod_site
+        )
+        if args.weekly_sql:
+            Path(args.weekly_sql).write_text(weekly_sql, encoding="utf-8")
+        print(f"  + weekly paintings ({len(json.loads(weekly_json.read_text(encoding='utf-8')))} weeks)")
 
     # 4. report
     print("\n" + "=" * 58)

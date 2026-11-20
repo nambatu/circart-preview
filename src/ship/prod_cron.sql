@@ -33,3 +33,7 @@ select cron.schedule('circart-push-reminders', '*/10 * * * *', 'select public.qu
 
 -- daily privacy clean-up (011)
 select cron.schedule('circart-privacy-cleanup', '17 3 * * *', 'select public.privacy_cleanup()');
+
+-- optional (task 56b, once custom SMTP is configured): nightly check calling an
+-- Edge Function to email 30-day warnings (src/email/inactivity-warning-*.html)
+-- to email accounts nearing 24 months without any visit or game.

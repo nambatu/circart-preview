@@ -21,6 +21,8 @@ REPO=nambatu/circart-preview
 
 mkdir -p "$PV/app" "$PV/backend/web" "$PV/backend/deck" "$PV/backend/supabase/migrations" "$PV/preview" "$PV/packs" "$PV/dailies"
 cp "$SRC"/app/*.js "$SRC"/app/*.css "$SRC"/app/index.html "$PV/app/"
+cp "$SRC"/app/*.json "$PV/app/" 2>/dev/null || true
+mkdir -p "$PV/weekly" && cp "$SRC"/weekly/*.json "$PV/weekly/" 2>/dev/null || true
 [ -d "$SRC/app/vendor" ] && mkdir -p "$PV/app/vendor" && cp -r "$SRC/app/vendor/." "$PV/app/vendor/"
 cp "$SRC"/web/online.js "$PV/backend/web/"
 cp "$SRC"/deck/*.py "$PV/backend/deck/"
@@ -33,7 +35,14 @@ mkdir -p "$PV/legal" && cp "$SRC"/legal/*.html "$PV/legal/" 2>/dev/null || true
 
 cd "$OUT"
 git pull -q --rebase --autostash origin main || true
-python3 "$PV/preview/build_preview.py" --game "$GAME" --claude "$PV" --out "$OUT" --config "$SRC/preview/preview.json"
+PY=""
+for cand in python python3; do
+  if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import PIL" 2>/dev/null; then
+    PY="$cand"; break
+  fi
+done
+PY="${PY:-$(command -v python3 || command -v python)}"
+"$PY" "$PV/preview/build_preview.py" --game "$GAME" --claude "$PV" --out "$OUT" --config "$SRC/preview/preview.json"
 for f in docs/*.js; do node --check "$f" || { echo "syntax error in $f"; exit 1; }; done
 git add -A
 git diff --cached --quiet && { echo "nothing to deploy"; exit 0; }
