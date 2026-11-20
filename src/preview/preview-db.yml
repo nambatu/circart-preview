@@ -36,15 +36,16 @@ jobs:
             create table if not exists public._preview_migrations (name text primary key, applied_at timestamptz default now());
             alter table public._preview_migrations enable row level security;
             revoke all on public._preview_migrations from anon, authenticated;"
-          while IFS= read -r f; do
+          LC_ALL=C
+          for f in supabase/migrations/*.sql; do
             n=$(basename "$f")
-            done=$(psql "$DB" -v name="$n" -tAc "select 1 from public._preview_migrations where name = :'name'")
+            done=$(psql "$DB" -v ON_ERROR_STOP=1 -v name="$n" -tAq <<< "select 1 from public._preview_migrations where name = :'name'")
             if [ -z "$done" ]; then
               echo "applying $n"
               psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f "$f"
-              psql "$DB" -v ON_ERROR_STOP=1 -v name="$n" -q -c "insert into public._preview_migrations (name) values (:'name')"
+              psql "$DB" -v ON_ERROR_STOP=1 -v name="$n" -q <<< "insert into public._preview_migrations (name) values (:'name')"
             fi
-          done < <(printf '%s\n' supabase/migrations/*.sql | LC_ALL=C sort)
+          done
           echo "loading deck"
           psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/deck.sql
           if [ -f supabase/packs.sql ]; then echo "loading packs"; psql "$DB" -v ON_ERROR_STOP=1 -q -1 -f supabase/packs.sql; fi

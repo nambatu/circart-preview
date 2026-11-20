@@ -58,15 +58,45 @@ done
 sha=$(git rev-parse HEAD)
 echo "waiting for GitHub (preview-db + Pages)…"
 sleep 20
-for i in $(seq 1 60); do
-  pending=$(gh run list -R $REPO -L 6 --json status,headSha --jq "[.[] | select(.headSha==\"$sha\" and .status!=\"completed\")] | length" 2>/dev/null || echo 0)
-  [ "$pending" = 0 ] && break
-  sleep 10
-done
-gh run list -R $REPO -L 6 --json name,conclusion,headSha,databaseId --jq ".[] | select(.headSha==\"$sha\") | \"\(.conclusion)\t\(.name)\t\(.databaseId)\"" 2>/dev/null | while IFS=$'\t' read -r concl name id; do
-  echo "$concl  $name"
-  if [ "$concl" = failure ] && [[ "$name" == pages* ]]; then
-    echo "  Pages failed — re-running once"; gh run rerun "$id" -R $REPO || true
-  fi
-done
+if command -v gh >/dev/null 2>&1; then
+  for i in $(seq 1 60); do
+    pending=$(gh run list -R $REPO -L 6 --json status,headSha --jq "[.[] | select(.headSha==\"$sha\" and .status!=\"completed\")] | length" 2>/dev/null || echo 0)
+    [ "$pending" = 0 ] && break
+    sleep 10
+  done
+  while IFS=$'\t' read -r concl name id; do
+    echo "$concl  $name"
+    if [ "$concl" = failure ] && [[ "$name" == pages* ]]; then
+      echo "  Pages failed — re-running once"; gh run rerun "$id" -R $REPO || true
+    fi
+    if [ "$concl" = failure ] && [ "$name" = "preview-db" ]; then
+      echo "ERROR: preview-db failed ($id)"; exit 1
+    fi
+  done < <(gh run list -R $REPO -L 6 --json name,conclusion,headSha,databaseId --jq ".[] | select(.headSha==\"$sha\") | \"\(.conclusion)\t\(.name)\t\(.databaseId)\"" 2>/dev/null)
+else
+  "$PY" - "$REPO" "$sha" << 'PYEOF'
+import json, sys, time, urllib.request
+repo, sha = sys.argv[1], sys.argv[2]
+url = f"https://api.github.com/repos/{repo}/actions/runs?head_sha={sha}"
+runs = []
+for _ in range(60):
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "circart-deploy"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            runs = json.loads(r.read().decode("utf-8")).get("workflow_runs") or []
+    except Exception:
+        runs = []
+    if runs and all(x.get("status") == "completed" for x in runs):
+        break
+    time.sleep(10)
+db_failed = False
+for x in runs:
+    name, concl = x.get("name", "?"), x.get("conclusion") or x.get("status")
+    print(f"{concl}  {name}")
+    if name == "preview-db" and concl != "success":
+        db_failed = True
+if db_failed:
+    sys.exit("ERROR: preview-db did not succeed")
+PYEOF
+fi
 echo "done: https://nambatu.github.io/circart-preview/"
