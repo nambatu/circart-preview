@@ -62,6 +62,16 @@
         not_enough_patches: 'Clean at least three patches first before guessing.',
         no_painting: 'There is no weekly painting active right now.',
         too_early: 'Clean at least three patches first before guessing.',
+        friend_needs_account: 'Sign in and pick a username before adding friends.',
+        user_not_found: 'No player with that username was found.',
+        not_friends: 'You can only do that with accepted friends.',
+        blocked: 'That request could not be sent.',
+        friend_not_found: 'That friend request is no longer active.',
+        too_many_requests: 'You sent a lot of requests just now. Please wait a bit before sending more.',
+        too_many_reactions: 'Easy with the reactions. Give it a moment before sending another.',
+        target_already_locked: 'That player already locked in their answer.',
+        not_locked: 'Lock in your own answer first.',
+        invite_not_found: 'That invitation is no longer active.',
     };
 
     function fail(error) {
@@ -482,6 +492,25 @@
     const pickBonus          = (id, position, artist, movement) =>
         rpc('pick_bonus', { p_game: id, p_position: position, p_artist: artist, p_movement: movement });
 
+    // ─── live waiting studio + friends + direct invites (032) ───────────────
+    const roundLive          = gameId => rpc('round_live', { p_game: gameId });
+    const callIt             = (gameId, position, targetSeat, predictOk) =>
+        rpc('call_it', { p_game: gameId, p_position: position, p_target_seat: targetSeat, p_predict_ok: predictOk });
+    const sendReaction       = (gameId, emoji, targetSeat = null) =>
+        rpc('send_reaction', { p_game: gameId, p_emoji: emoji, p_target_seat: targetSeat });
+    const roundResults       = (gameId, turn = null) => rpc('round_results', { p_game: gameId, p_turn: turn });
+    const sendFriendRequest  = username => rpc('send_friend_request', { p_username: username });
+    const respondFriendRequest = (username, accept) => rpc('respond_friend_request', { p_username: username, p_accept: accept });
+    const removeFriend       = (username, block = false) => rpc('remove_friend', { p_username: username, p_block: block });
+    const myFriends          = () => rpc('my_friends');
+    const friendProfile      = username => rpc('friend_profile', { p_username: username });
+    const friendsLeaderboard = (board, date = null) => rpc('friends_leaderboard', { p_board: board, p_date: date });
+    const inviteFriendsToGame = (usernames, { kind = 'async', cardCount = 12, cardsPerTurn = 3 } = {}) =>
+        rpc('invite_friends_to_game', { p_usernames: usernames, p_kind: kind, p_card_count: cardCount, p_cards_per_turn: cardsPerTurn });
+    const sendScoreChallenge = (username, mode, score) => rpc('send_score_challenge', { p_username: username, p_mode: mode, p_score: score });
+    const myGameInvites      = () => rpc('my_game_invites');
+    const respondGameInvite  = (inviteId, accept) => rpc('respond_game_invite', { p_invite_id: inviteId, p_accept: accept });
+
     // ─── push notifications (async games) ─────────────────────────────────
     // iPhone: only once the app is added to the home screen (iOS 16.4+).
     // Firefox on Android supports web push but may not offer window.Notification;
@@ -561,6 +590,9 @@
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
         monthlyWinners, myBadges, myAchievements, myPacks, myCollection, markPacksSeen, exportMyData,
         priceSummary, priceLeaderboard, myStreak, myPainting, guessPainting, myRestorations, myHistory,
+        roundLive, callIt, sendReaction, roundResults,
+        sendFriendRequest, respondFriendRequest, removeFriend, myFriends, friendProfile, friendsLeaderboard,
+        inviteFriendsToGame, sendScoreChallenge, myGameInvites, respondGameInvite,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         dailyStory,

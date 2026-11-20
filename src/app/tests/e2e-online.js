@@ -4,7 +4,7 @@
   let offset = 0; const sync = r => { if (r && r.server_now) offset = new Date(r.server_now).getTime() - Date.now(); return r; };
   async function rpc(fn, args) {
     const r = await fetch('/rpc', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ who, fn, args: args||{} }) });
-    const j = await r.json(); if (j.error) { const e = new Error(j.error); e.code = (String(j.error).match(/[a-z_]+_(invalid|taken)/) || [])[0]; throw e; } return sync(j.result);
+    const j = await r.json(); if (j.error) { const e = new Error(j.error); e.code = (String(j.error).match(/\b(friend_needs_account|user_not_found|not_friends|blocked|friend_not_found|too_many_requests|too_many_reactions|target_already_locked|not_locked|invite_not_found|game_not_found|game_started|game_full|not_host|need_two_players|bad_settings|already_answered|not_playing|card_not_open|not_yet|not_answered|bad_slot|username_needs_account|already_guessed_today|already_guessed|already_revealed|not_enough_patches|no_painting|too_early|too_many_tries|too_many_games|too_many_runs|not_signed_in|[a-z_]+_(?:invalid|taken))\b/) || [])[0]; throw e; } return sync(j.result);
   }
   window.CircOnline = {
     available: () => true,
@@ -31,5 +31,19 @@
     myStreak: () => rpc('my_streak'), myPainting: (week=null) => rpc('my_painting',{p_week:week}),
     guessPainting: choice => rpc('guess_painting',{p_choice:choice}), myRestorations: () => rpc('my_restorations'),
     myHistory: ({kind=null,limit=30,offset=0}={}) => rpc('my_history',{p_kind:kind,p_limit:limit,p_offset:offset}),
+    roundLive: gameId => rpc('round_live', { p_game: gameId }),
+    callIt: (gameId, position, targetSeat, predictOk) => rpc('call_it', { p_game: gameId, p_position: position, p_target_seat: targetSeat, p_predict_ok: predictOk }),
+    sendReaction: (gameId, emoji, targetSeat = null) => rpc('send_reaction', { p_game: gameId, p_emoji: emoji, p_target_seat: targetSeat }),
+    roundResults: (gameId, turn = null) => rpc('round_results', { p_game: gameId, p_turn: turn }),
+    sendFriendRequest: username => rpc('send_friend_request', { p_username: username }),
+    respondFriendRequest: (username, accept) => rpc('respond_friend_request', { p_username: username, p_accept: accept }),
+    removeFriend: (username, block = false) => rpc('remove_friend', { p_username: username, p_block: block }),
+    myFriends: () => rpc('my_friends'),
+    friendProfile: username => rpc('friend_profile', { p_username: username }),
+    friendsLeaderboard: (board, date = null) => rpc('friends_leaderboard', { p_board: board, p_date: date }),
+    inviteFriendsToGame: (usernames, { kind = 'async', cardCount = 12, cardsPerTurn = 3 } = {}) => rpc('invite_friends_to_game', { p_usernames: usernames, p_kind: kind, p_card_count: cardCount, p_cards_per_turn: cardsPerTurn }),
+    sendScoreChallenge: (username, mode, score) => rpc('send_score_challenge', { p_username: username, p_mode: mode, p_score: score }),
+    myGameInvites: () => rpc('my_game_invites'),
+    respondGameInvite: (inviteId, accept) => rpc('respond_game_invite', { p_invite_id: inviteId, p_accept: accept }),
   };
 })();

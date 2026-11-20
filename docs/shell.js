@@ -506,12 +506,155 @@
         }));
     }
 
-    // ─── home: games with friends ─────────────────────────────────────────
+    // ─── home: games with friends & direct invites ────────────────────────
+    let homeOnlineSeq = 0;
+
+    function normalizeFriendsRes(res) {
+        const out = { friends: [], incoming: [], outgoing: [] };
+        if (!res) return out;
+        const normItem = (x) => {
+            if (!x) return null;
+            if (typeof x === 'string') return { username: x, displayName: x, streak: 0 };
+            const username = String(x.username || x.friend_username || x.handle || '').trim();
+            if (!username) return null;
+            const rawName = String(x.display_name || x.name || username).trim();
+            return {
+                username,
+                displayName: rawName || username,
+                streak: Number(x.daily_streak ?? x.streak ?? 0) || 0,
+            };
+        };
+        if (Array.isArray(res)) {
+            res.forEach(row => {
+                const item = normItem(row);
+                if (!item) return;
+                const st = row.status || 'accepted';
+                if (st === 'accepted' || st === 'friend') out.friends.push(item);
+                else if (st === 'pending') {
+                    const dir = row.direction || (row.is_requester || row.outgoing ? 'outgoing' : 'incoming');
+                    if (dir === 'outgoing') out.outgoing.push(item);
+                    else out.incoming.push(item);
+                }
+            });
+            return out;
+        }
+        const pushAll = (src, dest) => (src || []).forEach(x => { const item = normItem(x); if (item) dest.push(item); });
+        pushAll(res.friends || res.accepted, out.friends);
+        pushAll(res.incoming || res.pending_in || res.requests, out.incoming);
+        pushAll(res.outgoing || res.pending_out || res.sent, out.outgoing);
+        return out;
+    }
+
+    function renderInvitesBox(ibox, o, invites) {
+        if (!ibox) return;
+        if (!invites || !invites.length) { ibox.innerHTML = ''; return; }
+        const modeWord = (inv) => {
+            const m = inv.challenge_kind || inv.mode || inv.game_kind || inv.challenge_mode || inv.kind || '';
+            if (m === 'daily_score') return t('invites.modeDaily');
+            if (m === 'run_score') return t('invites.modeRun');
+            if (m === 'price_score') return t('invites.modePrice');
+            const isLive = (inv.game_kind || inv.mode) === 'live' || Number(inv.cards_per_turn) === 1;
+            return isLive ? t('invites.modeLive') : t('invites.modeAsync');
+        };
+        const msgFor = (inv) => {
+            const sender = inv.from_username || inv.sender_username || inv.inviter_username || inv.from_name || inv.username || inv.from || '';
+            const k = inv.challenge_kind || inv.kind || inv.type || '';
+            const m = inv.mode || inv.challenge_mode || '';
+            const isScore = ['daily_score', 'run_score', 'price_score'].includes(k) || ['daily_score', 'run_score', 'price_score'].includes(m);
+            if (isScore) {
+                const sc = inv.target_score ?? inv.score ?? inv.value ?? 0;
+                return t('invites.scoreMsg', { name: sender, score: Number(sc).toLocaleString(), mode: modeWord(inv) });
+            }
+            return t('invites.gameMsg', { name: sender, mode: modeWord(inv) });
+        };
+        ibox.innerHTML = `
+          <h2 class="label home-label row">${esc(t('invites.title'))}<span class="badge">${invites.length}</span></h2>
+          <div class="inv-list">
+            ${invites.map(inv => `
+              <section class="panel inv-card" data-inv-id="${esc(inv.id)}">
+                <div class="inv-top"><p class="inv-msg">${esc(msgFor(inv))}</p></div>
+                <div class="inv-acts">
+                  <button type="button" class="btn primary inv-btn" data-inv-accept="${esc(inv.id)}">${esc(t('invites.accept'))}</button>
+                  <button type="button" class="btn quiet inv-btn" data-inv-decline="${esc(inv.id)}">${esc(t('invites.decline'))}</button>
+                </div>
+              </section>`).join('')}
+          </div>`;
+        ibox.querySelectorAll('[data-inv-accept], [data-inv-decline]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const accept = btn.hasAttribute('data-inv-accept');
+                const id = accept ? btn.dataset.invAccept : btn.dataset.invDecline;
+                const card = btn.closest('.inv-card');
+                const inv = invites.find(x => String(x.id) === String(id)) || {};
+                const btns = card ? [...card.querySelectorAll('button')] : [btn];
+                btns.forEach(b => { b.disabled = true; });
+                try {
+                    const res = await o.respondGameInvite(id, accept);
+                    if (!accept) {
+                        toast(t('invites.declined'));
+                        renderOnlineHome(o, await safeUser(o));
+                        return;
+                    }
+                    const invMode = inv.challenge_kind || inv.mode || inv.challenge_mode || inv.kind || '';
+                    const rMode = (res && (res.challenge_kind || res.mode || res.kind)) || invMode;
+                    const gid = (res && (res.game_id || res.id)) || inv.game_id;
+                    if (gid && rMode !== 'daily_score' && rMode !== 'run_score' && rMode !== 'price_score') {
+                        cachedProfile = null;
+                        window.CircGame.open(gid);
+                        return;
+                    }
+                    if (rMode === 'daily_score') {
+                        const g = await o.playDaily();
+                        cachedProfile = null;
+                        window.CircGame.open(g.id, { challengeNo: g.challenge_no });
+                    } else if (rMode === 'run_score') {
+                        const g = await o.startRun();
+                        cachedProfile = null;
+                        window.CircGame.open(g.id);
+                    } else if (rMode === 'price_score') {
+                        const cards = await loadPriceDeck();
+                        if (!cards || cards.length < 2) {
+                            toast(t('price.noCards'));
+                            btns.forEach(b => { b.disabled = false; });
+                            return;
+                        }
+                        window.CircGame.openPrice(cards, { prevBest: localPriceBest() });
+                    } else {
+                        renderOnlineHome(o, await safeUser(o));
+                    }
+                } catch (err) {
+                    btns.forEach(b => { b.disabled = false; });
+                    toast(errText(err));
+                }
+            });
+        });
+    }
+
     async function renderOnlineHome(o, u) {
+        const seq = ++homeOnlineSeq;
         const box = $('home-online');
-        if (!o || !FEATURES.friends) { box.innerHTML = ''; $('home-games').innerHTML = ''; return; }
-        let games = [];
-        if (u) { try { games = await o.myGames(); } catch (e) { games = []; } }
+        const ibox = $('home-invites');
+        const gbox = $('home-games');
+        if (!o || !FEATURES.friends) {
+            box.innerHTML = '';
+            if (ibox) ibox.innerHTML = '';
+            if (gbox) gbox.innerHTML = '';
+            return;
+        }
+        let games = [], invites = [];
+        if (u) {
+            const p = cachedProfile || await o.getProfile().catch(() => null);
+            if (seq !== homeOnlineSeq) return;
+            if (p) cachedProfile = p;
+            const canInvite = !!(p && !p.is_guest && p.username && o.myGameInvites);
+            const [gRes, iRes] = await Promise.all([
+                o.myGames().catch(() => []),
+                canInvite ? o.myGameInvites().catch(() => []) : Promise.resolve([]),
+            ]);
+            if (seq !== homeOnlineSeq) return;
+            games = Array.isArray(gRes) ? gRes : [];
+            invites = Array.isArray(iRes) ? iRes : [];
+        }
+        renderInvitesBox(ibox, o, invites);
         const mine = games.filter(g => !g.dropped);
         const cutoff = o.serverNow() - 24 * 60 * 60 * 1000;
         const active = mine.filter(g => g.status !== 'finished');
@@ -533,7 +676,6 @@
             : g.my_turn ? t('home.turnInfo', { turn: g.turn, turns: g.turns, left: left(g.turn_deadline) })
             : t('home.waitingOthers', { turn: g.turn, turns: g.turns });
 
-        const gbox = $('home-games');
         gbox.innerHTML = shown.length ? `
           <h2 class="label home-label row">${esc(t('home.yourGamesLabel'))}${turns ? `<span class="badge">${turns}</span>` : ''}</h2>
           <div class="home-games">
@@ -556,7 +698,7 @@
             </form>`,
         });
         gbox.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => window.CircGame.open(b.dataset.game)));
-        $('home-friends').addEventListener('click', friendsSheet);
+        $('home-friends').addEventListener('click', () => friendsSheet());
         $('home-join').addEventListener('submit', e => { e.preventDefault(); joinByCode($('home-code').value); });
     }
 
@@ -585,7 +727,8 @@
         return (o && await o.user()) ? await profileName() : '';
     }
 
-    async function friendsSheet() {
+    async function friendsSheet(opts) {
+        const preselect = new Set((opts && Array.isArray(opts.preselect)) ? opts.preselect : []);
         const name = await currentName();
         const m = sheet(`
           <h2 class="serif" style="font-size:24px">${esc(t('friends.title'))}</h2>
@@ -595,7 +738,8 @@
           <button class="choice strong" data-kind="live"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M13 2.5L4.5 13.5H11l-1 8 8.5-11H12z"/></svg></span>
             <span><b>${esc(t('friends.live'))}</b><br><span class="note">${esc(t('friends.liveText'))}</span></span></button>
           <button class="choice" data-kind="async"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
-            <span><b>${esc(t('friends.async'))}</b><br><span class="note">${esc(t('friends.asyncText'))}</span></span></button>`);
+            <span><b>${esc(t('friends.async'))}</b><br><span class="note">${esc(t('friends.asyncText'))}</span></span></button>
+          <div id="fs-direct"></div>`);
         m.querySelectorAll('[data-kind]').forEach(b => b.addEventListener('click', async () => {
             b.disabled = true;
             try {
@@ -603,8 +747,64 @@
                 m.remove();
                 cachedProfile = null;
                 window.CircGame.open(g.id);
-            } catch (e) { b.disabled = false; toast(e.message || t('common.error')); }
+            } catch (e) { b.disabled = false; toast(errText(e)); }
         }));
+
+        const o = online();
+        const u = await safeUser(o);
+        if (!o || !u || !o.myFriends || !o.inviteFriendsToGame || !m.isConnected) return;
+        const p = cachedProfile || await o.getProfile().catch(() => null);
+        if (!m.isConnected || !p || p.is_guest || !p.username) return;
+        const fr = normalizeFriendsRes(await o.myFriends().catch(() => null));
+        if (!m.isConnected || !fr.friends.length) return;
+
+        const directBox = m.querySelector('#fs-direct');
+        if (!directBox) return;
+        let invKind = 'async';
+        directBox.innerHTML = `
+          <div class="fr-direct">
+            <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px">
+              <span class="label" style="margin:0">${esc(t('invites.pickFriends'))}</span>
+              <div class="seg" role="group" aria-label="${esc(t('invites.pickFriends'))}">
+                <button type="button" data-inv-kind="async" aria-pressed="true">${esc(t('invites.modeAsync'))}</button>
+                <button type="button" data-inv-kind="live" aria-pressed="false">${esc(t('invites.modeLive'))}</button>
+              </div>
+            </div>
+            <div class="fr-pick-chips">
+              ${fr.friends.map(f => `<button type="button" class="chip fr-pick-chip" data-inv-friend="${esc(f.username)}" aria-pressed="${preselect.has(f.username)}">${esc(f.displayName)}</button>`).join('')}
+            </div>
+            <button type="button" class="btn primary block" data-send-inv>${esc(t('invites.sendInvite'))}</button>
+          </div>`;
+
+        directBox.querySelectorAll('[data-inv-kind]').forEach(b => b.addEventListener('click', () => {
+            invKind = b.dataset.invKind;
+            directBox.querySelectorAll('[data-inv-kind]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.invKind === invKind)));
+        }));
+        directBox.querySelectorAll('[data-inv-friend]').forEach(b => b.addEventListener('click', () => {
+            b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+        }));
+        const sendBtn = directBox.querySelector('[data-send-inv]');
+        if (sendBtn) sendBtn.addEventListener('click', async () => {
+            const usernames = [...directBox.querySelectorAll('[data-inv-friend][aria-pressed="true"]')].map(b => b.dataset.invFriend);
+            if (!usernames.length) { toast(t('invites.pickPrompt')); return; }
+            sendBtn.disabled = true;
+            try {
+                const res = await o.inviteFriendsToGame(usernames, {
+                    kind: invKind,
+                    cardCount: invKind === 'live' ? 10 : 12,
+                    cardsPerTurn: invKind === 'live' ? 1 : 3,
+                });
+                m.remove();
+                cachedProfile = null;
+                toast(t('invites.sentMsg'));
+                const gid = (res && (res.game_id || res.id)) || (typeof res === 'string' ? res : null);
+                if (gid) window.CircGame.open(gid);
+                else renderHome();
+            } catch (e) {
+                sendBtn.disabled = false;
+                toast(errText(e));
+            }
+        });
     }
 
     async function joinByCode(code) {
@@ -633,6 +833,9 @@
 
     // ─── ranks: leaderboards + your stats ─────────────────────────────────
     let ranksTab = 'today';
+    let ranksScope = 'all';
+    let ranksSeq = 0;
+
     async function renderRanks() {
         const box = $('ranks-body');
         const o = online();
@@ -640,19 +843,26 @@
         const u = await safeUser(o);
         if (!u) { box.innerHTML = `<p class="muted">${esc(t('ranks.signIn'))}</p>`; return; }
         const tabs = ['today', 'month', 'price', 'allTime'];
+        const scopes = ['all', 'friends'];
         box.innerHTML = `
-          <div class="seg" role="group" aria-label="${esc(t('ranks.title'))}" style="align-self:flex-start">
-            ${tabs.map(k => `<button data-rt="${k}" aria-pressed="${ranksTab === k}">${esc(t('ranks.' + k))}</button>`).join('')}
+          <div class="ranks-controls">
+            <div class="seg" role="group" aria-label="${esc(t('ranks.title'))}">
+              ${tabs.map(k => `<button data-rt="${k}" aria-pressed="${ranksTab === k}">${esc(t('ranks.' + k))}</button>`).join('')}
+            </div>
+            <div class="seg ranks-scope" role="group" aria-label="${esc(t('friends.cardTitle'))}">
+              ${scopes.map(s => `<button data-rscope="${s}" aria-pressed="${ranksScope === s}">${esc(t('ranks.scope' + (s === 'all' ? 'All' : 'Friends')))}</button>`).join('')}
+            </div>
           </div>
           <div id="ranks-board" style="margin-top:12px"><p class="muted">…</p></div>
           <div id="ranks-stats" style="margin-top:20px"></div>`;
         box.querySelectorAll('[data-rt]').forEach(b => b.addEventListener('click', () => { ranksTab = b.dataset.rt; renderRanks(); }));
+        box.querySelectorAll('[data-rscope]').forEach(b => b.addEventListener('click', () => { ranksScope = b.dataset.rscope; renderRanks(); }));
         renderBoard(o);
         renderStats(o);
     }
 
-    function boardList(entries, value) {
-        if (!entries.length) return `<p class="muted">${esc(t('ranks.nobody'))}</p>`;
+    function boardList(entries, value, emptyKey) {
+        if (!entries.length) return `<p class="muted">${esc(t(emptyKey || 'ranks.nobody'))}</p>`;
         return `<ol class="go-stand">${entries.map(e => `
             <li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
               <span class="go-name">${esc(e.username)}${e.is_me ? ' ' + esc(t('game.you')) : ''}</span>
@@ -673,15 +883,58 @@
     }
 
     async function renderBoard(o) {
+        const mySeq = ++ranksSeq;
         const el = $('ranks-board');
         const pts = n => t('ranks.pts', { n: Number(n).toLocaleString() });
         try {
+            const p = cachedProfile || await o.getProfile().catch(() => null);
+            if (mySeq !== ranksSeq) return;
+            if (p) cachedProfile = p;
+            if (ranksScope === 'friends' && o.friendsLeaderboard) {
+                if (!p || p.is_guest || !p.username) {
+                    el.innerHTML = `<p class="muted">${esc(t('friends.needAccount'))}</p>`;
+                    return;
+                }
+                const b = await o.friendsLeaderboard(ranksTab);
+                if (mySeq !== ranksSeq) return;
+                const entries = (b && b.entries) || [];
+                const val = e => e.value ?? e.score ?? e.points ?? e.best ?? 0;
+                const onlyMe = entries.length <= 1 && entries.every(e => e.is_me);
+                let noFriends = (b && b.friends_count === 0) || !entries.length;
+                if (entries.length === 1 && entries[0].is_me && b.friends_count == null && o.myFriends) {
+                    const fr = normalizeFriendsRes(await o.myFriends().catch(() => null));
+                    if (mySeq !== ranksSeq) return;
+                    noFriends = fr.friends.length === 0;
+                }
+                const emptyKey = noFriends ? 'ranks.noFriendsYet' : 'ranks.nobody';
+                if (ranksTab === 'today') {
+                    const head = b && b.challenge_no != null ? `<p class="note" style="margin-bottom:8px">${esc(t('game.daily', { no: b.challenge_no }))}</p>` : '';
+                    el.innerHTML = `${head}${boardList(entries, e => pts(e.score ?? val(e)), emptyKey)}`;
+                } else if (ranksTab === 'month') {
+                    const fmt = v => b && b.metric === 'accuracy' ? v + '%' : b && (b.metric === 'best_streak' || b.metric === 'artists_named') ? String(v) : pts(v);
+                    const head = b && b.title ? `<section class="panel" style="padding:14px;margin-bottom:10px">
+                        <b class="serif" style="font-size:18px">${esc(de(b, 'title'))}</b>
+                        ${b.description ? `<p class="note">${esc(de(b, 'description'))}${b.days_left != null ? ` · ${esc(t('ranks.daysLeft', { n: b.days_left }))}` : ''}</p>` : ''}</section>` : '';
+                    el.innerHTML = `${head}${boardList(entries, e => fmt(val(e)), emptyKey)}`;
+                } else if (ranksTab === 'price') {
+                    el.innerHTML = `<p class="note" style="margin-bottom:8px">${esc(t('ranks.priceInfo'))}</p>
+                      ${boardList(entries, e => pts(val(e)), emptyKey)}`;
+                } else {
+                    el.innerHTML = `${boardList(entries, e => pts(e.points ?? val(e)), emptyKey)}`;
+                }
+                if (entries.length && noFriends && onlyMe) {
+                    el.insertAdjacentHTML('beforeend', `<p class="note" style="margin-top:8px">${esc(t('ranks.noFriendsYet'))}</p>`);
+                }
+                return;
+            }
             if (ranksTab === 'today') {
                 const b = await o.dailyLeaderboard();
+                if (mySeq !== ranksSeq) return;
                 el.innerHTML = `<p class="note" style="margin-bottom:8px">${esc(t('game.daily', { no: b.challenge_no }))} · ${esc(b.players === 1 ? t('ranks.players1') : t('ranks.players', { n: b.players }))}</p>
                   ${boardList(b.entries, e => pts(e.score))}`;
             } else if (ranksTab === 'month') {
                 const [b, w] = await Promise.all([o.monthlyLeaderboard(), o.monthlyWinners ? o.monthlyWinners().catch(() => null) : null]);
+                if (mySeq !== ranksSeq) return;
                 const fmt = v => b.metric === 'accuracy' ? v + '%' : b.metric === 'best_streak' || b.metric === 'artists_named' ? String(v) : pts(v);
                 b.me = b.me && b.me.ranked === false ? null : b.me;      // guests: their best shows on the home card
                 el.innerHTML = `${winnersStrip(w)}<section class="panel" style="padding:14px;margin-bottom:10px">
@@ -691,6 +944,7 @@
                   ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: fmt(b.me.value) }))}</p>` : ''}`;
             } else if (ranksTab === 'price') {
                 const b = await o.priceLeaderboard();
+                if (mySeq !== ranksSeq) return;
                 const entries = (b && b.entries) || [];
                 const val = e => e.value ?? e.score ?? e.best ?? e.points ?? 0;
                 const meVal = b && b.me ? (b.me.value ?? b.me.score ?? b.me.best ?? b.me.points ?? null) : null;
@@ -702,12 +956,13 @@
                   ${b && b.me && b.me.ranked !== false && !entries.some(e => e.is_me) && meVal != null ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: pts(meVal) }))}</p>` : ''}`;
             } else {
                 const b = await o.alltimeLeaderboard();
+                if (mySeq !== ranksSeq) return;
                 el.innerHTML = `${boardList(b.entries, e => pts(e.points))}
                   ${b.me && !b.entries.some(e => e.is_me) ? `<p class="note" style="margin-top:8px">${esc(t('ranks.youRank', { rank: b.me.rank, value: pts(b.me.points) }))}</p>` : ''}`;
             }
-            const p = cachedProfile || await o.getProfile().catch(() => null);
             if (p && (p.is_guest || !p.username)) el.insertAdjacentHTML('beforeend', `<p class="note" style="margin-top:8px">${esc(t('ranks.notRanked'))}</p>`);
         } catch (e) {
+            if (mySeq !== ranksSeq) return;
             el.innerHTML = `<p class="muted">${esc(t('ranks.offline'))}</p>`;
         }
     }
@@ -920,6 +1175,292 @@
         if (closeBtn) closeBtn.focus();
     }
 
+    const BADGE_ICONS = {
+        daily_streak: '🔥',
+        perfect_daily: '🖼️',
+        signature_spotter: '✍️',
+        movement_maker: '🎨',
+        photo_finish: '📸',
+        storyteller: '📖',
+        full_gallery: '🏛️',
+        sharp_eye: '👁️',
+        going_going_gone: '🔨',
+        restorer: '🖌️',
+        vernissage_guest: '🥂',
+    };
+
+    function badgeListHtml(bs, ach) {
+        bs = bs || [];
+        ach = ach || [];
+        // streak badges come in tiers (7 / 30 / 100): show only the highest
+        const top = ach.filter(a => a.key !== 'daily_streak' || !ach.some(x => x.key === 'daily_streak' && x.tier > a.tier));
+        return [
+            ...top.map(a => `<div class="badge-row"><span class="medal">${BADGE_ICONS[a.key] || '🏅'}</span>
+              <span><b>${esc(t('badge.' + a.key + '.name'))}</b><br><span class="note">${esc(t('badge.' + a.key + '.line', { n: a.tier }))}</span></span></div>`),
+            ...bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
+              <span><b>${esc(monthLabel(b.month))}</b> · ${esc(de(b, 'title'))}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`),
+        ].join('');
+    }
+
+    async function openScoreChallengeSheet(username, displayName, o) {
+        const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('friends.challengeTitle', { name: displayName }))}</h2>
+          <p class="muted" style="font-size:14px">${esc(t('friends.challengePrompt', { name: displayName }))}</p>
+          <div id="fr-chal-body"><p class="muted">…</p></div>`);
+        const body = m.querySelector('#fr-chal-body');
+        try {
+            const [d, r, pr] = await Promise.all([
+                o.dailySummary ? o.dailySummary().catch(() => null) : Promise.resolve(null),
+                o.runSummary ? o.runSummary().catch(() => null) : Promise.resolve(null),
+                o.priceSummary ? o.priceSummary().catch(() => null) : Promise.resolve(null),
+            ]);
+            if (!m.isConnected || !body) return;
+            const opts = [];
+            if (d && d.me && d.me.score != null) {
+                opts.push({ mode: 'daily_score', score: Number(d.me.score), label: t('friends.challengeDaily', { score: Number(d.me.score).toLocaleString() }) });
+            }
+            if (r && r.best != null) {
+                opts.push({ mode: 'run_score', score: Number(r.best), label: t('friends.challengeRun', { score: Number(r.best).toLocaleString() }) });
+            }
+            const priceBest = pr ? (pr.best ?? pr.best_score) : null;
+            if (priceBest != null) {
+                opts.push({ mode: 'price_score', score: Number(priceBest), label: t('friends.challengePrice', { score: Number(priceBest).toLocaleString() }) });
+            }
+            if (!opts.length) {
+                body.innerHTML = `<p class="note">${esc(t('friends.noScoreYet'))}</p>`;
+                return;
+            }
+            body.innerHTML = `<div class="fr-sheet-acts">${opts.map((x, idx) =>
+                `<button type="button" class="btn quiet block" data-chal-idx="${idx}">${esc(x.label)}</button>`
+            ).join('')}</div>`;
+            body.querySelectorAll('[data-chal-idx]').forEach(btn => btn.addEventListener('click', async () => {
+                const picked = opts[Number(btn.dataset.chalIdx)];
+                if (!picked) return;
+                body.querySelectorAll('button').forEach(b => { b.disabled = true; });
+                try {
+                    await o.sendScoreChallenge(username, picked.mode, picked.score);
+                    m.remove();
+                    toast(t('friends.challengeSent', { name: displayName }));
+                } catch (e) {
+                    body.querySelectorAll('button').forEach(b => { b.disabled = false; });
+                    toast(errText(e));
+                }
+            }));
+        } catch (e) {
+            if (body) body.innerHTML = `<p class="note">${esc(errText(e))}</p>`;
+        }
+    }
+
+    async function openFriendSheet(username, o) {
+        o = o || online();
+        if (!o || !o.friendProfile) return;
+        const m = sheet(`<div id="fr-sheet-body" class="fr-sheet"><p class="muted" style="text-align:center">…</p></div>`);
+        const body = m.querySelector('#fr-sheet-body');
+        try {
+            const res = await o.friendProfile(username);
+            if (!m.isConnected || !body) return;
+            const uname = (res && res.username) || username;
+            const dname = (res && res.display_name) || uname;
+            const st = (res && res.stats) || res || {};
+            const pct = v => v == null ? '–' : Math.round((Number(v) > 1 ? Number(v) : Number(v) * 100)) + '%';
+            const badgesHtml = badgeListHtml(res && res.badges, res && res.achievements);
+
+            body.innerHTML = `
+              <div class="fr-sheet-head">
+                <span class="avatar" style="width:50px;height:50px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:default;flex-shrink:0" aria-hidden="true">${esc(dname.slice(0, 1).toUpperCase())}</span>
+                <div style="min-width:0">
+                  <h2 class="serif" style="font-size:22px;line-height:1.2;margin:0">${esc(dname)}</h2>
+                  ${dname !== uname ? `<div class="note">@${esc(uname)}</div>` : ''}
+                </div>
+              </div>
+              <div>
+                <div class="label" style="margin-bottom:8px">${esc(t('friends.statsTitle'))}</div>
+                <div class="fr-sheet-stats">
+                  <div class="stat"><b>${Number(st.games_played ?? 0).toLocaleString()}</b><span>${esc(t('ranks.games'))}</span></div>
+                  <div class="stat"><b>${pct(st.accuracy)}</b><span>${esc(t('ranks.accuracy'))}</span></div>
+                  <div class="stat"><b>${Number(st.wins ?? 0).toLocaleString()}</b><span>${esc(t('ranks.wins'))}</span></div>
+                  <div class="stat"><b>${Number(st.best_streak ?? 0).toLocaleString()}</b><span>${esc(t('ranks.bestStreak'))}</span></div>
+                  <div class="stat"><b>${Number(st.daily_streak ?? 0).toLocaleString()}</b><span>${esc(t('ranks.dailyStreak'))}</span></div>
+                  <div class="stat"><b>${st.best_run != null ? Number(st.best_run).toLocaleString() : '–'}</b><span>${esc(t('friends.bestRun'))}</span></div>
+                  <div class="stat"><b>${st.best_price != null ? Number(st.best_price).toLocaleString() : '–'}</b><span>${esc(t('friends.bestPrice'))}</span></div>
+                </div>
+              </div>
+              <div class="fr-sheet-badges">
+                <div class="label">${esc(t('friends.badgesTitle'))}</div>
+                ${badgesHtml || `<p class="note" style="margin:0">${esc(t('friends.noBadges'))}</p>`}
+              </div>
+              <div class="fr-sheet-acts">
+                <button type="button" class="btn primary block" data-fr-invite>${esc(t('friends.inviteBtn'))}</button>
+                ${o.sendScoreChallenge ? `<button type="button" class="btn quiet block" data-fr-challenge>${esc(t('friends.challengeBtn'))}</button>` : ''}
+                <div class="fr-danger-row">
+                  <button type="button" class="btn quiet danger" data-fr-remove>${esc(t('friends.remove'))}</button>
+                  <button type="button" class="btn quiet danger" data-fr-block>${esc(t('friends.block'))}</button>
+                </div>
+              </div>`;
+
+            const invBtn = body.querySelector('[data-fr-invite]');
+            if (invBtn) invBtn.addEventListener('click', () => {
+                m.remove();
+                friendsSheet({ preselect: [uname] });
+            });
+            const chalBtn = body.querySelector('[data-fr-challenge]');
+            if (chalBtn) chalBtn.addEventListener('click', () => {
+                m.remove();
+                openScoreChallengeSheet(uname, dname, o);
+            });
+
+            let armedAct = null, armTimer = null;
+            const rmBtn = body.querySelector('[data-fr-remove]');
+            const blBtn = body.querySelector('[data-fr-block]');
+            const resetArm = () => {
+                armedAct = null;
+                clearTimeout(armTimer);
+                armTimer = null;
+                if (rmBtn) rmBtn.textContent = t('friends.remove');
+                if (blBtn) blBtn.textContent = t('friends.block');
+            };
+            const handleDanger = async (isBlock, btn) => {
+                const actKey = isBlock ? 'block' : 'remove';
+                if (armedAct !== actKey) {
+                    resetArm();
+                    armedAct = actKey;
+                    btn.textContent = t(isBlock ? 'friends.confirmBlock' : 'friends.confirmRemove', { name: dname });
+                    armTimer = setTimeout(resetArm, 6000);
+                    return;
+                }
+                clearTimeout(armTimer);
+                if (rmBtn) rmBtn.disabled = true;
+                if (blBtn) blBtn.disabled = true;
+                try {
+                    await o.removeFriend(uname, isBlock);
+                    m.remove();
+                    toast(t(isBlock ? 'friends.blocked' : 'friends.removed', { name: dname }));
+                    if ($('profile-screen') && $('profile-screen').classList.contains('active')) renderProfile();
+                    renderHome();
+                } catch (e) {
+                    if (rmBtn) rmBtn.disabled = false;
+                    if (blBtn) blBtn.disabled = false;
+                    resetArm();
+                    toast(errText(e));
+                }
+            };
+            if (rmBtn) rmBtn.addEventListener('click', () => handleDanger(false, rmBtn));
+            if (blBtn) blBtn.addEventListener('click', () => handleDanger(true, blBtn));
+        } catch (e) {
+            if (body) body.innerHTML = `<p class="muted">${esc(errText(e))}</p>`;
+        }
+    }
+
+    async function renderFriendsPanel(o, p, seq) {
+        const el = $('pf-friends');
+        if (!el || !o) return;
+        if (!p || p.is_guest || !p.username) {
+            el.innerHTML = `<section class="panel fr-panel">
+              <h2 class="label" style="margin:0">${esc(t('friends.cardTitle'))}</h2>
+              <p class="note" style="margin:0">${esc(t('friends.needAccount'))}</p>
+            </section>`;
+            return;
+        }
+        if (!o.myFriends) return;
+        const raw = await o.myFriends().catch(() => null);
+        if (seq !== profileSeq) return;
+        const { friends, incoming, outgoing } = normalizeFriendsRes(raw);
+
+        el.innerHTML = `<section class="panel fr-panel">
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h2 class="label" style="margin:0">${esc(t('friends.cardTitle'))}</h2>
+            <button type="button" class="btn quiet fr-copy-btn" id="pf-friend-copy">${esc(t('friends.copyLink'))}</button>
+          </div>
+          <form class="fr-add-form" id="pf-friend-form">
+            <input id="pf-friend-add" class="fr-input" type="text" maxlength="20" autocapitalize="off" autocomplete="off" placeholder="${esc(t('friends.addPlaceholder'))}">
+            <button class="btn quiet" type="submit" id="pf-friend-submit">${esc(t('friends.addBtn'))}</button>
+          </form>
+          ${incoming.length ? `
+          <div class="fr-sub">
+            <div class="label">${esc(t('friends.incoming'))}</div>
+            ${incoming.map(r => `
+              <div class="fr-req-row">
+                <span class="fr-req-name">${esc(r.displayName)}</span>
+                <div class="fr-req-acts">
+                  <button type="button" class="btn primary fr-sm-btn" data-fr-acc="${esc(r.username)}">${esc(t('friends.accept'))}</button>
+                  <button type="button" class="btn quiet fr-sm-btn" data-fr-dec="${esc(r.username)}">${esc(t('friends.decline'))}</button>
+                </div>
+              </div>`).join('')}
+          </div>` : ''}
+          ${friends.length ? `
+          <div class="fr-list">
+            ${friends.map(f => `
+              <button type="button" class="fr-row" data-fr-open="${esc(f.username)}">
+                <span class="avatar fr-av" aria-hidden="true">${esc(f.displayName.slice(0, 1).toUpperCase())}</span>
+                <span class="fr-row-main"><b>${esc(f.displayName)}</b>${f.displayName !== f.username ? `<small class="note">@${esc(f.username)}</small>` : ''}</span>
+                ${f.streak > 0 ? `<span class="fr-streak">🔥 ${f.streak}</span>` : ''}
+                <span class="value" aria-hidden="true">›</span>
+              </button>`).join('')}
+          </div>` : `<p class="note" style="margin:0">${esc(t('friends.listEmpty'))}</p>`}
+          ${outgoing.length ? `<p class="note" style="margin:0">${esc(t('friends.outgoing'))}: ${esc(outgoing.map(x => x.username).join(' · '))}</p>` : ''}
+        </section>`;
+
+        const copyBtn = $('pf-friend-copy');
+        if (copyBtn) copyBtn.addEventListener('click', async () => {
+            const url = new URL(location.origin + location.pathname);
+            url.searchParams.set('friend', p.username);
+            try {
+                await navigator.clipboard.writeText(url.toString());
+                toast(t('friends.linkCopied'));
+            } catch (e) {
+                sheet(`<h2 class="serif" style="font-size:20px">${esc(t('friends.copyLink'))}</h2>
+                  <textarea class="input" rows="3" readonly style="height:auto;padding:10px">${esc(url.toString())}</textarea>`);
+            }
+        });
+
+        const form = $('pf-friend-form');
+        const addInput = $('pf-friend-add');
+        const addSubmit = $('pf-friend-submit');
+        if (form && addInput && addSubmit) {
+            let busy = false;
+            form.addEventListener('submit', async e => {
+                e.preventDefault();
+                if (busy) return;
+                const target = addInput.value.trim();
+                if (!target) return;
+                busy = true;
+                addSubmit.disabled = true;
+                try {
+                    await o.sendFriendRequest(target);
+                    addInput.value = '';
+                    toast(t('friends.requestSent', { name: target }));
+                    renderFriendsPanel(o, p, seq);
+                } catch (err) {
+                    toast(errText(err));
+                } finally {
+                    busy = false;
+                    addSubmit.disabled = false;
+                }
+            });
+        }
+
+        el.querySelectorAll('[data-fr-acc], [data-fr-dec]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const accept = btn.hasAttribute('data-fr-acc');
+                const uname = accept ? btn.dataset.frAcc : btn.dataset.frDec;
+                const row = btn.closest('.fr-req-row');
+                const btns = row ? [...row.querySelectorAll('button')] : [btn];
+                btns.forEach(b => { b.disabled = true; });
+                try {
+                    await o.respondFriendRequest(uname, accept);
+                    renderFriendsPanel(o, p, seq);
+                    renderHome();
+                } catch (err) {
+                    btns.forEach(b => { b.disabled = false; });
+                    toast(errText(err));
+                }
+            });
+        });
+
+        el.querySelectorAll('[data-fr-open]').forEach(btn => {
+            btn.addEventListener('click', () => openFriendSheet(btn.dataset.frOpen, o));
+        });
+    }
+
     async function renderProfile() {
         const seq = ++profileSeq;
         const box = $('profile-body');
@@ -962,6 +1503,7 @@
 
         box.innerHTML = `
           ${account}
+          <div id="pf-friends"></div>
           <div id="pf-badges"></div>
           <div id="pf-history"></div>
           <section class="panel list" aria-label="Settings">
@@ -990,32 +1532,15 @@
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
           </section>`;
         wireProfile(o);
+        if (u && o) renderFriendsPanel(o, p, seq).catch(() => {});
         if (u && o.myBadges) Promise.all([o.myBadges().catch(() => []), o.myAchievements ? o.myAchievements().catch(() => []) : []]).then(([bs, ach]) => {
             if (seq !== profileSeq) return;
             const el = $('pf-badges');
             bs = bs || []; ach = ach || [];
             if (!el || (!bs.length && !ach.length)) return;
-            const ICONS = {
-                daily_streak: '🔥',
-                perfect_daily: '🖼️',
-                signature_spotter: '✍️',
-                movement_maker: '🎨',
-                photo_finish: '📸',
-                storyteller: '📖',
-                full_gallery: '🏛️',
-                sharp_eye: '👁️',
-                going_going_gone: '🔨',
-                restorer: '🖌️',
-                vernissage_guest: '🥂',
-            };
-            // streak badges come in tiers (7 / 30 / 100): show only the highest
-            const top = ach.filter(a => a.key !== 'daily_streak' || !ach.some(x => x.key === 'daily_streak' && x.tier > a.tier));
             el.innerHTML = `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
               <h2 class="label">${esc(t('profile.badges'))}</h2>
-              ${top.map(a => `<div class="badge-row"><span class="medal">${ICONS[a.key] || '🏅'}</span>
-                <span><b>${esc(t('badge.' + a.key + '.name'))}</b><br><span class="note">${esc(t('badge.' + a.key + '.line', { n: a.tier }))}</span></span></div>`).join('')}
-              ${bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
-                <span><b>${esc(monthLabel(b.month))}</b> · ${esc(de(b, 'title'))}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
+              ${badgeListHtml(bs, ach)}
             </section>`;
         }).catch(() => {});
 
@@ -1454,6 +1979,42 @@
         t,
     };
 
+    async function handleFriendLink(username, o) {
+        if (!/^[A-Za-z0-9_.]{3,20}$/.test(username)) {
+            toast(t('err.username_invalid'));
+            return;
+        }
+        const u = await safeUser(o);
+        const p = u ? await o.getProfile().catch(() => null) : null;
+        if (!u || !p || p.is_guest || !p.username) {
+            showTab('profile');
+            sheet(`<h2 class="serif" style="font-size:22px">${esc(t('friends.linkConfirmTitle', { name: username }))}</h2>
+              <p class="muted" style="font-size:14px">${esc(t('friends.linkSignIn', { name: username }))}</p>`);
+            return;
+        }
+        if (p.username.toLowerCase() === username.toLowerCase()) {
+            toast(t('friends.linkSelf'));
+            return;
+        }
+        const m = sheet(`
+          <h2 class="serif" style="font-size:22px">${esc(t('friends.linkConfirmTitle', { name: username }))}</h2>
+          <p class="muted" style="font-size:14px">${esc(t('friends.linkConfirmText', { name: username }))}</p>
+          <button type="button" class="btn primary block" id="fr-link-send">${esc(t('friends.linkSend'))}</button>`);
+        const sendBtn = m.querySelector('#fr-link-send');
+        if (sendBtn) sendBtn.addEventListener('click', async () => {
+            sendBtn.disabled = true;
+            try {
+                await o.sendFriendRequest(username);
+                m.remove();
+                toast(t('friends.requestSent', { name: username }));
+                if ($('profile-screen') && $('profile-screen').classList.contains('active')) renderProfile();
+            } catch (e) {
+                sendBtn.disabled = false;
+                toast(errText(e));
+            }
+        });
+    }
+
     // ─── start ────────────────────────────────────────────────────────────
     function init() {
         window.CircI18n.apply();
@@ -1540,6 +2101,20 @@
             history.replaceState(history.state, '', location.pathname);
             joinByCode(code);
         }
+
+        // friend links (?friend=<username>) & score challenge notifications (?friends=1)
+        try {
+            const curUrl = new URL(location.href);
+            const friendUser = (curUrl.searchParams.get('friend') || '').trim();
+            const hasFriendsFlag = curUrl.searchParams.has('friends');
+            if (friendUser || hasFriendsFlag) {
+                curUrl.searchParams.delete('friend');
+                curUrl.searchParams.delete('friends');
+                const clean = curUrl.pathname + (curUrl.searchParams.toString() ? '?' + curUrl.searchParams.toString() : '') + (curUrl.hash || '');
+                if (window.history && history.replaceState) history.replaceState(history.state, '', clean);
+            }
+            if (friendUser && o && FEATURES.friends) handleFriendLink(friendUser, o);
+        } catch (e) { /* ignore */ }
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

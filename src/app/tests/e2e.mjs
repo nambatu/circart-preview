@@ -97,7 +97,7 @@ try {
     if (pos === 1) ok(await ana.evaluate(() => { const e = document.querySelector('.go-sticky #go-bar'); return !!e && getComputedStyle(e.closest('.go-sticky')).position === 'sticky'; }), "countdown bar sits in a sticky header");
     const r = await right(gid, pos);
     await ana.click(`[data-gap="${r.slot}"]`);
-    await ben.click(`[data-gap="${r.slot === 0 ? r.n : 0}"]`);
+    if (pos !== 2) await ben.click(`[data-gap="${r.slot === 0 ? r.n : 0}"]`);
     await waitText(ana, 'Who made it?');
     if (pos === 1) { ok((await text(ana)).includes('Locked in'), "live: 'Locked in', result kept secret, artist question"); await shot(ana, '3-locked'); }
     const opts = await ana.$$eval('[data-artist]', bs => bs.map(b => b.dataset.artist));
@@ -106,6 +106,18 @@ try {
     await ana.click(`[data-artist="${artist.replace(/"/g, '\\"')}"]`);
     if (pos === 1) ok((await ana.$$('[data-movement]')).length === 4 || (await ana.$$('[data-movement]')).length === 0, "movement question: 4 options (or none for this card)");
     await clickIf(ana, '[data-act="skip"]');
+    if (pos === 2) {
+      await ana.waitForSelector('.lw-crowd');
+      ok(await ana.isVisible('.lw-art img') && (await ana.textContent('.lw-crowd')).includes('Locked guesses so far'),
+         "live waiting (task 32): painting stays visible and crowd timeline renders after locking in");
+      await ana.waitForSelector('[data-call-seat][data-call-ok="0"]');
+      await ana.click('[data-call-seat][data-call-ok="0"]');
+      await ana.click('[data-react-emoji="🎨"]');
+      await ana.waitForSelector('.lw-feed-item');
+      ok((await ana.textContent('.lw-feed')).includes('🎨'), "live waiting (task 32): emoji reaction appears in live feed");
+      await shot(ana, 'w2-live-waiting-light');
+      await ben.click(`[data-gap="${r.slot === 0 ? r.n : 0}"]`);
+    }
     await clickIf(ben, '[data-act="skip"]');
     await waitText(ana, 'Where everyone placed it', 8000); await waitText(ben, 'Where everyone placed it', 8000);
     if (pos === 1) {
@@ -113,7 +125,13 @@ try {
       ok(ta.includes('Picture perfect!') && tb.includes('Back to the drawing board'), "reveal: Ana all right, Ben not");
       ok(tb.includes('Your guess') && !ta.includes('Your guess'), "reveal: a wrong card shows where it was placed and where it belongs");
       ok(/✓/.test(ta) && /Next card in/.test(ta), "reveal: right gap marked, countdown to the next card");
+      ok((await ana.locator('.rr-row').count()) === 2, "reveal (task 32): per-player round breakdown shown");
       await shot(ana, '4-reveal'); await shot(ben, '4-reveal-dark');
+    }
+    if (pos === 2) {
+      ok((await ana.locator('.rr-call-pill').count()) >= 1 && (await text(ana)).includes('25'),
+         "reveal (task 32): accurate Call-It awards +25 bonus pill");
+      await shot(ben, 'w2-live-reveal-dark');
     }
   }
   await waitText(ana, 'Game over', 15000); await waitText(ben, 'Game over', 8000);
@@ -809,6 +827,55 @@ try {
   await dora.keyboard.press('Escape');
   await dora.evaluate(() => document.querySelectorAll('body > .modal').forEach(m => m.remove()));
   await shot(dora, 'w1-profile-history-light');
+
+  console.log("\nwave 2: friends, friends leaderboards, friend profile + badges & direct async invites");
+  await run(() => db.query(`update profiles set username = 'ana_1', is_guest = false where id = $1`, [users.ana]));
+  await ana.goto('http://localhost:8772/?as=ana'); await homeReady(ana);
+  await ana.click('.tabbar [data-tab="profile"]');
+  await ana.waitForSelector('#pf-friend-add');
+  await ana.fill('#pf-friend-add', 'dora_2');
+  await ana.click('#pf-friend-submit');
+  await ana.waitForFunction(() => (document.getElementById('pf-friends') || {}).innerText.includes('dora_2'));
+  ok(true, "friends (task 33): Ana sends friend request to dora_2");
+
+  await dora.click('.tabbar [data-tab="profile"]');
+  await dora.waitForSelector('[data-fr-acc="ana_1"]');
+  await dora.click('[data-fr-acc="ana_1"]');
+  await dora.waitForSelector('[data-fr-open="ana_1"]');
+  await dora.locator('#pf-friends').scrollIntoViewIfNeeded();
+  await shot(dora, 'w2-friends-profile-light');
+  await dora.click('[data-fr-open="ana_1"]');
+  await dora.waitForSelector('body > .modal .modal-content');
+  const frModalTxt = await dora.textContent('body > .modal .modal-content');
+  ok(frModalTxt.includes('ana_1') && (await dora.locator('body > .modal .hist-row').count()) === 0,
+     "friends (task 33): tapping friend opens read-only stats & badges sheet with zero play history");
+  await dora.keyboard.press('Escape');
+  await dora.evaluate(() => document.querySelectorAll('body > .modal').forEach(m => m.remove()));
+
+  await dora.click('.tabbar [data-tab="ranks"]');
+  await dora.waitForSelector('[data-rscope="friends"]');
+  await dora.click('[data-rscope="friends"]');
+  await dora.waitForFunction(() => (document.getElementById('ranks-board') || {}).innerText.includes('dora_2'));
+  ok(true, "ranks (task 33): Friends filter scopes leaderboard cleanly");
+
+  await dora.click('.tabbar [data-tab="play"]'); await homeReady(dora);
+  await dora.click('#home-friends');
+  await dora.waitForSelector('#fs-direct [data-inv-friend="ana_1"]');
+  await dora.click('#fs-direct [data-inv-friend="ana_1"]');
+  await dora.click('[data-send-inv]');
+  await dora.waitForSelector('#game-online-screen.active');
+  ok(true, "invites (task 44): Dora sends direct async invite to Ana");
+
+  const anaDark = await page('ana', 'dark');
+  await anaDark.goto('http://localhost:8772/?as=ana'); await homeReady(anaDark);
+  await anaDark.waitForSelector('#home-invites [data-inv-accept]');
+  await anaDark.locator('#home-invites').scrollIntoViewIfNeeded();
+  await shot(anaDark, 'w2-home-invite-dark');
+  await anaDark.click('#home-invites [data-inv-accept]');
+  await anaDark.waitForSelector('#game-online-screen.active');
+  await waitText(anaDark, 'Turn 1');
+  ok((await text(anaDark)).toLowerCase().includes('start'), "invites (task 44): accepting invite auto-starts the async game");
+  await anaDark.close();
 
   ok(errs.length === 0, "no script errors" + (errs.length ? ': ' + errs.join(' | ') : ''));
 } catch (e) { console.log("  ✗ " + e.message.split('\n')[0]); fails++; }

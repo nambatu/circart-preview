@@ -21,6 +21,8 @@
         return /^https?:/i.test(s) ? '' : s;
     };
 
+    const REACTIONS = ['🎨', '👏', '😮', '😅', '🔥'];
+
     let G = null;          // the open game: { id, st, card, answer, picked, rev, ... }
     let unwatch = null;
     let tick = null;       // countdown interval
@@ -32,7 +34,8 @@
     function open(id, extra) {
         close(true);
         G = { id, st: null, card: null, answer: null, picked: false, rev: null, revFor: null, wantCard: false,
-              challengeNo: extra && extra.challengeNo, prevBest: extra ? extra.prevBest : undefined, board: null, results: null, rematch: null, sel: {}, bonusRes: null };
+              challengeNo: extra && extra.challengeNo, prevBest: extra ? extra.prevBest : undefined, board: null, results: null, rematch: null, sel: {}, bonusRes: null,
+              liveData: null, liveTurn: null, revResults: null, revResultsTurn: null, asyncPrevResults: null, asyncPrevTurn: null, triviaOpen: true, triviaTurn: null };
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         $('game-online-screen').classList.add('active');
         $('go-body').innerHTML = `<p class="muted" style="padding:2rem;text-align:center">…</p>`;
@@ -259,13 +262,16 @@
 
             // a new live round or async turn: forget the previous card and any stale reveal
             if (live && st.phase !== 'reveal') {
-                cur.rev = null; cur.revFor = null;
+                cur.rev = null; cur.revFor = null; cur.revResults = null; cur.revResultsTurn = null;
             }
             if (live && cur.card && cur.cardTurn !== st.current_turn) {
                 cur.card = null;
             }
-            if (cur.answer && live && (st.phase === 'play' || st.phase === 'reveal') && cur.answer.turn !== st.current_turn) {
-                cur.answer = null; cur.card = null; cur.picked = false; cur.sel = {}; cur.bonusRes = null;
+            if (live && cur.liveTurn != null && cur.liveTurn !== st.current_turn) {
+                cur.liveData = null; cur.liveTurn = null;
+            }
+            if (cur.answer && live && (st.phase === 'play' || st.phase === 'waiting' || st.phase === 'reveal') && cur.answer.turn !== st.current_turn) {
+                cur.answer = null; cur.card = null; cur.picked = false; cur.sel = {}; cur.bonusRes = null; cur.liveData = null; cur.liveTurn = null;
             }
             if (live && st.phase === 'reveal' && cur.revFor !== st.current_turn) {
                 cur.answer = null; cur.card = null;
@@ -279,12 +285,51 @@
                     cur.rev = null;
                 }
             }
+            if (live && st.phase === 'reveal') cur.answer = null;
+            if (live && st.phase === 'reveal' && cur.rev && typeof O().roundResults === 'function') {
+                try {
+                    const rr = await O().roundResults(cur.id, st.current_turn);
+                    if (G !== cur) return;
+                    if (rr) { cur.revResults = rr; cur.revResultsTurn = st.current_turn; }
+                } catch (e) {
+                    if (G !== cur) return;
+                }
+            }
             // live deals the card to everyone at once; async waits for "Ready"
             if (st.phase === 'play' && !cur.answer && (!cur.card || cur.card.wait) && (live || cur.wantCard)) {
                 const card = await O().nextCard(cur.id);
                 if (G !== cur) return;
                 cur.card = card;
                 cur.cardTurn = st.current_turn;
+            }
+            // live waiting room data: only fetched after lock-in (or on reload in waiting phase)
+            if (live && ((st.phase === 'waiting' && (!cur.answer || cur.picked)) || (st.phase === 'play' && cur.answer && cur.picked)) && typeof O().roundLive === 'function') {
+                try {
+                    const ld = await O().roundLive(cur.id);
+                    if (G !== cur) return;
+                    if (ld && (ld.turn == null || ld.turn === st.current_turn)) {
+                        cur.liveData = ld;
+                        cur.liveTurn = st.current_turn;
+                    }
+                } catch (e) {
+                    if (G !== cur) return;
+                }
+            }
+            // async: lazily load previous closed turn results for ready/waiting screens
+            if (st.kind === 'async' && (st.current_turn > 1 || st.phase === 'waiting')) {
+                const asyncPrevTurn = st.phase === 'waiting' && st.turn_closed ? st.current_turn : st.current_turn - 1;
+                if (asyncPrevTurn >= 1 && typeof O().roundResults === 'function' && cur.asyncPrevTurn !== asyncPrevTurn) {
+                    cur.asyncPrevTurn = asyncPrevTurn;
+                    cur.asyncPrevResults = null;
+                    try {
+                        const prev = await O().roundResults(cur.id, asyncPrevTurn);
+                        if (G !== cur) return;
+                        cur.asyncPrevResults = prev || null;
+                    } catch (e) {
+                        if (G !== cur) return;
+                        cur.asyncPrevResults = null;
+                    }
+                }
             }
             if ((st.kind === 'live' || st.kind === 'async') && (st.phase === 'lobby' || !cur.opts)) {
                 try {
@@ -360,7 +405,7 @@
         if (st.phase === 'play' && cur.card && cur.card.ends_at && !cur.answer && timed()) due = cur.card.ends_at;
         else if (cur.answer && !cur.picked && cur.answer.bonusEnds && st.kind !== 'live') { due = new Date(cur.answer.bonusEnds).toISOString(); bonusDue = true; }
         else if (st.phase === 'reveal') due = st.next_round_at;
-        else if (live && st.phase === 'waiting') due = st.turn_deadline;
+        else if (live && (st.phase === 'waiting' || (st.phase === 'play' && cur.answer))) due = st.turn_deadline;
         if (due) {
             tick = setInterval(() => {
                 if (G !== cur) { clearInterval(tick); return; }
@@ -372,9 +417,10 @@
                 if (ms <= 0) { clearInterval(tick); if (bonusDue) pick(); else setTimeout(() => { if (G === cur) refresh(); }, 400); }   // bonus time up: send what's picked
             }, 200);
         }
-        // realtime is primary; this catches a dropped connection
+        // realtime is primary; this catches a dropped connection (2.5s while on the live waiting room)
+        const liveWaiting = live && (st.phase === 'waiting' || (st.phase === 'play' && !!cur.answer));
         const pollIfVisible = () => { if (G === cur && !document.hidden) refresh(); };    // no requests while the app is in the background
-        if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(pollIfVisible, live ? 4000 : 30000);
+        if (['lobby', 'play', 'waiting', 'reveal'].includes(st.phase)) poll = setInterval(pollIfVisible, liveWaiting ? 2500 : live ? 4000 : 30000);
         else if (st.phase === 'finished' && st.kind !== 'daily' && st.kind !== 'run') poll = setInterval(pollIfVisible, 10000);   // a rematch may appear
     }
 
@@ -401,6 +447,8 @@
             if (!G.picked && body.dataset.pickFor === key) {
                 const n = $('go-answered');
                 if (n && st.kind === 'live') n.textContent = answeredLine();
+                const lp = st.kind === 'live' ? body.querySelector('.lw-players') : null;
+                if (lp) lp.innerHTML = livePlayersInner(false);
                 return;
             }
             body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult();
@@ -550,6 +598,7 @@
             <button class="btn primary block" data-act="ready">${esc(t('game.startTurn', { n: st.current_turn }))}</button></section>
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
+          ${G.asyncPrevResults ? lastTurnPanel(G.asyncPrevResults) : ''}
         </div>`;
     }
 
@@ -662,14 +711,201 @@
 
     const answeredLine = () => t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length });
 
+    function liveWaitingArt(ld) {
+        const src = (G.card && G.card.image_url) || (ld && ld.card && ld.card.image_url) || (ld && ld.image_url) || '';
+        const title = (G.card && G.card.title) || (ld && ld.card && ld.card.title) || '';
+        if (src) return `<div class="lw-art"><img class="zoomable-img" src="${esc(src)}" alt="${esc(t('game.artAlt'))}"></div>`;
+        if (title) return `<div class="lw-art"><div class="go-typo serif">${esc(title)}</div></div>`;
+        return '';
+    }
+
+    function livePlayersInner(allowCall) {
+        const ld = allowCall ? G.liveData : null;
+        const list = (ld && Array.isArray(ld.players) && ld.players.length ? ld.players : (G.st.players || [])).filter(p => !p.dropped);
+        const myCalls = (ld && ld.my_calls) || {};
+        const endIso = G.st.turn_deadline;
+        const secs = (timed() && endIso) ? Math.max(0, Math.ceil(left(endIso) / 1000)) : null;
+        const rawLm = t('live.lockedMark');
+        const rawTh = t('live.thinking');
+        return list.map(p => {
+            const isLocked = !!(p.locked || p.done_this_turn || (p.is_me && (G.picked || allowCall)));
+            if (isLocked) {
+                const lmText = rawLm.includes('{name}') ? t('live.lockedMark', { name: p.name }) : `✓ ${p.name}`;
+                const lmAria = rawLm.includes('{name}') ? lmText : `${p.name} · ${rawLm}`;
+                return `<span class="lw-pill locked" aria-label="${esc(lmAria)}">${esc(lmText)}</span>`;
+            }
+            const thText = rawTh.includes('{name}') ? t('live.thinking', { name: p.name }) : `${p.name} · ${rawTh}`;
+            const cd = secs != null ? ` <span class="lw-cd"><span data-countdown>${secs}</span>s</span>` : '';
+            const pill = `<span class="lw-pill thinking"><span class="lw-dot" aria-hidden="true"></span><span>${esc(thText)}</span>${cd}</span>`;
+            if (!allowCall || p.is_me || p.seat == null || typeof O().callIt !== 'function') return pill;
+            const saved = myCalls[String(p.seat)];
+            const hasSaved = saved !== undefined && saved !== null;
+            const pressedOk = hasSaved && (saved === true || saved === 1 || saved === '1');
+            const pressedBad = hasSaved && (saved === false || saved === 0 || saved === '0');
+            const prompt = t('live.callPrompt', { name: p.name });
+            return `<div class="lw-player">${pill}<span class="lw-call" role="group" aria-label="${esc(prompt)}">
+              <span class="lw-call-label note">${esc(prompt)}</span>
+              <button type="button" class="chip lw-call-btn" data-call-seat="${esc(p.seat)}" data-call-ok="1" aria-pressed="${pressedOk}">${esc(t('live.callRight'))}</button>
+              <button type="button" class="chip lw-call-btn" data-call-seat="${esc(p.seat)}" data-call-ok="0" aria-pressed="${pressedBad}">${esc(t('live.callWrong'))}</button>
+            </span></div>`;
+        }).join('');
+    }
+
+    function livePlayersBlock(allowCall) {
+        const inner = livePlayersInner(allowCall);
+        return inner ? `<div class="lw-players">${inner}</div>` : '';
+    }
+
+    function slotInitials(ld, slotIdx) {
+        if (ld.slot_players && Array.isArray(ld.slot_players[String(slotIdx)])) {
+            return ld.slot_players[String(slotIdx)].map(x => typeof x === 'string' ? x : (x.initials || (x.name || '?').trim().slice(0, 1).toUpperCase()));
+        }
+        return (ld.players || [])
+            .filter(p => (p.locked || p.done_this_turn) && p.slot != null && Number(p.slot) === slotIdx)
+            .map(p => p.initials || (p.name || '?').trim().slice(0, 1).toUpperCase());
+    }
+
+    function crowdHeatBlock(ld, picked) {
+        if (!picked || !ld || !Array.isArray(ld.timeline_years) || !ld.timeline_years.length) return '';
+        const lockedCount = ld.locked_count != null ? ld.locked_count : (Array.isArray(ld.players) ? ld.players.filter(p => p.locked).length : 0);
+        if (!(lockedCount >= 1)) return '';
+        const ys = ld.timeline_years, n = ys.length;
+        const counts = ld.slot_counts || {};
+        const activeTotal = (ld.players || G.st.players || []).filter(p => !p.dropped).length || lockedCount;
+        const slotTotal = Object.values(counts).reduce((a, b) => a + (Number(b) || 0), 0);
+        const denom = Math.max(1, slotTotal || lockedCount);
+        const mySlot = ld.my_slot != null ? Number(ld.my_slot) : (G.answer && G.answer.slot != null ? Number(G.answer.slot) : null);
+        let rows = '';
+        for (let i = n; i >= 0; i--) {
+            const label = i === 0 ? t('game.before', { y: ys[0] }) : i === n ? t('game.after', { y: ys[n - 1] }) : `${ys[i - 1]} – ${ys[i]}`;
+            const k = Number(counts[String(i)] || 0);
+            const pct = Math.round(100 * k / denom);
+            const badges = slotInitials(ld, i);
+            rows += `<div class="lw-crowd-row${mySlot === i ? ' mine' : ''}">
+              <span class="lw-crowd-label">${esc(label)}</span>
+              <span class="go-dbar lw-bar"><span style="width:${pct}%"></span></span>
+              <span class="lw-initials">${badges.map(b => `<span class="lw-init">${esc(b)}</span>`).join('')}</span>
+            </div>`;
+        }
+        return `<section class="panel lw-crowd">
+          <div class="row" style="justify-content:space-between;align-items:baseline">
+            <b class="label" style="margin:0">${esc(t('live.crowdTitle'))}</b>
+            <span class="note">${esc(t('live.crowdCount', { n: lockedCount, total: activeTotal, count: lockedCount, locked: lockedCount }))}</span>
+          </div>
+          <div class="lw-crowd-rows">${rows}</div>
+        </section>`;
+    }
+
+    function lookCloserBlock(ld, picked) {
+        const trivia = picked && ld ? de(ld, 'trivia') : '';
+        if (!trivia) return '';
+        if (G.triviaTurn !== G.st.current_turn) { G.triviaTurn = G.st.current_turn; G.triviaOpen = true; }
+        return `<details class="panel lw-trivia"${G.triviaOpen !== false ? ' open' : ''}><summary>${esc(t('live.lookCloser'))}</summary><p>${esc(trivia)}</p></details>`;
+    }
+
+    function reactionsBlock(data) {
+        if (!G.st || G.st.kind !== 'live' || typeof O().sendReaction !== 'function') return '';
+        const rawList = (data && Array.isArray(data.reactions)) ? data.reactions : [];
+        const opts = rawList.filter(r => r._opt);
+        const srv = rawList.filter(r => !r._opt);
+        const srvOrdered = (srv.length > 1 && srv[0].id == null) ? srv.slice().reverse() : srv;
+        const list = [...opts, ...srvOrdered].slice(0, 8);
+        const feed = list.length ? `<div class="lw-feed">${list.map(r => {
+            const sender = r.name || r.player_name || r.display_name || r.from || '';
+            return `<span class="lw-feed-item${r.is_me ? ' me' : ''}">${esc(r.emoji || '')}${sender ? ` <small>${esc(sender)}</small>` : ''}</span>`;
+        }).join('')}</div>` : '';
+        return `<div class="lw-react-wrap">
+          <div class="lw-react-bar" role="group" aria-label="${esc(t('live.reactLabel'))}">
+            <span class="note lw-react-label">${esc(t('live.reactLabel'))}</span>
+            <div class="lw-react-btns">${REACTIONS.map(em => `<button type="button" class="lw-react-btn" data-react-emoji="${esc(em)}" aria-label="${esc(em)}">${esc(em)}</button>`).join('')}</div>
+          </div>
+          ${feed}
+        </div>`;
+    }
+
+    function bonusState(p, kind) {
+        const choiceKey = kind + '_choice', pickedKey = kind + '_picked', okKey = kind + '_correct';
+        if (choiceKey in p) return p[choiceKey] != null ? (p[okKey] ? 'ok' : 'bad') : null;
+        if (pickedKey in p) return p[pickedKey] ? (p[okKey] ? 'ok' : 'bad') : null;
+        if (typeof p[okKey] === 'boolean') {
+            if (p[okKey]) return 'ok';
+            const optOn = kind === 'artist' ? (!G.opts || G.opts.artist_bonus !== false) : (!G.opts || G.opts.movement_bonus !== false);
+            return (!p.timed_out && optOn) ? 'bad' : null;
+        }
+        return null;
+    }
+
+    function roundResultsBlock(rr, isAsync) {
+        if (!rr) return '';
+        const cards = (Array.isArray(rr.cards) && rr.cards.length) ? rr.cards
+            : (Array.isArray(rr.players) && rr.players.length) ? [{ card: rr.card || null, title: rr.title, year: rr.year, players: rr.players }]
+            : (Array.isArray(rr.results) && rr.results.length) ? [{ card: rr.card || null, title: rr.title, year: rr.year, players: rr.results }]
+            : [];
+        if (!cards.length) return '';
+        const cbRaw = t('live.callBonus');
+        const body = cards.map(c => {
+            const rows = Array.isArray(c.players) ? c.players : Array.isArray(c.answers) ? c.answers : Array.isArray(c.results) ? c.results : (Array.isArray(rr.players) ? rr.players : []);
+            if (!rows.length) return '';
+            const info = c.card || c;
+            const cTitle = info.title || '';
+            const cYear = info.year != null ? info.year : '';
+            const head = (isAsync || cards.length > 1) && (cTitle || cYear !== '')
+                ? `<div class="rr-card-head">${cYear !== '' ? `<b class="serif">${esc(cYear)}</b>` : ''}<span>${esc(cTitle)}</span></div>`
+                : '';
+            const listHtml = rows.map(p => {
+                const name = p.name || p.display_name || '?';
+                const topP = (!isAsync && Array.isArray(rr.players))
+                    ? rr.players.find(x => (p.seat != null && x.seat === p.seat) || (p.is_me && x.is_me) || (p.name && x.name === p.name))
+                    : null;
+                const callBonus = Number((p.call_bonus != null ? p.call_bonus : topP && topP.call_bonus) || 0);
+                const pts = Number(p.points || 0);
+                const aSt = bonusState(p, 'artist');
+                const mSt = bonusState(p, 'movement');
+                const placeMark = p.timed_out
+                    ? `<span class="rr-mark bad">${esc(t('live.timedOutShort'))}</span>`
+                    : p.correct
+                        ? `<span class="rr-mark ok">✓</span>`
+                        : `<span class="rr-mark bad">✗</span>`;
+                const cbText = cbRaw.includes('{')
+                    ? t('live.callBonus', { n: callBonus, pts: callBonus, points: callBonus })
+                    : (!/\d/.test(cbRaw) ? `+${callBonus} ${cbRaw}` : cbRaw);
+                return `<div class="rr-row${p.is_me ? ' me' : ''}">
+                  <span class="rr-name">${esc(name)}</span>
+                  <span class="rr-marks">${placeMark}${aSt ? `<span class="rr-mini ${aSt}" title="${esc(t('game.artistBonus'))}">🎨${aSt === 'ok' ? '✓' : '✗'}</span>` : ''}${mSt ? `<span class="rr-mini ${mSt}" title="${esc(t('game.movementBonus'))}">🖌️${mSt === 'ok' ? '✓' : '✗'}</span>` : ''}${callBonus > 0 ? `<span class="rr-call-pill">${esc(cbText)}</span>` : ''}</span>
+                  <span class="rr-pts">+${pts.toLocaleString()}</span>
+                </div>`;
+            }).join('');
+            return `<div class="rr-card">${head}<div class="rr-list">${listHtml}</div></div>`;
+        }).filter(Boolean).join('');
+        if (!body) return '';
+        if (isAsync) return body;
+        return `<section class="rr-section"><h2 class="label">${esc(t('live.roundBreakdown'))}</h2>${body}</section>`;
+    }
+
+    function lastTurnPanel(rr) {
+        const inner = roundResultsBlock(rr, true);
+        if (!inner) return '';
+        return `<details class="panel rr-prev"><summary>${esc(t('live.lastTurnBreakdown'))}</summary>${inner}</details>`;
+    }
+
     // live: you answered; the result comes when the round closes
     function viewLocked() {
         const a = G.answer;
+        const timedOut = !!(a && a.res && a.res.timed_out);
+        const picked = !!(G.picked || timedOut || (!a && G.st.phase === 'waiting' && G.liveData && G.liveData.me_locked !== false));
+        const ld = picked ? G.liveData : null;
+        const deadline = G.st.turn_deadline;
         return `<div class="page">
-          <h2 class="serif" style="font-size:26px">${esc(a.res.timed_out ? t('game.tooSlow') : t('game.locked'))}</h2>
-          ${a.res.timed_out ? '' : artistPicker()}
+          <h2 class="serif" style="font-size:26px">${esc(timedOut ? t('game.tooSlow') : t('game.locked'))}</h2>
+          ${!picked && a && !timedOut ? artistPicker() : ''}
+          ${picked ? liveWaitingArt(ld) : ''}
           <p class="muted"><span id="go-answered">${esc(answeredLine())}</span>
-            ${timed() ? `· <span data-countdown>${Math.ceil(left(G.st.turn_deadline) / 1000)}</span>s` : ''}</p>
+            ${timed() && deadline ? `· <span data-countdown>${Math.max(0, Math.ceil(left(deadline) / 1000))}</span>s` : ''}</p>
+          ${livePlayersBlock(picked)}
+          ${picked ? crowdHeatBlock(ld, picked) : ''}
+          ${picked ? lookCloserBlock(ld, picked) : ''}
+          ${picked ? reactionsBlock(ld) : ''}
+          ${picked && a && !timedOut ? artistPicker() : ''}
           ${standings(5)}
         </div>`;
     }
@@ -762,6 +998,8 @@
           ${m.timed_out && m.slot == null ? '' : yearBox(!!m.correct, rev.card && rev.card.year, rev.timeline_years, m.slot, rev.correct_slot)}
           ${cardStory(rev)}
           ${distribution(rev)}
+          ${roundResultsBlock(G.revResults, false)}
+          ${reactionsBlock(G.revResults)}
           <h2 class="label">${esc(t('game.afterCard', { n: rev.position }))}</h2>
           ${standings(5)}
           <p class="muted" style="text-align:center">${esc(G.st.current_turn >= G.st.turns ? t('game.finalIn') : t('game.nextIn'))} <span data-countdown>${Math.ceil(left(G.st.next_round_at) / 1000)}</span>s</p>
@@ -780,6 +1018,7 @@
           <section class="panel" style="padding:14px"><b>${esc(t('game.turnDone'))}</b>
             <p class="muted" style="font-size:14px">${esc(t('game.turnDoneText'))}</p></section>
           ${pushPrompt()}
+          ${G.asyncPrevResults ? lastTurnPanel(G.asyncPrevResults) : ''}
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
           ${st.timeline.length > 1 ? `<h2 class="label">${esc(t('game.timeline'))} · ${st.timeline.length}</h2>${timeline(false)}` : ''}
@@ -1063,6 +1302,59 @@
         else { await navigator.clipboard.writeText(text + '\n' + url); window.CircShell.toast(t('game.copiedResult')); }
     }
 
+    async function sendCall(seat, ok) {
+        const cur = G;
+        if (!cur || !cur.st || cur.st.kind !== 'live' || !O().callIt) return;
+        if (!(cur.picked || (!cur.answer && cur.st.phase === 'waiting'))) return;
+        const turn = cur.st.current_turn;
+        const pos = (cur.liveData && cur.liveData.position) || (cur.answer && cur.answer.position) || turn;
+        const key = String(seat);
+        const prevCalls = cur.liveData && cur.liveData.my_calls ? Object.assign({}, cur.liveData.my_calls) : {};
+        if (!cur.liveData) cur.liveData = {};
+        cur.liveData.my_calls = Object.assign({}, prevCalls, { [key]: ok });
+        draw();
+        try {
+            const res = await O().callIt(cur.id, pos, seat, ok);
+            if (G !== cur || !cur.st || cur.st.current_turn !== turn || !['play', 'waiting'].includes(cur.st.phase)) return;
+            if (res && res.my_calls && cur.liveData) cur.liveData.my_calls = res.my_calls;
+            refresh();
+        } catch (e) {
+            if (G !== cur) return;
+            if (cur.liveData) cur.liveData.my_calls = prevCalls;
+            draw();
+            window.CircShell.toast(e.message);
+        }
+    }
+
+    async function sendReact(emoji) {
+        const cur = G;
+        if (!cur || !cur.st || cur.st.kind !== 'live' || !O().sendReaction || !emoji) return;
+        if (cur.st.phase !== 'reveal' && !(cur.picked || (!cur.answer && cur.st.phase === 'waiting'))) return;
+        const turn = cur.st.current_turn;
+        const mePlayer = (cur.st.players || []).find(p => p.is_me);
+        const meName = (mePlayer && mePlayer.name) || '';
+        const targetKey = cur.st.phase === 'reveal' ? 'revResults' : 'liveData';
+        const hadObj = !!cur[targetKey];
+        const prevList = hadObj && Array.isArray(cur[targetKey].reactions) ? cur[targetKey].reactions.slice() : null;
+        if (!cur[targetKey]) cur[targetKey] = {};
+        cur[targetKey].reactions = [{ emoji, name: meName, is_me: true, _opt: true }, ...(prevList || [])].slice(0, 8);
+        draw();
+        try {
+            const res = await O().sendReaction(cur.id, emoji);
+            if (G !== cur || !cur.st || cur.st.current_turn !== turn) return;
+            if (res && Array.isArray(res.reactions) && cur[targetKey]) cur[targetKey].reactions = res.reactions;
+            refresh();
+        } catch (e) {
+            if (G !== cur) return;
+            if (cur[targetKey]) {
+                if (prevList) cur[targetKey].reactions = prevList;
+                else delete cur[targetKey].reactions;
+            }
+            draw();
+            window.CircShell.toast(e.message);
+        }
+    }
+
     // ─── actions ──────────────────────────────────────────────────────────
     function wire() {
         const body = $('go-body');
@@ -1071,6 +1363,9 @@
         body.querySelectorAll('[data-artist]').forEach(b => b.addEventListener('click', () => choose('artist', b.dataset.artist)));
         body.querySelectorAll('[data-movement]').forEach(b => b.addEventListener('click', () => choose('movement', b.dataset.movement)));
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
+        body.querySelectorAll('[data-call-seat][data-call-ok]').forEach(b => b.addEventListener('click', () => sendCall(Number(b.dataset.callSeat), b.dataset.callOk === '1')));
+        body.querySelectorAll('[data-react-emoji]').forEach(b => b.addEventListener('click', () => sendReact(b.dataset.reactEmoji)));
+        body.querySelectorAll('.lw-trivia').forEach(d => d.addEventListener('toggle', () => { if (G) G.triviaOpen = d.open; }));
         body.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', async () => {
             const cur = G;
             if (!cur) return;
@@ -1171,7 +1466,7 @@
                 movement_options: window.CircDealer.movementOptions(raw),
             };
             cur.answer = { position: cur.card.position, turn: cur.st.current_turn, res, slot, scoreBefore, bonusEnds: null, bonusTotal: 0 };
-            cur.picked = !hasBonus(res);
+            cur.picked = !hasBonus(res) || !!res.timed_out;
             cur.sel = {};
             cur.bonusRes = null;
             cur.rev = null;
@@ -1197,7 +1492,7 @@
             cur.answer = { position: cardPos, turn, res, slot, scoreBefore,
                          bonusEnds: kind !== 'live' && timed() && hasBonus(res) ? (kind === 'daily' && cardEndsAt ? new Date(cardEndsAt).getTime() : O().serverNow() + 19000) : null,
                          bonusTotal: kind === 'daily' && cardSeconds ? cardSeconds * 1000 : 19000 };
-            cur.picked = !hasBonus(res);
+            cur.picked = !hasBonus(res) || !!res.timed_out;
             cur.sel = {}; cur.bonusRes = null;
             cur.rev = null;
             if (kind !== 'live' && cur.picked) {
