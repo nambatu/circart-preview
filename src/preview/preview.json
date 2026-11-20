@@ -2,15 +2,14 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 20 Nov, 01:44",
+  "label": "Fri 20 Nov, 18:55",
   "changes": [
-    "Solo play and Card Packs now run on the same game screen and round flow as Daily and Games with Friends.",
-    "For each card you place the artwork on the timeline first, then lock in your artist and style choices before seeing the year and story.",
-    "Wrong cards still stay off your timeline in Solo, and your score counts 1 point per right answer with coloured squares and your full timeline at the end."
+    "Four new badges on your Profile: Daily Brushstroke (7/30/100 days in a row), Masterpiece (all cards right in a daily), Signature Spotter (100 artists named) and Photo Finish (won a game with friends by under 100 points).",
+    "Badges are worked out by the server from your games, so nobody can give themselves one."
   ],
   "test": [
-    "Start a 5-card Solo game and place one card wrong to make sure it stays off your timeline, then change your mind on an artist or style before locking in.",
-    "Open an unlocked pack in Gallery and play a round to check that it uses the same game screen cleanly in both light and dark mode."
+    "Open Profile after some played games and look for the new badges next to the monthly medals (they appear only once earned).",
+    "Check the badge names and lines in German too."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

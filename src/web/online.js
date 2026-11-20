@@ -325,6 +325,7 @@
     const monthlyWinners     = month => rpc('monthly_winners', { p_month: month || null });
     // months where I made the top 3: [{month, title, rank, value}], newest first
     const myBadges           = () => rpc('my_badges');
+    const myAchievements     = () => rpc('my_achievements');
     // card packs: [{id, title, title_de, description(_de), unlock_text(_de), progress, needed, unlocked, new, cards}]
     const myPacks            = () => rpc('my_packs');
     // Gallery: {seen: [card ids met], correct: [card ids placed right at least once]}
@@ -419,7 +420,7 @@
         answer, reveal, myGames, watchGame,
         playDaily, dailySummary, dailyLeaderboard, monthlyLeaderboard, alltimeLeaderboard, myStats,
         myResults, rematch, rematchInfo, gameOptions, setGameOptions, pickBonus, startRun, runSummary,
-        monthlyWinners, myBadges, myPacks, myCollection, markPacksSeen, exportMyData,
+        monthlyWinners, myBadges, myAchievements, myPacks, myCollection, markPacksSeen, exportMyData,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
         previewTestPush: () => rpc('preview_test_push'),       // preview builds only
         dailyStory,

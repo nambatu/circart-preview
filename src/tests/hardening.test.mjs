@@ -108,5 +108,18 @@ console.log("025: my_collection");
   ok(none.seen.length === 0 && none.correct.length === 0, "a new player has nothing, others' games don't leak");
 }
 
+console.log("028: my_achievements");
+{
+  await signUp("ach"); await signUp("ach2");
+  const none = await call("ach", "my_achievements");
+  ok(Array.isArray(none) && none.length === 0, "a new player has no achievements");
+  const g = (await db.query(`insert into games (kind, status, host_id, card_count, cards_per_turn, max_players) values ('async','finished',$1,10,1,4) returning id`, [users.ach])).rows[0].id;
+  await db.query(`insert into game_players (game_id, player_id, display_name, score, answered, correct, artists_named, final_rank)
+    values ($1,$2,'a',950,10,6,120,1), ($1,$3,'b',900,10,5,0,2)`, [g, users.ach, users.ach2]);
+  const got = (await call("ach", "my_achievements")).map(x => x.key);
+  ok(got.includes("photo_finish") && got.includes("signature_spotter"), "photo finish + signature spotter computed from games");
+  ok(!got.includes("perfect_daily") && !(await call("ach2", "my_achievements")).some(x => x.key === "photo_finish"), "no badge without the deed");
+}
+
 console.log(failures ? `\nFAILED: ${failures}` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

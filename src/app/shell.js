@@ -679,11 +679,17 @@
                    <button id="pf-delete" class="danger"><span>${esc(deleteArmed ? t('profile.deleteConfirm') : t('profile.delete'))}</span></button>` : ''}
           </section>`;
         wireProfile(o);
-        if (u && o.myBadges) o.myBadges().then(bs => {
+        if (u && o.myBadges) Promise.all([o.myBadges().catch(() => []), o.myAchievements ? o.myAchievements().catch(() => []) : []]).then(([bs, ach]) => {
             const el = $('pf-badges');
-            if (!el || !bs || !bs.length) return;
+            bs = bs || []; ach = ach || [];
+            if (!el || (!bs.length && !ach.length)) return;
+            const ICONS = { daily_streak: '🔥', perfect_daily: '🖼️', signature_spotter: '✍️', photo_finish: '📸' };
+            // streak badges come in tiers (7 / 30 / 100): show only the highest
+            const top = ach.filter(a => a.key !== 'daily_streak' || !ach.some(x => x.key === 'daily_streak' && x.tier > a.tier));
             el.innerHTML = `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
               <h2 class="label">${esc(t('profile.badges'))}</h2>
+              ${top.map(a => `<div class="badge-row"><span class="medal">${ICONS[a.key] || '🏅'}</span>
+                <span><b>${esc(t('badge.' + a.key + '.name'))}</b><br><span class="note">${esc(t('badge.' + a.key + '.line', { n: a.tier }))}</span></span></div>`).join('')}
               ${bs.map(b => `<div class="badge-row"><span class="medal">${MEDALS[b.rank - 1] || '🏅'}</span>
                 <span><b>${esc(monthLabel(b.month))}</b> · ${esc(de(b, 'title'))}<br><span class="note">${esc(t('profile.badgeLine', { rank: b.rank, score: Number(b.value).toLocaleString() }))}</span></span></div>`).join('')}
             </section>`;
