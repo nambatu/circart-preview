@@ -2,12 +2,16 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 20 Nov, 20:05",
+  "label": "Fri 20 Nov, 21:30",
   "changes": [
-    "The \"Play again (test version only)\" button is gone from the daily result screen."
+    "After placing a card you see no right or wrong until you lock in artist and style, and tapping answers no longer redraws the screen.",
+    "After lock-in one headline sums up the card (Picture perfect, Almost a masterpiece, A good first sketch, Back to the drawing board) and a year box says if the spot was right.",
+    "If the spot was wrong, the year box shows where you put the card and where it belongs, for example \"just one card off\"."
   ],
   "test": [
-    "Finish a daily and check that only the normal buttons are left."
+    "Place a card, then tap different artists and styles: nothing flashes and nothing jumps.",
+    "Place a card one spot too early or too late and look at the year box after locking in.",
+    "Get the year right but one bonus wrong and check the amber headline."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

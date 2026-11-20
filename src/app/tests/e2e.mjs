@@ -110,7 +110,8 @@ try {
     await waitText(ana, 'Where everyone placed it', 8000); await waitText(ben, 'Where everyone placed it', 8000);
     if (pos === 1) {
       const ta = await text(ana), tb = await text(ben);
-      ok(ta.includes('Correct!') && tb.includes('Not quite'), "reveal: Ana correct, Ben not");
+      ok(ta.includes('Picture perfect!') && tb.includes('Back to the drawing board'), "reveal: Ana all right, Ben not");
+      ok(tb.includes('Your guess') && !ta.includes('Your guess'), "reveal: a wrong card shows where it was placed and where it belongs");
       ok(/✓/.test(ta) && /Next card in/.test(ta), "reveal: right gap marked, countdown to the next card");
       await shot(ana, '4-reveal'); await shot(ben, '4-reveal-dark');
     }
@@ -160,7 +161,7 @@ try {
     await ana.click(`[data-gap="${k === 1 ? (r.slot === 0 ? r.n : 0) : r.slot}"]`);
     await waitText(ana, 'Who made it?');
     if (k === 0) {
-      ok((await text(ana)).includes('Correct!'), "async: own result straight away");
+      ok((await text(ana)).includes('Card placed') && !(await ana.$('.go-verdict')) && !(await ana.$('.go-flash')), "async: no verdict, no flash before lock-in");
       ok(!(await ana.$('.go-timer')) || !(await ana.isVisible('.go-timer')), "timer off: no countdown");
       ok(await ana.evaluate(() => { const e = document.querySelector('.go-sticky'); return !e || getComputedStyle(e).position === 'sticky'; }), "countdown bar (when there is one) is sticky");
       ok(await ana.isVisible('.go-bonus-art'), "the painting stays visible next to the questions");
@@ -168,7 +169,9 @@ try {
       const realA = await run(async () => (await db.query(`select c.artist from game_cards gc join cards c on c.id=gc.card_id where gc.game_id=$1 and gc.position=$2`, [gid2, pos])).rows[0].artist);
       const wrongA = names.find(n => n !== realA);
       // watch the whole picking time: no right/wrong marker may appear, not even for a frame
-      await ana.evaluate(() => { window.__flash = 0; const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong')) window.__flash++; };
+      await ana.evaluate(() => { window.__flash = 0; const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong, .go-verdict, .go-flash')) window.__flash++; };
+        window.__rebuilt = 0; const pk = document.querySelector('#go-body .panel');
+        new MutationObserver(() => { if (pk && !pk.isConnected) window.__rebuilt++; }).observe(document.getElementById('go-body'), { childList: true });
         new MutationObserver(chk).observe(document.body, { subtree: true, childList: true, attributes: true }); });
       const other = names.find(n => n !== realA && n !== wrongA);
       await ana.click(`[data-artist="${wrongA.replace(/"/g, '\\"')}"]`); await ana.waitForTimeout(150);
@@ -177,19 +180,21 @@ try {
       ok(!(await ana.$('.go-pick.right, .go-pick.wrong')), "nothing shown as right or wrong while picking");
       await ana.click(`[data-artist="${wrongA.replace(/"/g, '\\"')}"]`);
       if (await ana.$('[data-movement]')) {
-        ok(!(await ana.$('[data-act="lock"]')), "no lock-in button until both are picked");
+        ok(!(await ana.isVisible('[data-act="lock"]')), "no lock-in button until both are picked");
         const mv = await ana.$$('[data-movement]'); await mv[0].click(); await ana.waitForTimeout(100); await (await ana.$$('[data-movement]'))[1].click();
-        ok(!!(await ana.$('[data-act="lock"]')), "lock-in button appears once both are picked");
+        ok(await ana.isVisible('[data-act="lock"]'), "lock-in button appears once both are picked");
+        ok(await ana.evaluate(() => window.__rebuilt) === 0, "tapping answers doesn't redraw the screen");
         await ana.click('[data-act="lock"]');
       } else await ana.click('[data-act="skip"]');
       ok(await ana.evaluate(() => window.__flash) === 0, "no right/wrong flash at any moment before lock-in");
       await waitText(ana, 'Next');
       ok(!!(await ana.$('.go-pick.right')) && !!(await ana.$('.go-pick.wrong')), "the right answer shows green and my wrong pick red");
-      await shot(ana, '7b-async-bonus');
+      await ana.waitForTimeout(1000); await shot(ana, '7b-async-bonus');
     } else await ana.click('[data-act="skip"]');
     await waitText(ana, 'Next');
     if (k === 0) { ok(/\d{4}/.test(await text(ana)), "then the card's year and story"); await shot(ana, '7-async-result'); }
-    if (k === 1) ok((await text(ana)).includes('Not quite'), "wrong placement shown");
+    if (k === 1) { const tx = await text(ana); ok(tx.includes('Back to the drawing board') && tx.includes('Your guess') && /cards? off/.test(tx), "wrong placement shown, with where I put it");
+      await ana.waitForTimeout(1000); await shot(ana, '7c-async-wrong'); }
     await ana.click('[data-act="next"]');
   }
   await waitText(ana, 'Turn done');
@@ -424,7 +429,7 @@ try {
       await p.click(`[data-gap="${slot}"]`);
       await p.waitForFunction(() => {
         const el = document.getElementById('go-body');
-        return el && /Correct!|Not quite/.test(el.innerText);
+        return el && !!el.querySelector('[data-act="lock"], [data-act="skip"], [data-act="next"]');
       });
       if (!isWrong) expectedScore += 1;
 
@@ -436,7 +441,7 @@ try {
         const ptsBefore = await readScore(p);
         await p.evaluate(() => {
           window.__flash = 0;
-          const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong')) window.__flash++; };
+          const chk = () => { if (document.querySelector('.go-pick.right, .go-pick.wrong, .go-verdict, .go-flash')) window.__flash++; };
           window.__obs = new MutationObserver(chk);
           window.__obs.observe(document.body, { subtree: true, childList: true, attributes: true });
         });
@@ -451,7 +456,7 @@ try {
           await p.click(`[data-artist="${attrEsc(wrongA)}"]`);
           await p.waitForTimeout(100);
           ok((await p.$$('[data-artist]')).length === aOpts.length, "solo bonus: artist answers stay changeable");
-          if (hasM) ok(!(await p.$('[data-act="lock"]')), "solo bonus: no lock-in button until all questions picked");
+          if (hasM) ok(!(await p.isVisible('[data-act="lock"]')), "solo bonus: no lock-in button until all questions picked");
           const targetA = aOpts.includes(card.artist) ? card.artist : (aOpts.find(a => a !== wrongA) || wrongA);
           await p.click(`[data-artist="${attrEsc(targetA)}"]`);
           await p.waitForTimeout(80);
@@ -475,7 +480,7 @@ try {
         }
 
         ok(!(await p.$('.go-pick.right, .go-pick.wrong')), "solo bonus: nothing shown as right or wrong before lock-in");
-        ok(!!(await p.$('[data-act="lock"]')), "solo bonus: lock-in button appears once all present questions picked");
+        ok(await p.isVisible('[data-act="lock"]'), "solo bonus: lock-in button appears once all present questions picked");
         await p.waitForTimeout(50);
         const flashBeforeLock = await p.evaluate(() => {
           if (window.__obs) window.__obs.disconnect();
@@ -488,8 +493,10 @@ try {
         if (pickedWrong) ok(!!(await p.$('.go-pick.wrong')), "solo bonus: wrong answer highlighted red after lock-in");
         const ptsAfter = await readScore(p);
         expectedScore += expectedBonus;
-        ok(ptsAfter === ptsBefore + expectedBonus, `solo bonus: score incremented by +${expectedBonus} (${ptsBefore} -> ${ptsAfter})`);
-        if (shotsPrefix) await shot(p, `solo-bonus-${shotsPrefix}`);
+        ok(ptsAfter === ptsBefore + 1 + expectedBonus, `solo bonus: the score shows the card only after lock-in, +${1 + expectedBonus} (${ptsBefore} -> ${ptsAfter})`);
+        ok(await p.$eval('.go-verdict', (e, cls) => e.classList.contains(cls), pickedWrong ? 'part' : 'ok'), "solo bonus: partly right gets its own verdict colour");
+        ok(!!(await p.$(".go-yearbox.ok")), "solo bonus: the year box says right spot");
+        if (shotsPrefix) { await p.waitForTimeout(1000); } if (shotsPrefix) await shot(p, `solo-bonus-${shotsPrefix}`);
       } else if (await p.$('[data-act="skip"]')) {
         await p.click('[data-act="skip"]');
       }
@@ -497,8 +504,8 @@ try {
       await p.waitForSelector('[data-act="next"]');
       if (isWrong) {
         const resTxt = await text(p);
-        ok(resTxt.includes('Not quite') && /stays off your timeline/i.test(resTxt) && resTxt.includes(String(card.year)),
-           "solo wrong card: shows 'Not quite', 'This one stays off your timeline', and year");
+        ok(/drawing board|first sketch|masterpiece/i.test(resTxt) && /stays off your timeline/i.test(resTxt) && resTxt.includes(String(card.year)) && resTxt.includes('Your guess'),
+           "solo wrong card: verdict, 'stays off your timeline', the year and where I put it");
         if (card.trivia) {
           const tr = await p.textContent('.go-trivia').catch(() => '');
           ok(tr.trim().length > 0, "solo wrong card: shows trivia");

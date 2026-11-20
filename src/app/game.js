@@ -163,7 +163,7 @@
                 G.answer = null; G.card = null;
                 try {
                     G.rev = await O().reveal(G.id, st.current_turn); G.revFor = st.current_turn;
-                    if (!G.rev.mine.timed_out || G.rev.mine.slot != null) feel(!!G.rev.mine.correct);
+                    if (!G.rev.mine.timed_out || G.rev.mine.slot != null) feel(liveGrade(G.rev.mine).level, !!G.rev.mine.correct);
                 } catch (e) { G.rev = null; }
             }
             // live deals the card to everyone at once; async waits for "Ready"
@@ -231,9 +231,22 @@
             : st.kind === 'daily' ? (G.challengeNo ? t('game.daily', { no: G.challengeNo }) : t('game.dailyShort'))
             : st.kind === 'run' ? t('run.short')
             : t('game.async');
-        $('go-score').textContent = (st.phase === 'lobby' || (st.kind === 'solo' && st.phase === 'finished')) ? '' : t('game.points', { n: st.me.score.toLocaleString() });
+        const shown = G.answer && !G.picked && G.answer.scoreBefore != null ? G.answer.scoreBefore : st.me.score;   // no hint before lock-in
+        $('go-score').textContent = (st.phase === 'lobby' || (st.kind === 'solo' && st.phase === 'finished')) ? '' : t('game.points', { n: shown.toLocaleString() });
         const body = $('go-body');
-        if (G.answer) return body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult(), wire();
+        if (G.answer) {
+            // while picking, polls and live updates must not rebuild the picker (it flickered on every update)
+            const key = G.answer.key || (G.answer.key = String(Math.random()).slice(2));   // one key per card answer
+            if (!G.picked && body.dataset.pickFor === key) {
+                const n = $('go-answered');
+                if (n && st.kind === 'live') n.textContent = answeredLine();
+                return;
+            }
+            body.innerHTML = st.kind === 'live' ? viewLocked() : viewResult();
+            if (G.picked) delete body.dataset.pickFor; else body.dataset.pickFor = key;
+            return wire();
+        }
+        delete body.dataset.pickFor;
         const view = {
             lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
             finished: () => (st.kind === 'solo' ? viewSoloDone() : st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
@@ -307,12 +320,15 @@
 
     // ─── feedback you can feel: a colour flash, a mark, a short buzz ──────
     // Android buzzes; iPhone browsers don't allow vibration, so it's visual there.
-    function feel(ok) {
-        try { if (navigator.vibrate) navigator.vibrate(ok ? 35 : [45, 70, 45]); } catch (e) { /* ignore */ }
+    // level: 'ok' (all right), 'part' (some right), 'bad' (none); true/false work too.
+    // The mark shows the year (✓ / ✗), the colour how the whole card went.
+    function feel(level, yearOk) {
+        const lv = level === true ? 'ok' : level === false ? 'bad' : level;
+        try { if (navigator.vibrate) navigator.vibrate(lv === 'ok' ? 35 : lv === 'part' ? [35, 60, 35] : [45, 70, 45]); } catch (e) { /* ignore */ }
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const f = document.createElement('div');
-        f.className = 'go-flash ' + (ok ? 'ok' : 'bad');
-        f.innerHTML = `<span>${ok ? '✓' : '✗'}</span>`;
+        f.className = 'go-flash ' + lv;
+        f.innerHTML = `<span>${(yearOk == null ? lv !== 'bad' : yearOk) ? '✓' : '✗'}</span>`;
         document.body.appendChild(f);
         setTimeout(() => f.remove(), 900);
     }
@@ -396,6 +412,45 @@
         </div>`;
     }
 
+    // ─── grading one card: year, artist and style together ───────────────
+    // Nothing is judged before lock-in; then every part gets its own ✓ / ✗ and
+    // the headline says how it went overall (all, most, some or none right).
+    function grade(r, b, asked) {
+        if (r.timed_out) return { key: 'tooSlow', level: 'bad', parts: [] };
+        const parts = [{ k: 'year', ok: !!r.correct }];
+        if (asked.artist) parts.push({ k: 'artist', ok: !!(b && b.artist_correct) });
+        if (asked.movement) parts.push({ k: 'style', ok: !!(b && b.movement_correct) });
+        const n = parts.filter(x => x.ok).length;
+        const key = n === parts.length ? 'perfect' : n === 0 ? 'none' : n === parts.length - 1 ? 'almost' : 'sketch';
+        return { key, level: n === parts.length ? 'ok' : n ? 'part' : 'bad', parts };
+    }
+    const verdictText = g => g.key === 'tooSlow' ? t('game.tooSlow') : t('game.v.' + g.key);
+    const verdictCls = g => g.level === 'ok' ? 'ok' : g.level === 'part' ? 'part' : 'bad';
+    function gradeNow() {
+        const r = G.answer.res;
+        return grade(r, G.bonusRes, { artist: !!opts(r, 'artist'), movement: !!opts(r, 'movement') });
+    }
+
+    // the year: right → one calm line; wrong → where I put it and where it belongs,
+    // on a short strip of my timeline (often it's only one card off)
+    function yearBox(ok, year, ys, mine, right) {
+        const y = `<b class="serif go-yb-year">${esc(year)}</b>`;
+        if (ok) return `<section class="go-yearbox ok">${y}<span>${esc(t('game.rightSpot'))}</span></section>`;
+        if (!Array.isArray(ys) || mine == null || right == null || mine === right) return year != null ? `<section class="go-yearbox bad">${y}</section>` : '';
+        const n = ys.length, d = Math.abs(mine - right);
+        const from = Math.max(0, Math.min(mine, right) - 1), to = Math.min(n, Math.max(mine, right) + 1);
+        let strip = from > 0 ? '<li class="go-ob-more">…</li>' : '';
+        for (let i = from; i <= to; i++) {
+            if (i === mine) strip += `<li class="go-ob-gap bad">${esc(t('game.yourGuess'))}</li>`;
+            if (i === right) strip += `<li class="go-ob-gap ok">${esc(year)}</li>`;
+            if (i < to) strip += `<li class="go-ob-year">${esc(ys[i])}</li>`;
+        }
+        if (to < n) strip += '<li class="go-ob-more">…</li>';
+        return `<section class="go-yearbox bad">
+          <div class="go-yb-top">${y}<span>${esc(d === 1 ? t('game.offByOne') : t('game.offBy', { n: d }))}</span></div>
+          <ol class="go-ob-strip" aria-hidden="true">${strip}</ol></section>`;
+    }
+
     // ─── bonus questions after placing: artist (+200) and movement (+100) ──
     // Tap one answer per question; when every question has one, it's sent.
     // "Skip" sends whatever is picked so far.
@@ -419,6 +474,11 @@
               : `<button class="go-pick ${cls(n)}" aria-pressed="${n === sel}" data-${kind}="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
     }
 
+    function readyToLock() {
+        const r = G.answer && G.answer.res;
+        return !!r && (!opts(r, 'artist') || !!G.sel.artist) && (!opts(r, 'movement') || !!G.sel.movement);
+    }
+
     function artistPicker() {
         const r = G.answer.res, a = opts(r, 'artist'), m = opts(r, 'movement');
         if (!a && !m) return '';
@@ -436,8 +496,10 @@
           ${res && res.closed ? `<p class="note">${esc(t('game.bonusClosed'))}</p>` : ''}
           ${a ? bonusRow('artist', t('game.whoPainted'), solo ? 1 : 200, a) : ''}
           ${m ? bonusRow('movement', t('game.whichMovement'), solo ? 1 : 100, m) : ''}
-          ${G.picked ? '' : `${(!a || G.sel.artist) && (!m || G.sel.movement) ? `<button class="btn primary block" data-act="lock">${esc(t('game.lockIn'))}</button>` : ''}<button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
+          ${G.picked ? '' : `<button class="btn primary block" data-act="lock"${readyToLock() ? '' : ' style="display:none"'}>${esc(t('game.lockIn'))}</button><button class="btn link" data-act="skip">${esc(t('game.skip'))}</button>`}</section>`;
     }
+
+    const answeredLine = () => t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length });
 
     // live: you answered; the result comes when the round closes
     function viewLocked() {
@@ -445,7 +507,7 @@
         return `<div class="page">
           <h2 class="serif" style="font-size:26px">${esc(a.res.timed_out ? t('game.tooSlow') : t('game.locked'))}</h2>
           ${a.res.timed_out ? '' : artistPicker()}
-          <p class="muted">${esc(t('game.answered', { n: G.st.players.filter(p => p.done_this_turn).length, total: G.st.players.filter(p => !p.dropped).length }))}
+          <p class="muted"><span id="go-answered">${esc(answeredLine())}</span>
             ${timed() ? `· <span data-countdown>${Math.ceil(left(G.st.turn_deadline) / 1000)}</span>s` : ''}</p>
           ${standings(5)}
         </div>`;
@@ -454,20 +516,29 @@
     // async / daily / run / solo: your own result right away, then the card's story
     function viewResult() {
         const a = G.answer, r = a.res, rev = G.rev, solo = G.st.kind === 'solo';
-        const verdict = r.timed_out ? t('game.tooSlow') : r.correct ? t('game.correct') : t('game.wrong');
+        if (!G.picked) {
+            // still choosing: no verdict, no points, no flash until lock-in
+            return `<div class="page">
+              <p class="muted">${esc(t('game.placedWait'))}</p>
+              ${artistPicker()}
+            </div>`;
+        }
+        const g = gradeNow();
         const aPts = solo ? 1 : 200, mPts = solo ? 1 : 100;
         const gained = (r.points || 0) + (rev && rev.mine.artist_correct ? aPts : 0) + (rev && rev.mine.movement_correct ? mPts : 0);
+        const ys = rev && rev.timeline_years, mine = rev && rev.mine && rev.mine.slot != null ? rev.mine.slot : a.slot;
         return `<div class="page">
-          <div class="row" style="justify-content:space-between">
-            <h2 class="serif go-verdict ${r.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
+          <div class="go-vhead">
+            <h2 class="serif go-verdict ${verdictCls(g)}">${esc(verdictText(g))}</h2>
             <b class="serif" style="font-size:26px">+${gained}</b></div>
           ${r.streak > 1 ? `<p class="note">${esc(t(solo ? 'solo.streak' : 'game.streak', { n: r.streak }))}</p>` : ''}
+          ${rev && !r.timed_out ? yearBox(!!r.correct, rev.card && rev.card.year, ys, mine, rev.correct_slot) : ''}
           ${solo && !r.correct ? `<p class="note">${esc(t('solo.droppedNote'))}</p>` : ''}
           ${G.st.kind === 'run' ? `<p class="note">${hearts(G.st)} ${!r.correct ? esc(G.st.status === 'finished' ? t('run.over') : t('run.lifeLost')) : ''}</p>` : ''}
           ${artistPicker()}
           ${rev ? cardStory(rev) : ''}
           ${rev && G.story ? chapterFor(a.position) : ''}
-          ${G.picked || !hasBonus(r) ? `<button class="btn primary block" data-act="next">${esc(((G.st.kind === 'daily' || solo) && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>` : ''}
+          <button class="btn primary block" data-act="next">${esc(((G.st.kind === 'daily' || solo) && a.position >= G.st.card_count) || (G.st.kind === 'run' && G.st.status === 'finished') ? t('game.results') : t('game.next'))}</button>
         </div>`;
     }
 
@@ -513,17 +584,21 @@
         return `<section><h2 class="label" style="margin-bottom:8px">${esc(t('game.whereEveryone'))}</h2><div class="go-dist">${rows}</div></section>`;
     }
 
+    // live: a skipped question can't be told apart from one that wasn't asked, so only answered ones count
+    const liveGrade = m => grade(m, m, { artist: !!m.artist_choice, movement: !!m.movement_choice });
+
     function viewReveal() {
         const rev = G.rev;
         if (!rev) return `<div class="page"><p class="muted">…</p></div>`;
         const m = rev.mine;
-        const verdict = m.timed_out ? t('game.tooSlow') : m.correct ? t('game.correct') : t('game.wrong');
+        const g = liveGrade(m);
         return `<div class="page">
-          <div class="row" style="justify-content:space-between">
-            <h2 class="serif go-verdict ${m.correct ? 'ok' : 'bad'}">${esc(verdict)}</h2>
+          <div class="go-vhead">
+            <h2 class="serif go-verdict ${verdictCls(g)}">${esc(verdictText(g))}</h2>
             <b class="serif" style="font-size:26px">+${m.points}</b></div>
           ${m.artist_choice ? `<p class="go-artline ${m.artist_correct ? 'ok' : 'bad'}">${esc(t('game.artistWas', { name: m.artist_choice }))} ${m.artist_correct ? '✓ +200' : '✗ · ' + esc(rev.card.artist)}</p>` : ''}
           ${m.movement_choice ? `<p class="go-artline ${m.movement_correct ? 'ok' : 'bad'}">${esc(t('game.movementWas', { name: m.movement_choice }))} ${m.movement_correct ? '✓ +100' : '✗ · ' + esc(rev.card.movement_group || '')}</p>` : ''}
+          ${m.timed_out && m.slot == null ? '' : yearBox(!!m.correct, rev.card && rev.card.year, rev.timeline_years, m.slot, rev.correct_slot)}
           ${cardStory(rev)}
           ${distribution(rev)}
           <h2 class="label">${esc(t('game.afterCard', { n: rev.position }))}</h2>
@@ -719,7 +794,9 @@
                 image_url: imgUrl(raw),
                 trivia: de(raw, 'trivia'),
             },
-            mine: { artist_correct: aOk, movement_correct: mOk },
+            mine: { artist_correct: aOk, movement_correct: mOk, slot: G.answer ? G.answer.slot : null },
+            timeline_years: G.st.timeline.map(c => c.year),
+            correct_slot: G.st.timeline.filter(c => c.year < raw.year).length,
         };
         G.results.push({ correct: ok, timed_out: false, artist: aOk, movement: mOk });
         G.local.logCards.push({ id: soloSourceId(raw, G.local.packId), correct: ok, artist: aOk, title: false, year: false });
@@ -758,7 +835,7 @@
                 G.st.me.streak = 0;
             }
             if (window.CircCollection) window.CircCollection.record(raw.id, ok);
-            feel(ok);
+            const scoreBefore = G.st.me.score - (ok ? 1 : 0);
             const res = {
                 correct: ok,
                 timed_out: false,
@@ -767,27 +844,30 @@
                 artist_options: window.CircDealer.artistOptions(raw, G.local.artistPool),
                 movement_options: window.CircDealer.movementOptions(raw),
             };
-            G.answer = { position: G.card.position, turn: G.st.current_turn, res, bonusEnds: null, bonusTotal: 0 };
+            G.answer = { position: G.card.position, turn: G.st.current_turn, res, slot, scoreBefore, bonusEnds: null, bonusTotal: 0 };
             G.picked = !hasBonus(res);
             G.sel = {};
             G.bonusRes = null;
             G.rev = null;
-            if (G.picked) finalizeSoloCard();
+            if (G.picked) { finalizeSoloCard(); feel(gradeNow().level, !!G.answer.res.correct); }
             $('go-body').scrollTop = 0;
             draw();
             return;
         }
         document.querySelectorAll('[data-gap]').forEach(b => { b.disabled = true; });
+        const scoreBefore = G.st.me.score;
         try {
             const res = await O().answer(G.id, G.card.position, slot);
-            G.answer = { position: G.card.position, turn: G.st.current_turn, res,
+            G.answer = { position: G.card.position, turn: G.st.current_turn, res, slot, scoreBefore,
                          bonusEnds: G.st.kind !== 'live' && timed() && hasBonus(res) ? (G.st.kind === 'daily' && G.card.ends_at ? new Date(G.card.ends_at).getTime() : O().serverNow() + 19000) : null,
                          bonusTotal: G.st.kind === 'daily' && G.card.seconds ? G.card.seconds * 1000 : 19000 };
             G.picked = !hasBonus(res);
             G.sel = {}; G.bonusRes = null;
-            if (G.st.kind !== 'live') feel(!!res.correct && !res.timed_out);
             G.rev = null;
-            if (G.st.kind !== 'live' && G.picked) G.rev = await O().reveal(G.id, G.answer.position);
+            if (G.st.kind !== 'live' && G.picked) {
+                G.rev = await O().reveal(G.id, G.answer.position);
+                feel(gradeNow().level, !!G.answer.res.correct);                     // no questions to answer: judge right away
+            }
         } catch (e) {
             window.CircShell.toast(e.message);
         }
@@ -797,7 +877,14 @@
     function choose(kind, name) {
         if (!G.answer || G.picked) return;                  // nothing is revealed until lock-in, so changing is fine
         G.sel[kind] = name;
-        draw();
+        // only the buttons change: no redraw, so nothing flickers or re-animates
+        document.querySelectorAll(`#go-body [data-${kind}]`).forEach(b => {
+            const on = b.dataset[kind] === name;
+            b.classList.toggle('chosen', on);
+            b.setAttribute('aria-pressed', String(on));
+        });
+        const lock = document.querySelector('#go-body [data-act="lock"]');
+        if (lock) lock.style.display = readyToLock() ? '' : 'none';
     }
 
     async function pick() {
@@ -818,17 +905,14 @@
                 movement_correct: mOk,
                 movement: G.sel.movement ? realGroup : null,
             };
-            if (G.sel.artist || G.sel.movement) feel((!G.sel.artist || aOk) && (!G.sel.movement || mOk));
             finalizeSoloCard();
+            feel(gradeNow().level, !!G.answer.res.correct);
             draw();
             return;
         }
         try {
             const r = await O().pickBonus(G.id, G.answer.position, G.sel.artist || null, G.sel.movement || null);
-            if (r && ('artist_correct' in r)) {
-                G.bonusRes = r;
-                if (G.sel.artist || G.sel.movement) feel((!G.sel.artist || r.artist_correct) && (!G.sel.movement || r.movement_correct));
-            }
+            if (r && ('artist_correct' in r)) G.bonusRes = r;
         } catch (e) { if (G.st.kind !== 'live') G.bonusRes = { closed: true }; }   // the window closed: no bonus points
         if (G.st.kind !== 'live') { try { G.rev = await O().reveal(G.id, G.answer.position); } catch (e) { /* ignore */ } }
         if (G.st.kind === 'daily' && G.story) { try { G.story = await O().dailyStory(G.st.challenge_date || null); } catch (e) { /* keep */ } }
@@ -836,6 +920,7 @@
             G.bonusRes.artist = G.rev.card.artist;
             G.bonusRes.movement = G.rev.card.movement_group;
         }
+        if (G.st.kind !== 'live') feel(gradeNow().level, !!G.answer.res.correct);   // the one and only verdict for this card
         refresh();
     }
 

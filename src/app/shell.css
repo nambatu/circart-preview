@@ -22,6 +22,7 @@
     --gap-hover: rgba(114, 47, 55, 0.35);
     --gap-bg: #f8f6f1;
     --success: #2f6b45;
+    --partial: #a8701a;
     --error: #a1262e;
     --shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
     color-scheme: light;
@@ -43,6 +44,7 @@
         --gap-hover: rgba(224, 149, 157, 0.35);
         --gap-bg: #1f1c18;
         --success: #8fd3a8;
+    --partial: #e6b864;
         --error: #f0a08a;
         --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         color-scheme: dark;
@@ -62,6 +64,7 @@
     --gap-hover: rgba(224, 149, 157, 0.35);
     --gap-bg: #1f1c18;
     --success: #8fd3a8;
+    --partial: #e6b864;
     --error: #f0a08a;
     --shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
@@ -248,9 +251,29 @@ body.tabs-on #back-to-menu-btn { display: none; }
 .go-gap { width: 100%; min-height: 44px; border-radius: 10px; border: 1.5px dashed var(--gap-hover); background: var(--gap-bg); color: var(--text-primary); font: 600 14px var(--font-body); cursor: pointer; }
 .go-gap:active, .go-gap:focus-visible { background: var(--accent-color); color: var(--on-accent); border-style: solid; border-color: var(--accent-color); }
 .go-gap:disabled { opacity: 0.5; }
-.go-verdict { font-size: 30px; }
+.go-verdict { font-size: 26px; line-height: 1.15; text-align: left; flex: 1; min-width: 0; margin: 0; }
 .go-verdict.ok { color: var(--success); }
 .go-verdict.bad { color: var(--error); }
+.go-verdict.part { color: var(--partial); }
+.go-vhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.go-vhead > b { font-size: 26px; white-space: nowrap; }
+.go-yearbox { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--card-bg);
+    border-left: 4px solid var(--success); }
+.go-yearbox.bad { border-left-color: var(--error); }
+.go-yearbox.ok { flex-direction: row; align-items: center; gap: 12px; }
+.go-yb-top { display: flex; align-items: center; gap: 12px; }
+.go-yb-year { font-size: 28px; line-height: 1; }
+.go-yearbox.ok .go-yb-year { color: var(--success); }
+.go-yearbox.bad .go-yb-year { color: var(--error); }
+.go-yearbox span { font-weight: 600; font-size: 15px; }
+.go-ob-strip { list-style: none; margin: 0; padding: 10px 0 2px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    border-top: 1px solid var(--line); }
+.go-ob-year { font-weight: 600; font-size: 14px; color: var(--text-secondary); padding: 6px 8px; border-radius: 8px;
+    background: color-mix(in srgb, var(--text-secondary) 10%, transparent); }
+.go-ob-gap { padding: 5px 10px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+.go-ob-gap.bad { border: 2px dashed var(--error); color: var(--error); }
+.go-ob-gap.ok { border: 2px solid var(--success); color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.go-ob-more { color: var(--text-secondary); }
 .go-story { display: flex; gap: 14px; padding: 12px; }
 .go-story img { width: 84px; height: 120px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
 .go-trivia { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 6px; }
@@ -285,10 +308,12 @@ body.tabs-on #back-to-menu-btn { display: none; }
     animation: goFlash 0.85s ease-out forwards; }
 .go-flash.ok { background: color-mix(in srgb, var(--success) 22%, transparent); }
 .go-flash.bad { background: color-mix(in srgb, var(--error) 22%, transparent); }
+.go-flash.part { background: color-mix(in srgb, var(--partial) 22%, transparent); }
 .go-flash span { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font: 700 52px var(--font-body); color: #fff; animation: goPop 0.85s ease-out forwards; }
 .go-flash.ok span { background: var(--success); }
 .go-flash.bad span { background: var(--error); }
+.go-flash.part span { background: var(--partial); }
 @keyframes goFlash { 0% { opacity: 0; } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes goPop { 0% { transform: scale(0.4); } 25% { transform: scale(1.08); } 40% { transform: scale(1); } 100% { transform: scale(1); } }
 .go-verdict { animation: goPop 0.5s ease-out; }
