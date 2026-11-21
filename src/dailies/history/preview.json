@@ -1082,5 +1082,88 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-20",
+        "cards": [
+            {
+                "id": "by7tr894xp",
+                "year": 1871,
+                "title": "Arrangement in Grey and Black No. 1",
+                "artist": "James McNeill Whistler",
+                "position": 0
+            },
+            {
+                "id": "d9xz8r7kah",
+                "year": 1743,
+                "title": "Marriage A-la-Mode II: The Tete a Tete",
+                "artist": "William Hogarth",
+                "position": 1
+            },
+            {
+                "id": "dyahhfkufn",
+                "year": 1670,
+                "title": "The Young Beggar",
+                "artist": "Bartolomé Esteban Murillo",
+                "position": 2
+            },
+            {
+                "id": "xkgxebc2gz",
+                "year": 1594,
+                "title": "The Last Supper",
+                "artist": "Tintoretto",
+                "position": 3
+            },
+            {
+                "id": "4jz2ah5m5r",
+                "year": 1665,
+                "title": "Girl with a Pearl Earring",
+                "artist": "Johannes Vermeer",
+                "position": 4
+            },
+            {
+                "id": "sw7dzya8ya",
+                "year": 1787,
+                "title": "Self-Portrait with Her Daughter Julie",
+                "artist": "Élisabeth Vigée Le Brun",
+                "position": 5
+            },
+            {
+                "id": "bxew87tbh9",
+                "year": 2013,
+                "title": "This Is Fine",
+                "artist": "KC Green",
+                "position": 6
+            },
+            {
+                "id": "e3wva7a6h5",
+                "year": 1814,
+                "title": "The Third of May 1808",
+                "artist": "Francisco Goya",
+                "position": 7
+            },
+            {
+                "id": "kbdvkgv8ny",
+                "year": 1936,
+                "title": "Migrant Mother",
+                "artist": "Dorothea Lange",
+                "position": 8
+            },
+            {
+                "id": "a6efz93mtz",
+                "year": 2003,
+                "title": "The Weather Project",
+                "artist": "Olafur Eliasson",
+                "position": 9
+            },
+            {
+                "id": "sne9z8b57s",
+                "year": 1624,
+                "title": "The Laughing Cavalier",
+                "artist": "Frans Hals",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
