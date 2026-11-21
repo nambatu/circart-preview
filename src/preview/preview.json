@@ -2,16 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Fri 20 Nov, 23:12",
+  "label": "Sat 21 Nov, 11:30",
   "changes": [
-    "Pinned the active artwork to the top of the game screen so you can scroll your timeline or bonus questions without losing sight of it.",
-    "All 60 Auction Prices works now use official US CPI-U inflation figures, show local currency beside dollars, and update Banksy's Love Is in the Bin.",
-    "Painting of the Week moved off the Play screen into Gallery under Restorations with a quick link inside your top-right flame popup.",
-    "Polished game and setting texts in English and German and removed the duplicate flame on the Daily card."
+    "Fix: if a card picture fails to load (for example on a shaky connection), the app now tries again by itself instead of leaving the space empty.",
+    "Privacy page: says plainly that there is no separate agreement with Anthropic for the AI help with feedback."
   ],
   "test": [
-    "Play a few cards in Solo or Daily, scroll down your timeline on card 4 or 5, and make sure the artwork stays pinned at the top.",
-    "Answer a card and scroll the bonus Artist and Movement options to see the artwork stay in view above them."
+    "Play a Monthly Run on mobile data: every card picture should appear."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

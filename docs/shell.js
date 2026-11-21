@@ -1827,6 +1827,25 @@
     // Every card image opens the zoom window (#zoom-modal). On top of it:
     // pinch or double-tap to zoom, drag to look around, a tap closes it (when
     // not zoomed in), and so do ✕, Escape and the back swipe (setupBack).
+    // A picture that fails to load (a dropped connection, a hiccup in the image
+    // cache) gets two more tries instead of staying blank. Bug of 21 Nov: a card
+    // stayed empty during a run, but showed when opened fullscreen, because the
+    // fullscreen view asked for the same picture again. "?r=" skips the cached
+    // failure; the site ignores it.
+    document.addEventListener('error', e => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement) || !img.src || img.src.startsWith('data:')) return;
+        const tries = Number(img.dataset.retry || 0);
+        if (tries >= 2) return;
+        img.dataset.retry = String(tries + 1);
+        setTimeout(() => {
+            if (!img.isConnected) return;
+            const u = new URL(img.src, location.href);
+            u.searchParams.set('r', String(tries + 1));
+            img.src = u.href;
+        }, 700 * (tries + 1));
+    }, true);
+
     const ZOOM_SEL = '.zoomable-img, .go-art img, .go-tl img, .go-story img, .go-bonus-art, .hcard-thumb';
     function setupZoom() {
         const modal = $('zoom-modal'), img = $('zoomed-image'), x = $('close-zoom-btn');
