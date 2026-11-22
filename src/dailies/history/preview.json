@@ -1165,5 +1165,88 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-21",
+        "cards": [
+            {
+                "id": "r48mjpgg2b",
+                "year": 1931,
+                "title": "The Persistence of Memory",
+                "artist": "Salvador Dalí",
+                "position": 0
+            },
+            {
+                "id": "krk2gcpyer",
+                "year": 1926,
+                "title": "Bird in Space",
+                "artist": "Constantin Brâncuși",
+                "position": 1
+            },
+            {
+                "id": "85m76d4m3j",
+                "year": 1960,
+                "title": "Anthropometry of the Blue Period",
+                "artist": "Yves Klein",
+                "position": 2
+            },
+            {
+                "id": "e8kk9xsvds",
+                "year": 1910,
+                "title": "Dance (II)",
+                "artist": "Henri Matisse",
+                "position": 3
+            },
+            {
+                "id": "2fa6jjjb5v",
+                "year": 1873,
+                "title": "Barge Haulers on the Volga",
+                "artist": "Ilya Repin",
+                "position": 4
+            },
+            {
+                "id": "54qghsqhme",
+                "year": 1434,
+                "title": "The Arnolfini Portrait",
+                "artist": "Jan van Eyck",
+                "position": 5
+            },
+            {
+                "id": "2sekd8bwhn",
+                "year": 1669,
+                "title": "The Return of the Prodigal Son",
+                "artist": "Rembrandt",
+                "position": 6
+            },
+            {
+                "id": "6xs5w2ajd7",
+                "year": 1767,
+                "title": "The Swing",
+                "artist": "Jean-Honoré Fragonard",
+                "position": 7
+            },
+            {
+                "id": "gkqg9x5rst",
+                "year": 1927,
+                "title": "Automat",
+                "artist": "Edward Hopper",
+                "position": 8
+            },
+            {
+                "id": "ygpwfg75ft",
+                "year": 1504,
+                "title": "David",
+                "artist": "Michelangelo",
+                "position": 9
+            },
+            {
+                "id": "684rpf2dwk",
+                "year": 1831,
+                "title": "The Great Wave off Kanagawa",
+                "artist": "Katsushika Hokusai",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
