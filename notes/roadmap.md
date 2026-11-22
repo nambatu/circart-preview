@@ -243,6 +243,7 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 - 2026-11-15 (18:00) · story-daily run · nothing due (Mon 16 "Under the hammer" is live, nothing approved for Tue 17); new draft "Going, going, gone" (record prices, part 2 of D6) for Wed 18 Nov; Admin approved it the same evening with Kahlo and Beckmann added (9 cards) → build in the Mon 16 run
 - 2026-11-16 (18:00) · story-daily run · D8 "Going, going, gone" (record prices, part 2) built and live for Wed 18 Nov, 9 cards; no new draft (one build per run). Nothing approved for Thu 19 onwards yet: next run writes a new draft
 - 2026-11-20 (18:00) · story-daily run · nothing approved and due (Sat 21 / Sun 22 have no approved story); new draft "Cecilia's music" (St Cecilia's Day) for Sun 22 Nov; Admin approved it the same evening → D9 built and live for Sun 22 Nov, 8 cards
+- 2026-11-22 (18:00) · story-daily run · nothing approved and due (Sun 22 Cecilia is live, nothing approved for Mon 23 / Tue 24); new draft "Lautrec's Paris" (Toulouse-Lautrec's birthday) for Tue 24 Nov, waiting for Admin
 - 2026-11-09 · manual session · moved development into this repo (src/, CLAUDE.md, notes/), evening build switched off, story task pointed here; 35 + 36 deployed · next: 37 (style check) or 31
 - 2026-11-09 (evening build, Mon) · 31 countdown bar fix · tests green · deployed yes · next: 37 (style check, needs splitting) or 32a
 - 2026-11-10 · manual session · daily history export + never-twice check · deployed yes (Action only, no app change) · next: 37a
