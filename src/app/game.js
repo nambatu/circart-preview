@@ -599,7 +599,8 @@
                 <span class="eyebrow">${esc(G.story ? t('story.eyebrow') : G.challengeNo ? t('home.daily.eyebrow', { no: G.challengeNo }) : t('game.dailyShort'))}</span>
                 <h2 class="serif" style="font-size:24px">${esc(G.story ? de(G.story, 'title') : t('home.daily.title'))}</h2>
                 <p class="muted" style="font-size:${G.story ? 16 : 14}px;line-height:1.5">${esc(G.story ? de(G.story, 'intro') : t('game.dailyStartText'))}</p>
-                ${G.story ? `<p class="note">${esc(t('story.howTo'))}</p>` : ''}
+                ${G.story ? `<p class="note">${esc(t(lookBack() ? 'story.howToLook' : 'story.howTo'))}</p>` : ''}
+                ${startChapter()}
                 ${started ? `<p class="note">${esc(t('game.card', { n: st.me.answered + 1, total: st.card_count }))} · ${esc(t('game.points', { n: st.me.score.toLocaleString() }))}</p>` : ''}
                 <button class="btn primary block" data-act="ready">${esc(started ? t('home.daily.continue') : t('game.dailyStart'))}</button>
               </section>
@@ -980,8 +981,32 @@
         const s = G.story;
         const ch = s && s.chapters && s.chapters.find(c => c.position === pos);
         if (!ch || !de(ch, 'chapter')) return '';
-        return `<section class="panel go-chapter"><span class="eyebrow">${esc(t('story.next'))}</span>
+        return `<section class="panel go-chapter"><span class="eyebrow">${esc(t(lookBack() ? 'story.about' : 'story.next'))}</span>
           <p>${esc(de(ch, 'chapter'))}</p></section>`;
+    }
+    // 033: stories that look back — each chapter is about the card just placed;
+    // the start card has its own chapter, and the results show the story in order
+    const lookBack = () => !!(G.story && G.story.look_back);
+    const chapterText = pos => {
+        const s = G.story;
+        if (!s) return '';
+        if (pos === 0) return de(s, 'start_chapter') || '';
+        const ch = s.chapters && s.chapters.find(c => c.position === pos);
+        return ch ? de(ch, 'chapter') || '' : '';
+    };
+    function startChapter() {
+        if (!lookBack() || !chapterText(0) || G.st.me.answered > 0) return '';
+        const c = (G.st.timeline || []).find(x => x.position === 0);
+        return `<div class="go-chapter go-start-chapter"><span class="eyebrow">${esc(t('story.startCard'))}${c ? ' · ' + esc(c.title) : ''}</span>
+          <p>${esc(chapterText(0))}</p></div>`;
+    }
+    function storyRecap() {
+        const tl = G.st.timeline || [];          // oldest first
+        const item = c => `<li class="go-tl go-recap-item">${c.image_url ? `<img src="${esc(c.image_url)}" alt="">` : '<span class="go-noimg"></span>'}
+            <span><b class="serif">${esc(c.year)}</b> · <i>${esc(c.title)}</i><br><small>${esc(c.artist)}</small>
+            ${chapterText(c.position) ? `<p class="go-recap-text">${esc(chapterText(c.position))}</p>` : ''}</span></li>`;
+        return `<h2 class="label">${esc(t('story.whole'))}</h2>
+          <ol class="go-timeline go-recap" aria-label="${esc(t('story.whole'))}">${tl.map(item).join('')}</ol>`;
     }
     function creditFor(pos) {
         const s = G.story;
@@ -1281,14 +1306,15 @@
               ${mine && mine.rank ? ' · ' + esc(t('game.dailyRank', { rank: mine.rank, players: b.players })) : ''}</p>
           </div>
           ${mine && !mine.ranked ? `<p class="note" style="text-align:center">${esc(t('game.dailyUnranked'))}</p>` : ''}
+          ${lookBack() ? storyRecap() : ''}
           ${G.story && de(G.story, 'outro') ? `<section class="panel go-chapter"><span class="eyebrow">${esc(de(G.story, 'title'))}</span>
             <p>${esc(de(G.story, 'outro'))}</p></section>` : ''}
           <button class="btn primary block" data-act="shareDaily">${esc(t('game.dailyShare'))}</button>
           ${top.length ? `<h2 class="label">${esc(t('ranks.today'))}</h2>
             <ol class="go-stand">${top.map(e => `<li class="${e.is_me ? 'me' : ''}"><span class="go-rank" style="width:28px">${e.rank}</span>
               <span class="go-name">${esc(e.username)}</span><span class="go-pts">${e.score.toLocaleString()}</span></li>`).join('')}</ol>` : ''}
-          <h2 class="label">${esc(t('game.yourTimeline'))}</h2>
-          ${timeline(false)}
+          ${lookBack() ? '' : `<h2 class="label">${esc(t('game.yourTimeline'))}</h2>
+          ${timeline(false)}`}
           <p class="note" style="text-align:center">${esc(t('game.dailyTomorrow'))}</p>
           <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;

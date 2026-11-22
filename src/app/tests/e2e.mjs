@@ -20,9 +20,10 @@ await db.query(`update cards set image_url = '/images/' || (array[${imgs.map(i=>
     await db.query(`insert into cards (id, source_id, title, artist, year, movement, tier, image_url, trivia, active)
                     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)`,
                    ["st" + i, "daily:e2e:" + i, c.title, c.artist, c.year, c.movement, c.tier, c.image_url, c.trivia]);
-  await db.exec(`insert into daily_themes (day, slug, title, title_de, intro, intro_de, outro, outro_de)
+  // 033: a story that looks back (start card chapter + the whole story in order at the end)
+  await db.exec(`insert into daily_themes (day, slug, title, title_de, intro, intro_de, outro, outro_de, look_back)
                  values (_today(), 'e2e-walk', 'A walk through the cathedral', 'Ein Gang durch den Dom',
-                         'We start at the big west door.', 'Wir beginnen am Westportal.', 'And that is the end of our walk.', 'Damit endet unser Gang.')`);
+                         'We start at the big west door.', 'Wir beginnen am Westportal.', 'And that is the end of our walk.', 'Damit endet unser Gang.', true)`);
   for (let i = 0; i <= 10; i++)
     await db.query(`insert into daily_theme_cards (day, position, card_id, chapter, chapter_de, credit) values (_today(), $1, $2, $3, $4, $5)`,
                    [i, "st" + i, "Now turn left to chapter " + (i + 1) + ".", "Jetzt links zu Kapitel " + (i + 1) + ".", "Photo: Test, CC BY-SA 4.0"]);
@@ -231,6 +232,8 @@ try {
   await cleo.click('[data-daily="play"]');
   await waitText(cleo, 'We start at the big west door');
   ok(true, "story daily: the start screen shows the intro");
+  ok((await text(cleo)).includes('chapter 1') && (await cleo.locator('.go-start-chapter').count()) === 1,
+     "look-back story: the start screen shows the start card's chapter");
   await shot(cleo, '10-daily-start');
   await cleo.click('[data-act="ready"]');
   const gid3 = await run(async () => (await db.query(`select id from games where kind='daily'`)).rows[0].id);
@@ -288,6 +291,24 @@ try {
   }
   await waitText(cleo, 'Daily done');
   ok((await text(cleo)).includes('end of our walk'), "results: the story's ending");
+  {
+    const recap = await cleo.evaluate(() => {
+      const items = [...document.querySelectorAll('.go-recap .go-recap-item')];
+      const years = items.map(li => parseInt(li.querySelector('b').textContent, 10));
+      return { n: items.length, texts: items.filter(li => li.querySelector('.go-recap-text')).length,
+               sorted: years.every((y, i) => i === 0 || years[i - 1] <= y) };
+    });
+    ok((await cleo.textContent('#go-body')).includes('The whole story, in order') && recap.n === 11 && recap.texts === 11 && recap.sorted,
+       `results: the whole story in year order, every card with its chapter (${recap.n} cards, ${recap.texts} texts)`);
+  }
+  await cleo.waitForTimeout(1500);
+  await cleo.emulateMedia({ colorScheme: 'dark' }); await cleo.waitForTimeout(300);
+  await cleo.evaluate(() => document.querySelector('.go-recap')?.scrollIntoView());
+  await shot(cleo, '12b-story-recap-dark');
+  await cleo.emulateMedia({ colorScheme: 'light' }); await cleo.waitForTimeout(300);
+  await cleo.evaluate(() => document.querySelector('.go-recap')?.scrollIntoView());
+  await shot(cleo, '12c-story-recap-light');
+  await cleo.evaluate(() => { document.getElementById('go-body').scrollTop = 0; });
   ok((await text(cleo)).includes('7 of 10 placed right'), "daily done: 7 of 10 right, score shown");
   ok(((await text(cleo)).match(/🟥/g) || []).length === 3 && ((await text(cleo)).match(/🟩/g) || []).length === 7, "daily done: 7 green and 3 red squares");
   await shot(cleo, '12-daily-done');

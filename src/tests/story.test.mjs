@@ -85,6 +85,7 @@ let st = await call("ana", "daily_story", null);
 ok(st && st.title === "A walk" && st.intro_de === "Intro DE" && st.chapters.length === 0 && st.outro === null,
    "before playing: title + intro, no chapters, no outro");
 ok(st.start_credit === "Public domain", "the start card's photo credit comes along");
+ok(st.look_back === false && st.start_chapter == null, "an old-style story: look_back off, no start chapter (033)");
 
 for (let k = 1; k <= 10; k++) {
   const c = await call("ana", "next_card", g.id);
@@ -137,6 +138,15 @@ sum = await call("ana", "daily_summary");
 ok(sum.status === "done", "after 4 cards the short daily is done");
 st = await call("ana", "daily_story", null);
 ok(st.outro === "Done" && st.chapters.length === 4, "short story: 4 chapters and the ending");
+
+// 033: a story that looks back carries the start card's chapter from the start
+await db.exec(`update daily_themes set look_back = true where day = '2026-11-09'`);
+st = await call("ana", "daily_story", null);
+ok(st.look_back === true && st.start_chapter === "C0", "look_back story: flag and the start card's chapter (033)");
+await setClock("2026-11-09T12:00:00+01:00");
+const bs = await call("ben", "daily_story", null);
+ok(bs.look_back === true && bs.start_chapter === "C0" && bs.chapters.length === 0 && bs.outro === null,
+   "before playing, the start chapter shows but no other chapter and no outro (033)");
 
 // 023: a story can switch off the questions after each card (Admin, 14 Nov: one painter → no sense)
 await db.exec(`insert into daily_themes (day, slug, title, intro, artist_bonus, movement_bonus) values ('2026-11-10', 'one-painter', 'One', 'Hi', false, false)`);

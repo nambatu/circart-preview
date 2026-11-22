@@ -6,7 +6,7 @@ Admin (6 Nov 2026, later): "if you have the time you can plan days ahead but the
 ## What a themed daily is
 - **A handful of works with one red thread** (3 to 30 cards to place; "sometimes shortness is the sweetest"). Same for everyone that day, like today's dailies.
 - **Intro** (2–3 sentences) before the first card: where we are, what connects the works.
-- **A chapter after every card** (1–2 sentences, shown with the reveal): what happened next, leading to the next card. Read in order, the chapters tell one story.
+- **A chapter for every card, the start card included** (shown with the reveal): it talks only about that card, never about the next one. On the results screen all chapters appear in year order and tell one story (Admin, 22 Nov; how to write them: `WRITING.md`).
 - **Outro** on the results screen: how the story ends.
 - **The order must not be chronological** (otherwise every card goes to the right end of the timeline): the red thread is a walk, a story or a theme, and the years jump. At most two rising years in a row.
 - **At least six cards to place (Admin, 12 Nov):** fewer than six is generally not much fun.
@@ -85,4 +85,4 @@ Admin answers "approve", "change …" or "drop". Approved drafts are built into 
 - Thu 19 + Fri 20 Nov: no story, normal random daily (no story-daily runs 17–19 Nov).
 - 2026-11-20 (story-daily run) · "Cecilia's music / Cäcilias Musik" (St Cecilia's Day, music in art, start card + 7, suggested Sun 22 Nov; full draft in `drafts/draft-2026-11-20-cecilia.md`) · **Admin 20 Nov evening: approved** → built the same evening for **Sun 22 Nov** (`2026-11-22-cecilia.json`). Vermeer counts as 1665 (about 1662–65)
 - Sat 21 Nov: no story run. Mon 23 Nov: no story, normal random daily.
-- 2026-11-22 (story-daily run) · "Lautrec's Paris / Lautrecs Paris" (Toulouse-Lautrec's birthday, one artist's life, start card + 7, suggested Tue 24 Nov; full draft in `drafts/draft-2026-11-22-lautrec.md`) · **waiting for Admin**. Years checked with two sources each; photos found for 4 of 8, the rest at build
+- 2026-11-22 (story-daily run) · "Lautrec's Paris / Lautrecs Paris" (Toulouse-Lautrec's birthday, one artist's life, start card + 7, suggested Tue 24 Nov; full draft in `drafts/draft-2026-11-22-lautrec.md`) · **Admin 22 Nov evening: not happy with how the stories read** → new writing rules (`WRITING.md`, nature-documentary voice, chapters look back, story in order at the end); the draft was rewritten that way, **waiting for Admin**. Years checked with two sources each; photos found for 4 of 8, the rest at build

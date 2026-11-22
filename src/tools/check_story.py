@@ -23,6 +23,9 @@ LEAK = re.compile(
     r"years? (later|earlier|before|after|older|younger)|most recent|ancient)\b"
     r"|ältest|älter|jüngst|jünger|neuest|neuer als|früher als|später als|Jahrhunderte (später|früher)|zuletzt",
     re.I)
+# a chapter that looks back must not lead into the next card (Admin, 22 Nov)
+FORWARD = re.compile(r"\b(the next (picture|card|painting|work|one)|our next|in the next|"
+                     r"nächste[nmrs]? (Bild|Karte|Gemälde|Werk)|im nächsten|als nächstes)\b", re.I)
 REQ_THEME = ["date", "slug", "title", "title_de", "intro", "intro_de", "outro", "outro_de"]
 REQ_CARD = ["title", "artist", "year", "trivia", "trivia_de", "image_source", "image_source_fallback",
             "commons_page", "sources", "credit", "visual_type"]
@@ -87,6 +90,9 @@ def main():
     d = json.load(open(a.file, encoding="utf-8"))
     th, cards = d.get("theme", {}), d.get("cards", [])
     errors, warns = [], []
+    # "look_back": true (033) = every chapter talks only about the card just placed,
+    # the start card has a chapter too, and the results show the story in year order
+    look = th.get("look_back") is True
 
     for k in REQ_THEME:
         if not th.get(k): errors.append(f"theme.{k} missing")
@@ -94,7 +100,7 @@ def main():
     for i, c in enumerate(cards):
         for k in REQ_CARD:
             if not c.get(k): errors.append(f"card {i} ({c.get('title')}): {k} missing")
-        if i > 0 and (not c.get("chapter") or not c.get("chapter_de")):
+        if (i > 0 or look) and (not c.get("chapter") or not c.get("chapter_de")):
             errors.append(f"card {i} ({c.get('title')}): chapter / chapter_de missing")
 
     ys = [c.get("year") for c in cards]
@@ -104,6 +110,11 @@ def main():
         best = max(best, run)
     if best > 2: errors.append(f"years rise {best} times in a row {ys}: the order must not be chronological")
     if len(set(ys)) != len(ys): warns.append(f"two cards share a year {ys}: placing them is a coin toss")
+    # like the random deal: cards only a few years apart should not come right after each other
+    for i in range(2, len(ys)):
+        if isinstance(ys[i], int) and isinstance(ys[i - 1], int) and abs(ys[i] - ys[i - 1]) <= 3:
+            warns.append(f"cards {i - 1} and {i} are only {abs(ys[i] - ys[i - 1])} years apart and come one after the other: "
+                         f"put another card between them")
     # the questions after each card (Admin, 14 Nov): one painter → "who painted it?" makes no sense
     if len({c.get("artist") for c in cards[1:]}) == 1 and th.get("artist_bonus", True) is not False:
         errors.append('every card is by the same artist: set "artist_bonus": false (and usually "movement_bonus": false) in the theme')
@@ -119,8 +130,14 @@ def main():
             if m:
                 # chapters lead to the NEXT card → a comparison there is a spoiler (error);
                 # trivia is about the card just placed → only a warning to double-check
-                (errors if k.startswith("chapter") else warns).append(
+                # in a look-back story the chapter is about the card just placed → warning
+                (errors if k.startswith("chapter") and not look else warns).append(
                     f"card {i} {k}: compares dates ('{m.group(0)}'): {t[:110]}")
+            if look and k.startswith("chapter"):
+                f = FORWARD.search(t)
+                if f:
+                    errors.append(f"card {i} {k}: leads into the next card ('{f.group(0)}'): "
+                                  f"a look-back chapter talks only about this card")
             for j, o in enumerate(cards):
                 if j != i and str(o.get("year")) in t:
                     (errors if j > i else warns).append(

@@ -441,6 +441,10 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
 /* story dailies: the chapter after each card and the outro */
 .go-chapter { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; border-left: 3px solid var(--accent-color); }
 .go-chapter p { margin: 0; font-family: var(--font-heading); font-size: 17px; line-height: 1.45; }
+.go-start-chapter { padding: 4px 0 4px 14px; }
+.go-start-chapter p { font-size: 16px; }
+.go-recap .go-recap-item { align-items: flex-start; }
+.go-recap .go-recap-text { margin: 6px 0 0; font-family: var(--font-heading); font-size: 15px; line-height: 1.45; }
 .go-credit { margin-top: 6px; font-size: 12px; opacity: 0.8; }
 
 /* lobby: seconds per card */
@@ -749,3 +753,4 @@ body.tabs-on #install-hint { bottom: calc(76px + env(safe-area-inset-bottom, 0px
 .fr-pick-chip[aria-pressed="true"] {
     background: var(--accent-color); color: var(--on-accent); border-color: var(--accent-color);
 }
+.go-recap .go-tl b { width: auto; font-size: 16px; }

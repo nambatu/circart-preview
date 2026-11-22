@@ -27,9 +27,10 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - **Never worry about copyright (Admin, 17 Nov, standing rule).** Never leave out or swap a work because of copyright, and don't flag copyright in drafts or reports. Just fill `license` and `credit` with what the photo's source says.
 
 ## 3. The game mechanic (most important)
+- **How the texts read is in `src/dailies/WRITING.md` (Admin, 22 Nov): read it before every draft.** Nature-documentary voice; every new story sets `"look_back": true`; chapters talk only about the card just placed; the start card has a chapter too; the results screen shows all chapters in year order. Where WRITING.md and an older line below disagree, WRITING.md wins.
 - **Order is NOT chronological.** The red thread is a walk, a story, a theme. No more than 2 rising years in a row. Avoid two cards with the same year. The start card (position 0) should have a mid-range year.
-- **No spoilers.** A chapter is shown after card N and leads to card N+1. It must never tell or hint at the date of any later card: no "oldest", "newest", "older than", "centuries later", "the oldest treasure", no years of later cards. Trivia talks only about the card itself. The intro never names a card's year.
-- **The chapter is the only text players read after a card (Admin, 13 Nov):** story dailies hide the card trivia (roadmap task 53), so each chapter carries the story on its own. Make it red-lined and interesting: what happened, why it mattered, a surprising turn, and a lead into the next card. Leave out mundane facts (sizes, materials, which room it hangs in) unless they are part of the story. Still fill `trivia`/`trivia_de` (the Gallery and other modes show them), but never repeat it in the chapter.
+- **No spoilers.** A chapter is shown after card N. It must never tell or hint at the date of any later card: no "oldest", "newest", "older than", "centuries later", "the oldest treasure", no years of later cards. Trivia talks only about the card itself. The intro never names a card's year.
+- **The chapter is the only text players read after a card (Admin, 13 Nov):** story dailies hide the card trivia (roadmap task 53), so each chapter carries the story on its own. Make it interesting: what happens in the picture, why it mattered, a surprising turn. No lead into the next card (Admin, 22 Nov). Leave out mundane facts (sizes, materials, which room it hangs in) unless they are part of the story. Still fill `trivia`/`trivia_de` (the Gallery and other modes show them), but never repeat it in the chapter.
 - At least six cards to place (Admin, 12 Nov): fewer is generally not much fun.
 - **Questions after each card (Admin, 14 Nov):** normally the player is asked who painted the card and which style it is. When every card is by the same painter (an artist's life), set `"artist_bonus": false` and `"movement_bonus": false` in the theme; when all cards share one style, set `"movement_bonus": false`. `check_story.py` stops a one-painter story without it.
 - Length: whatever the story needs, 3–30 cards ("sometimes shortness is the sweetest").
@@ -47,8 +48,8 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 2. Publish once (step 6) so the pack-images Action downloads the photos, `git pull`, then:
    `python3 src/tools/check_story.py src/dailies/<story>.json --art pack-art --keys pack_images.json --sheet /tmp/sheet.jpg` (sheet outside the repo)
 3. **Look at sheet.jpg** (Read tool) card by card: is it the right work (compare with the Commons description and the work's Wikipedia image)? Whole work visible? Not a detail, frame, room or wrong version? Replace any wrong photo and repeat.
-4. Read the chapters on their own, in order: do they tell one gripping story without the trivia? Nothing from the trivia repeated, nothing mundane.
-5. Re-read intro, chapters, outro in EN and DE as a player who doesn't know the years: does any sentence give away an order? Does each chapter really lead to the next card?
+4. Read the chapters sorted by year (that's how the results screen shows them): do they tell one story without the trivia? Nothing from the trivia repeated, nothing mundane.
+5. Re-read intro, chapters, outro in EN and DE as a player who doesn't know the years: does any sentence give away an order? Does each chapter talk only about its own card?
 
 ## 6. Publish
 - Save the story as `src/dailies/<date>-<slug>.json` (keep every older story there too).
@@ -65,7 +66,7 @@ Pick from the idea bank below or in ideas.md (or a better idea). Save the full d
 | **Red thread** | 1 sentence |
 | **Suggested date** | in the next few days (why that day) |
 | **Works** | position · year · artist · title · photo found (yes / not yet) |
-| **Intro + 2 sample chapters** | EN + DE, to judge the tone |
+| **Intro, all chapters, outro** | EN + DE, so Admin can judge the whole story (WRITING.md) |
 | **Open questions** | anything Admin must decide |
 
 ## 8. Report to Admin (one message, plain English)
@@ -90,4 +91,4 @@ Pick from the idea bank below or in ideas.md (or a better idea). Save the full d
 13. **Admin's own visits** — when Admin mentions a visited place (like Würzburg Cathedral), turn it into a story soon after, while it's fresh.
 
 ## Writing style
-Plain, friendly sentences like a good tour guide. No comma lists of three or more things. At most one light art pun per screen. German is natural German with „…“ quotes and informal "du", not a literal translation.
+See `src/dailies/WRITING.md` (nature-documentary voice). Plain, friendly sentences. No comma lists of three or more things. At most one light art pun per screen. German is natural German with „…“ quotes and informal "du", not a literal translation.
