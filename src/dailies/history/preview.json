@@ -607,7 +607,7 @@
             {
                 "id": "tn7t6tjpp2",
                 "year": 1891,
-                "title": "Moulin Rouge: La Goulue",
+                "title": "Moulin Rouge – La Goulue",
                 "artist": "Henri de Toulouse-Lautrec",
                 "position": 9
             },
@@ -1248,5 +1248,67 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-22",
+        "cards": [
+            {
+                "id": "yx6csn5z9u",
+                "year": 1600,
+                "title": "Saint Cecilia",
+                "artist": "Stefano Maderno",
+                "position": 0
+            },
+            {
+                "id": "t5dkwa33ts",
+                "year": 1517,
+                "title": "The Ecstasy of Saint Cecilia",
+                "artist": "Raphael",
+                "position": 1
+            },
+            {
+                "id": "bmapkwhf4s",
+                "year": 1895,
+                "title": "Saint Cecilia",
+                "artist": "John William Waterhouse",
+                "position": 2
+            },
+            {
+                "id": "3ftcr42exf",
+                "year": 1772,
+                "title": "The Linley Sisters (Elizabeth and Mary Linley)",
+                "artist": "Thomas Gainsborough",
+                "position": 3
+            },
+            {
+                "id": "4sh9jn9fbu",
+                "year": 1911,
+                "title": "Impression III (Concert)",
+                "artist": "Wassily Kandinsky",
+                "position": 4
+            },
+            {
+                "id": "pamtw6m8uu",
+                "year": 1665,
+                "title": "The Music Lesson (Lady at the Virginals with a Gentleman)",
+                "artist": "Johannes Vermeer",
+                "position": 5
+            },
+            {
+                "id": "9kgp7a6ewa",
+                "year": 1892,
+                "title": "Young Girls at the Piano",
+                "artist": "Pierre-Auguste Renoir",
+                "position": 6
+            },
+            {
+                "id": "xmsjvcv39w",
+                "year": 1866,
+                "title": "The Fifer",
+                "artist": "Édouard Manet",
+                "position": 7
+            }
+        ],
+        "story": "cecilia"
     }
 ]
