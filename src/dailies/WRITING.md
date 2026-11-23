@@ -2,13 +2,16 @@
 
 `SKILL.md` says how a story is built. This file says how it should read. Admin wasn't happy with the earlier stories: each chapter was a list of facts followed by "The next picture shows…". This is the new way, and it applies to every story from now on.
 
-## The voice: a nature documentary
-Write like the narrator of a good nature documentary. The narrator is calm and curious, looks closely, explains what is going on, and never pretends to have been there.
-- **Present tense.** "Vincent sits at a café table." Present tense also keeps "then", "later" and "in the end" out of the text, so the order stays secret.
-- **Start with what the player can see**, then explain it. "A rider stands on a galloping horse. The ringmaster cracks his whip." Then the story behind it.
-- **Facts only.** No invented narrator ("I knew him"), no invented scenes, no guessing at feelings. Every fact needs a source as usual. Quotes only if a source gives them, and then with "is said to have said" if the source isn't sure.
-- **Trustworthy before clever.** It is fine to be warm and to marvel at something, but never at the cost of accuracy.
+## The voice: museum guide + detective (Admin, 23 Nov)
+Write like a good museum guide who treats every picture as a little case to solve. The guide stands next to the player, points at things in the picture and explains what they mean. Some of those things are clues: they help the player understand the work, and on hard days they may hint at where it belongs.
+- **Point first, then explain.** Start with something the player can see right now: "Start with the black shape in front." "Look at the glass on the table." Then say what it is and why it matters.
+- **Name the clues.** A colour, a costume, a signature, a style, an object, the way something is drawn. "Remember that bold, flat look." The player should look at the picture again after reading.
+- **Present tense**, which also keeps "then", "later" and "in the end" out of the text.
+- **Facts only.** No invented narrator, no invented scenes, no guessing at feelings. Every fact needs a source. A clue must be visible in the photo the players see (check it on the contact sheet). Quotes only if a source gives them.
+- **Talk to the player** with "you" ("du" in German), the way a guide talks to a visitor. Warm, curious, never lecturing.
 - Sentences may be long or short, whatever the moment needs. There is no word count. Read it as a player would and ask whether it flows.
+
+(22 Nov the voice was a nature documentary narrator. Admin compared six styles on 23 Nov and chose this mix.)
 
 ## Chapters look back, never forward
 Every new story sets `"look_back": true` in the theme.
@@ -24,14 +27,8 @@ On the results screen the game shows every card oldest first, each with its chap
 - **The intro** sets the scene and the question in two or three sentences: where we are, whose story it is, what connects the works. It never names a card's year.
 - **The outro** closes the story in two or three sentences. It comes after the recap, so it may look back over the whole thing. No life advice and no "Happy X Day".
 
-## Example (Toulouse-Lautrec, start card + 2 chapters)
-Start card, Moulin Rouge – La Goulue (poster):
-> EN: A dancer in mid-kick fills the poster, and a dark figure stands in front of her. This sheet goes up on walls across Paris, and La Goulue becomes the most famous face of the Moulin Rouge.
-> DE: Eine Tänzerin wirft das Bein in die Luft, vor ihr steht eine dunkle Gestalt. Dieses Plakat hängt bald an den Mauern von ganz Paris, und La Goulue wird zum bekanntesten Gesicht des Moulin Rouge.
-
-Equestrienne (At the Cirque Fernando):
-> EN: A rider balances on a galloping horse while the ringmaster cracks his whip. Henri loves the circus as much as the dance halls. Joseph Oller, who owns the Moulin Rouge, buys this picture and hangs it in his dance hall.
-> DE: Eine Reiterin hält sich auf einem galoppierenden Pferd, der Zirkusdirektor lässt die Peitsche knallen. Henri liebt den Zirkus genauso wie die Tanzsäle. Joseph Oller, dem das Moulin Rouge gehört, kauft das Bild und hängt es in seinem Tanzsaal auf.
+## Example
+See the finished Lautrec story (`2026-11-24-lautrec.json`): every chapter there is written in this voice.
 
 ## Before you send a draft
 - Read every chapter on its own: does it only talk about its own card?
