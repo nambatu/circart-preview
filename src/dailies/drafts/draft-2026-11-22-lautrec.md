@@ -66,4 +66,4 @@ DE: Das ist seine Welt, in der Reihenfolge, in der sie entstand. Henri de Toulou
 
 ## Still to check at build (two sources each, or cut)
 - Gabriel as the student in the Examination, the clinic chapter's facts beyond the Met page, Camondo's bequest (Joconde says so), and "died before forty".
-- Clinic chapter: it says nothing about when, but players who know his life may guess late. Admin to decide.
+- Clinic chapter: stays (Admin, 22 Nov: gentle hints are fine on hard days).

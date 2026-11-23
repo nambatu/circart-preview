@@ -13,7 +13,8 @@ Write like the narrator of a good nature documentary. The narrator is calm and c
 ## Chapters look back, never forward
 Every new story sets `"look_back": true` in the theme.
 - **A chapter talks only about the card the player has just placed.** It never leads into the next card. "The next picture…", "Our next…" and "Im nächsten Bild…" are gone (`check_story.py` stops them).
-- So a chapter can't give away the order of later cards. Still avoid words that place this card in a life or an era relative to the others ("his first", "as a young man", "his last", "late in life"). The player hasn't placed the other cards yet, and those words solve the puzzle for them.
+- So a chapter can't give away the order of later cards. On normal days, avoid words that place this card in a life or an era ("his first", "as a young man", "his last", "late in life").
+- **Hard days may give gentle hints (Admin, 22 Nov).** When the years sit close together (one artist's life, one decade), a chapter may hint at where its card sits in a life: "as a student", "in the clinic", "by now he is famous". Players who read get a slight advantage, and that's fair. Hints stay gentle: never the year of another card, and never a ranking like "the oldest picture today".
 - **The start card has its own chapter too** (card 0). It shows on the start screen under the intro.
 - Pick the one or two most interesting things about the card. What is happening in the picture, why it matters, a surprising turn. Leave mundane facts (sizes, materials, which room it hangs in) to the trivia, and don't repeat the trivia.
 
