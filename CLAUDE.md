@@ -17,5 +17,6 @@ Admin is on **Claude Pro**: a 5-hour limit plus a weekly limit that resets **Thu
 
 ## Supabase connector
 - Preview project id `rzptvdlejmdeaanhbbtd`. Schema changes go through migration files + the `preview-db` Action, not through ad-hoc SQL.
+- SQL queries on the connector run without a permission prompt (`.claude/settings.json`). Use them to read. Never run UPDATE, DELETE, INSERT into existing tables' data or TRUNCATE without Admin's explicit yes first (AGENTS.md rule 10); new tables and columns go through migration files and need no permission.
 - With the connector you may read data (e.g. `feedback_inbox()`), check logs and advisors, and deploy the `send-push` Edge Function (verify_jwt false). Use `apply_migration` only as a fallback when Actions are down, and then record it: `insert into public._preview_migrations (name) values ('<file>.sql')`.
 - Email templates and other Auth settings can't be changed with the connector (and rule 5 forbids it anyway): give Admin the files in `src/email/`.

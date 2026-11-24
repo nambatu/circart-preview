@@ -18,6 +18,7 @@ CIRCArt is "Hitster for art": a phone web app (PWA) where you place artworks on 
 7. **Writing style for anything players read:** plain, full sentences like a person talking; no comma lists of three or more things; at most one art pun per screen; always English AND German (informal "du").
 8. Explicit cards in Admin's deck (e.g. Francis Bacon) stay in the game — Admin's decision.
 9. **Decisions Admin already made — don't re-propose them:** no extra protection against card-year lookups (anyone determined can cheat, and the Gallery shows years anyway); the all-time board keeps counting games with friends and solo play; no analytics/tracking service (usage is read from the game's own database).
+10. **Existing data is Admin's (24 Nov):** never change or delete existing rows in the database (UPDATE, DELETE, TRUNCATE, or a migration that rewrites existing players' data) without asking Admin first and getting a yes. Reading data needs no permission. Adding new tables or new columns (in a new migration) needs no permission either.
 
 ## Working together (several agents push to this repo)
 - **Always `git pull --rebase` first, and again right before every push.** The story-daily task and other agents push to `main`.
