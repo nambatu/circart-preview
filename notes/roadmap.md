@@ -50,8 +50,18 @@ Sections: **Today** (daily) → **Your games** (only when there are any) → **P
 Built by the separate scheduled task "CIRCArt story daily" (every evening 17:52 Berlin) with the skill in `src/dailies/SKILL.md`; ideas, drafts and Admin's answers in `src/dailies/ideas.md`. Work sessions don't write story drafts unless Admin asks. Items `D…` in the Queue belong to that task.
 **Planning horizon (Admin, 6 Nov):** the next day(s) matter most, not next week or month. Not every day needs a story; a normal random daily is fine when nothing is approved.
 
+## 🎄 Launch plan: go live around 20 December 2026 (Admin, 24 Nov)
+Web app first (circart.langschwerts.de, installable), app stores in January (Google Play needs a 14-day test with 12 testers, Apple needs a Mac or build service + review).
+- **Week of 23 Nov:** Admin sets up Brevo (SMTP) + pastes the email templates (`src/email/`). Claude: task 21 (German texts for the 230 base cards), then task 60 (review follow-ups + e2e weekly-painting step).
+- **Week of 30 Nov:** finish German texts. Admin creates the production Supabase project (Frankfurt; Pro plan for backups recommended), accepts the DPA, turns on 2FA, fills in Impressum + privacy details. Decide the name / logo (see task 61).
+- **Week of 7 Dec:** "ship it" (`src/ship/SHIP.md`): database, build, PR on the game repo, phone smoke test; iPhone push check (17b). Family-and-friends test.
+- **Week of 14 Dec:** fix what the test finds; short launch post (mini version of 42).
+- **~20 Dec:** go live.
+- **January:** app stores (41), Google login (25), more packs (29), run tuning (18).
+
 ## Queue (top = next)
 D10b. [ ] **Later, if Admin wants it: cards dealt in small groups / cards sharing a spot on the timeline** (Admin, 22 Nov, idea from the story review) — a game change, size it first.
+61. [ ] **Name and logo before the launch** (Admin, 24 Nov): many people don't get the "circa" in CIRCArt. Either a new name or a logo that explains it. Decide in week of 30 Nov; then update app name, manifest, icons, texts EN + DE, email templates, privacy pages and the store plan.
 60. [ ] **Fix the e2e weekly-painting step** — `src/app/tests/e2e.mjs` (wave 1: streak popover → Studio → `#gallery-restorations .wk-card`) times out; it already failed before D10 on 22 Nov (checked by running the tests without the D10 changes). Everything else is green.
 D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 story dailies on consecutive days, idea 14 in `src/dailies/ideas.md`. Write the drafts as usual (one per evening, Admin approves each); prices from Wikipedia's list (price in today's money), public auctions only.
 59. [x] **Safety review fixes: database, push, sign-out, shipping & privacy hardening** (Admin, 20 Nov) — migration 030 (close Daily game_players reads & lock contention, fix injection_scan/feedback_inbox/handle_new_user, gate daily_story & my_collection with artist_done/live checks), send-push hardening, sign-out push/queue/pack cleanup & Google link fallback, offline/live report spoiler fixes, stage.py/SHIP.md/workflow/CSP/privacy-page fixes, retire unused docs/ files.
@@ -157,7 +167,7 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
     - [x] Anthropic: Admin is on a normal Pro plan, so no DPA; privacy pages now say so plainly (21 Nov).
     - Live check on a phone: in a live game the other player's moves should appear within about a second (realtime). Migration 030 changed the table rights realtime uses; if moves only appear every few seconds, realtime stopped and only the 4-second polling works.
 29. [ ] **More packs (round 3):** ideas "Women Artists", "Ukiyo-e", "Dutch Golden Age landscapes". Same format and checks as `src/packs/*.json` (25 PD cards, `artist_died` < 1956, trivia + trivia_de, Wikimedia URLs incl. original + fallback, no duplicates with the base deck or other packs, look at every downloaded image). Unlock rules not used yet: `games_won`, `free`.
-21. [ ] ⏸ **Artwork texts in German for the base deck** (trivia of the 230 base cards) — offered to Admin 5 Nov, waiting for Admin's approval. (Pack cards already have `trivia_de`.)
+21. [ ] 🔧 Claude 2026-11-24 **Artwork texts in German for the base deck** (Admin said yes 24 Nov) (trivia of the 230 base cards) — offered to Admin 5 Nov, waiting for Admin's approval. (Pack cards already have `trivia_de`.)
 25. [ ] ⏸ **Email (Resend) + Google login** — Admin said "later" (5 Nov). Before shipping: custom SMTP for magic links + feedback-by-email, Google OAuth client. Steps for Admin are in the security review (private project: `claude/legal/SECURITY-REVIEW.md`).
 26. [ ] ⏸ **Admin's own to-dos** (account and dashboard settings only he can change) are kept in the private claude.ai project "Circart" as Admin's private to-do note, not in this public repo. Remind Admin before shipping.
 18. [ ] ⏳ **Run tuning from real play** (runs in `games where kind='run'`).
