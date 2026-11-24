@@ -1310,5 +1310,88 @@
             }
         ],
         "story": "cecilia"
+    },
+    {
+        "date": "2026-11-23",
+        "cards": [
+            {
+                "id": "bhv94vb4fz",
+                "year": 1917,
+                "title": "Fountain",
+                "artist": "Marcel Duchamp",
+                "position": 0
+            },
+            {
+                "id": "xmmx5sq9ua",
+                "year": 1823,
+                "title": "Saturn Devouring His Son",
+                "artist": "Francisco Goya",
+                "position": 1
+            },
+            {
+                "id": "tycgext8s8",
+                "year": 1721,
+                "title": "Pierrot",
+                "artist": "Antoine Watteau",
+                "position": 2
+            },
+            {
+                "id": "qg73zs7sxa",
+                "year": 1480,
+                "title": "The Lamentation of Christ",
+                "artist": "Andrea Mantegna",
+                "position": 3
+            },
+            {
+                "id": "zv92mek2zp",
+                "year": 1794,
+                "title": "Three Beauties of the Present Day",
+                "artist": "Kitagawa Utamaro",
+                "position": 4
+            },
+            {
+                "id": "4jk73maxda",
+                "year": 1965,
+                "title": "Infinity Mirror Room - Phalli's Field",
+                "artist": "Yayoi Kusama",
+                "position": 5
+            },
+            {
+                "id": "asybh7qdxv",
+                "year": 1908,
+                "title": "The Kiss",
+                "artist": "Gustav Klimt",
+                "position": 6
+            },
+            {
+                "id": "cvwsh6n9sm",
+                "year": 1962,
+                "title": "Campbell's Soup Cans",
+                "artist": "Andy Warhol",
+                "position": 7
+            },
+            {
+                "id": "ey272y9qy3",
+                "year": 1485,
+                "title": "The Birth of Venus",
+                "artist": "Sandro Botticelli",
+                "position": 8
+            },
+            {
+                "id": "pwfbh9c9hz",
+                "year": 1999,
+                "title": "99 Cent",
+                "artist": "Andreas Gursky",
+                "position": 9
+            },
+            {
+                "id": "44fghawz8y",
+                "year": 1930,
+                "title": "Composition II in Red, Blue, and Yellow",
+                "artist": "Piet Mondrian",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
