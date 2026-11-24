@@ -175,7 +175,7 @@
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
         });
         sb.auth.onAuthStateChange((event) => {
-            if (event === 'SIGNED_IN') { flushQueue(); setTimeout(() => { finishGuestTransfer().catch(() => {}); }, 0); }
+            if (event === 'SIGNED_IN') { flushQueue(); setTimeout(() => { finishGuestTransfer().catch(() => {}); reportTimeZone(); }, 0); }
             emitAuth(event);
         });
         window.addEventListener('online', flushQueue);
@@ -200,10 +200,30 @@
     // wants their solo games saved without signing up.
     async function ensureGuest() {
         const u = await user();
-        if (u) return u;
+        if (u) { reportTimeZone(); return u; }
         const { data, error } = await sb.auth.signInAnonymously();
         if (error) throw fail(error);
+        reportTimeZone();
         return data.user;
+    }
+
+    // The device's time zone (e.g. "Europe/Vienna"), for the rough country
+    // count on the usage dashboard (migration 034). Never the IP address or a
+    // city. Sent once per account and again only if it changes.
+    const TZ_KEY = 'circart-tz-sent';
+    function reportTimeZone() {
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (!tz || !sb) return;
+            user().then(u => {
+                if (!u) return;
+                const mark = u.id + '|' + tz;
+                if (storage(() => localStorage.getItem(TZ_KEY), null) === mark) return;
+                rpc('set_my_time_zone', { p_tz: tz })
+                    .then(() => storage(() => localStorage.setItem(TZ_KEY, mark)))
+                    .catch(() => {});
+            }).catch(() => {});
+        } catch (e) { /* never get in the way of playing */ }
     }
 
     async function saveTransferTicket() {

@@ -2,13 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Sun 22 Nov, 22:45",
+  "label": "Tue 24 Nov, 11:00",
   "changes": [
-    "Story dailies can now look back: after each card you read the story behind that card, and the start card has its own little story on the start screen.",
-    "At the end of such a story the results screen shows every card in the right order with its story, so the whole tale comes together. Older stories still look as before."
+    "When you play online, the app now saves your device's time zone, so the usage dashboard can count roughly which countries players come from. Never the IP address or the city. The privacy page says so."
   ],
   "test": [
-    "Nothing to try on your phone yet: the first story in the new style is the Lautrec draft for Tue 24 Nov. Once you approve it, play it and look at the end screen."
+    "Play the daily: nothing should look different.",
+    "Profile → Download my data: the profile part now has your time zone."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
