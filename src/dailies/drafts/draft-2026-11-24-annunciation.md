@@ -5,11 +5,11 @@ Written in the museum guide + detective voice (`src/dailies/WRITING.md`).
 | | |
 |---|---|
 | **Theme** | An angel calls / Ein Engel klopft an |
-| **Red thread** | The Annunciation (an angel tells Mary she will have a child), painted seven times in seven very different ways (idea 4, one subject through time). |
+| **Red thread** | The Annunciation (an angel tells Mary she will have a child), painted eight times in eight very different ways (idea 4, one subject through time). |
 | **Suggested date** | **Sun 29 Nov, First Sunday of Advent**: the season of waiting starts with this visit. |
 | **Questions after each card** | Seven painters, several styles → artist and style questions stay on. |
 
-## Works (start card + 6, order as played)
+## Works (start card + 7, order as played)
 | Pos | Year | Work | Where | Photo | Year sources |
 |---|---|---|---|---|---|
 | 0 (start) | 1534 | Lorenzo Lotto, Recanati Annunciation (the cat) | Villa Colloredo Mels, Recanati | on Commons (category exists), pick at build | Wikipedia ("c. 1534"); Bridgeman / artsupp (to confirm, one says 1532) |
@@ -19,12 +19,13 @@ Written in the museum guide + detective voice (`src/dailies/WRITING.md`).
 | 4 | 1475 | Leonardo da Vinci, Annunciation | Uffizi, Florence | yes ("Da Vinci The Annunciation.jpg") | Uffizi ("1472 c.", video "1472–1475 ca."); Google Arts & Culture |
 | 5 | 1891 | Paul Gauguin, Ia Orana Maria (Hail Mary) | The Met | yes (Met photo on Commons) | The Met; Wikipedia |
 | 6 | 1436 | Jan van Eyck, The Annunciation | National Gallery of Art, Washington | yes ("Annunciation - Jan van Eyck - 1434 - NG Wash DC.jpg") | NGA ("c. 1434/1436"); Google Arts & Culture / Vanderbilt |
+| 7 | 1623 | Orazio Gentileschi, Annunciation (added 24 Nov, Admin) | Galleria Sabauda, Turin | yes ("Annunciazione (1623 circa) - Orazio Gentileschi.jpg") | Wikipedia ("1623"); arte.it ("1623"); Finestre sull'Arte (sent to the duke in 1623) |
 
-Order: 1534 → 1850 → 1333 → 1898 → 1475 → 1891 → 1436 (up and down every step, no year twice). The approximate cards (Lotto, Leonardo, van Eyck) have no other card within 30 years: van Eyck and Leonardo are 39 apart, Leonardo and Lotto 59. Gauguin and Tanner are only 7 years apart but never come one after the other.
+Order: 1534 → 1850 → 1333 → 1898 → 1475 → 1891 → 1436 → 1623 (never three rising years in a row, no year twice). The approximate cards (Lotto, Leonardo, van Eyck) have no other card within 30 years: van Eyck and Leonardo are 39 apart, Leonardo and Lotto 59. Gauguin and Tanner are only 7 years apart but never come one after the other.
 
 ## Intro
-EN: Advent begins, the season of waiting, and the waiting starts with a visit. An angel comes to a young woman in Nazareth and tells her she will have a child. Painters have told this moment again and again, each in their own way. Look closely, follow the clues and put seven of these visits in order.
-DE: Der Advent beginnt, die Zeit des Wartens, und das Warten beginnt mit einem Besuch. Ein Engel kommt zu einer jungen Frau in Nazareth und sagt ihr, dass sie ein Kind bekommen wird. Maler haben diesen Moment immer wieder erzählt, jeder auf seine Weise. Schau genau hin, folge den Spuren und bring sieben dieser Besuche in die richtige Reihenfolge.
+EN: Advent begins, the season of waiting, and the waiting starts with a visit. An angel comes to a young woman in Nazareth and tells her she will have a child. Painters have told this moment again and again, each in their own way. Look closely, follow the clues and put eight of these visits in order.
+DE: Der Advent beginnt, die Zeit des Wartens, und das Warten beginnt mit einem Besuch. Ein Engel kommt zu einer jungen Frau in Nazareth und sagt ihr, dass sie ein Kind bekommen wird. Maler haben diesen Moment immer wieder erzählt, jeder auf seine Weise. Schau genau hin, folge den Spuren und bring acht dieser Besuche in die richtige Reihenfolge.
 
 ## Chapters (each about its own card)
 0. Lotto, Recanati Annunciation
@@ -55,15 +56,19 @@ DE: Such zuerst den Engel: halb versteckt zwischen den Blüten links, mit gelben
 EN: Tilt your head. Mary's answer, "Ecce ancilla domini", behold the handmaid of the Lord, is painted upside down, so that God above can read it. Gabriel wears rainbow-coloured wings and a heavy jewelled cloak, and the dove glides down on golden rays. Even the floor tells stories: its tiles show Samson and David with Goliath. Jan van Eyck sets the whole visit inside a church.
 DE: Leg den Kopf schief. Marias Antwort, „Ecce ancilla domini“, siehe, ich bin die Magd des Herrn, steht auf dem Kopf, damit Gott sie von oben lesen kann. Gabriel trägt regenbogenfarbene Flügel und einen schweren, juwelenbesetzten Mantel, und die Taube gleitet auf goldenen Strahlen herab. Sogar der Boden erzählt: Seine Fliesen zeigen Samson und David mit Goliath. Jan van Eyck verlegt den ganzen Besuch in eine Kirche.
 
-## Outro
-EN: Seven painters, one short conversation. Over the centuries the angel speaks in golden letters and then shrinks to a column of light, and Mary moves from a gold throne room into a plain bedroom. What stays the same is the moment itself: someone knocks, and the waiting begins.
-DE: Sieben Maler, ein kurzes Gespräch. Über die Jahrhunderte spricht der Engel erst in goldenen Buchstaben und wird zuletzt zu einer Lichtsäule, und Maria zieht aus dem goldenen Raum in ein schlichtes Schlafzimmer. Gleich bleibt nur der Moment selbst: Jemand klopft an, und das Warten beginnt.
+7. Gentileschi, Annunciation
+EN: Look up at the heavy red curtain. It is borrowed from Caravaggio, but here the room is full of warm daylight, and the dove of the Holy Spirit comes in through the window. Orazio Gentileschi paints it in Genoa and sends it, unasked, to the Duke of Savoy in Turin, whose family has its own Order of the Annunciation. The gift comes with a letter: Orazio hopes for a post at court. The duke keeps the painting, but the job never comes.
+DE: Schau hoch zum schweren roten Vorhang. Er ist bei Caravaggio abgeschaut, doch hier ist der Raum voll warmem Tageslicht, und die Taube des Heiligen Geistes kommt durchs Fenster herein. Orazio Gentileschi malt das Bild in Genua und schickt es ungefragt an den Herzog von Savoyen in Turin, dessen Familie einen eigenen Orden der Verkündigung hat. Dem Geschenk liegt ein Brief bei: Orazio hofft auf eine Stelle am Hof. Der Herzog behält das Bild, aber die Stelle bekommt Orazio nie.
 
-## Open questions
-- Seven cards (start + 6) is the minimum. If you'd like one or two more, a 17th-century one would fill the gap between Lotto and Rossetti (e.g. El Greco or Murillo); say so and I'll add it at build.
+## Outro
+EN: Eight painters, one short conversation. Over the centuries the angel speaks in golden letters and then shrinks to a column of light, and Mary moves from a gold throne room into a plain bedroom. What stays the same is the moment itself: someone knocks, and the waiting begins.
+DE: Acht Maler, ein kurzes Gespräch. Über die Jahrhunderte spricht der Engel erst in goldenen Buchstaben und wird zuletzt zu einer Lichtsäule, und Maria zieht aus dem goldenen Raum in ein schlichtes Schlafzimmer. Gleich bleibt nur der Moment selbst: Jemand klopft an, und das Warten beginnt.
+
+## Admin's answer
+- **24 Nov evening: approved; add one more card if possible** → Orazio Gentileschi's Annunciation (1623, Turin) added as card 7, at the end of the order.
 
 ## Still to check at build (two sources each, or cut)
 - Lotto year (Wikipedia "c. 1534"; one image agency says 1532) → `date_note` "about 1534 (some sources say 1532)".
 - Christina Rossetti as the model (well known; Wikipedia's claim about William as Gabriel is unsourced, so it stays out); "shocks many viewers" needs a source or goes.
-- Every clue checked on the contact sheet (Lotto's raised hands, Mary's cloak colour in Martini, Tanner's clothes, Gauguin's angel on the left, van Eyck's jewelled cloak).
+- Every clue checked on the contact sheet (Lotto's raised hands, Mary's cloak colour in Martini, Tanner's clothes, Gauguin's angel on the left, van Eyck's jewelled cloak, Gentileschi's curtain and the dove at the window).
 - Martini: the Uffizi now names the right-hand saint differently; the chapter doesn't mention the side saints, so nothing changes.
