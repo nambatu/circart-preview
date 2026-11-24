@@ -265,6 +265,7 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 - 2026-11-22 (18:00) · story-daily run · nothing approved and due (Sun 22 Cecilia is live, nothing approved for Mon 23 / Tue 24); new draft "Lautrec's Paris" (Toulouse-Lautrec's birthday) for Tue 24 Nov, waiting for Admin
 - 2026-11-22 (22:45) · same session, live with Admin · D10 done: look-back stories + story recap (migration 033), WRITING.md; Lautrec draft rewritten. e2e weekly-painting step fails since before (task 60)
 - 2026-11-23 (01:00) · same session · D11 Lautrec built and live for Tue 24 Nov; writing voice changed to museum guide + detective (Admin)
+- 2026-11-24 (18:00) · story-daily run · nothing approved and due for Wed 25 / Thu 26 (Black Friday for Fri 27 still waiting for Admin; Annunciation Sun 29 builds Thu 26/Fri 27); new draft "Am I not a man?" (slavery) for Wed 2 Dec, sent as a tone check
 - 2026-11-09 · manual session · moved development into this repo (src/, CLAUDE.md, notes/), evening build switched off, story task pointed here; 35 + 36 deployed · next: 37 (style check) or 31
 - 2026-11-09 (evening build, Mon) · 31 countdown bar fix · tests green · deployed yes · next: 37 (style check, needs splitting) or 32a
 - 2026-11-10 · manual session · daily history export + never-twice check · deployed yes (Action only, no app change) · next: 37a
