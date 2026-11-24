@@ -6,7 +6,7 @@ Admin, 24 Nov evening: "I'd like to try something political over the years" → 
 |---|---|
 | **Theme** | Painting power / Macht im Bild |
 | **Red thread** | How rulers and leaders want to be seen: every portrait is a message, and the clues are in the pose, the props and the background. |
-| **Suggested date** | **Sat 28 Nov**, the free day between the normal week and the Advent story. |
+| **Suggested date** | ~~Sat 28 Nov~~ → **Mon 30 Nov** (Admin: not Saturday, "maybe Sunday"; Sun 29 is the Advent story, so the next free day). |
 | **Questions after each card** | Eight painters, many styles → artist and style questions stay on. |
 
 ## Works (start card + 7, order as played)
@@ -64,7 +64,10 @@ DE: Hier gibt es weder Krone noch Thron. Washington trägt einen schlichten schw
 EN: That's how power has dressed itself over the centuries. First the crowns and swords, then a plain suit and a book of laws, and finally a face printed a million times. The rulers change, but the trick stays the same: someone decides what you should see.
 DE: So hat sich Macht über die Jahrhunderte inszeniert. Erst mit Kronen und Schwertern, dann mit schlichtem Anzug und Gesetzbuch und zuletzt mit einem Gesicht, das millionenfach gedruckt wird. Die Herrscher wechseln, der Trick bleibt: Jemand entscheidet, was du sehen sollst.
 
-## Open questions
+## Admin's answer
+- **24 Nov evening: approved; Mao is fine.** Not on Sat 28 (Black Friday runs Fri 27 instead); "delay power for Sunday maybe" → Sun 29 is taken by the Advent story, so Mon 30 Nov unless Admin says otherwise.
+
+## Open questions (answered)
 - Is Mao next to the kings fine for you? He is there because of Warhol's picture, not to put him on a level with anyone; the chapter is about how the image works.
 - Obama is the only living person. The chapter is only about the poster.
 

@@ -61,6 +61,9 @@ Web app first (circart.langschwerts.de, installable), app stores in January (Goo
 
 ## Queue (top = next)
 D12. [ ] **Build the story daily for Sun 29 Nov (First Advent), "An angel calls / Ein Engel klopft an"** (Admin approved 24 Nov, with Gentileschi added) — 8 cards, draft `src/dailies/drafts/draft-2026-11-24-annunciation.md`. Story-daily task, Thu 26 or Fri 27 run; live before midnight Sat 28.
+D13. [ ] **Story daily for Fri 27 Nov (Black Friday), "Shop till you drop / Kaufrausch"** (Admin asked 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-black-friday.md`, waiting for approval; then build in the Thu 26 run.
+D14. [ ] **Story daily for Mon 30 Nov, "Painting power / Macht im Bild"** (Admin approved 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-power.md`; build in the Sat 28 run.
+D15. [ ] **Story daily for Wed 2 Dec: slavery in Africa and the Americas** (Admin, 24 Nov) — idea 16 in `src/dailies/ideas.md`; ask Admin about tone, draft by Sat 28.
 D10b. [ ] **Later, if Admin wants it: cards dealt in small groups / cards sharing a spot on the timeline** (Admin, 22 Nov, idea from the story review) — a game change, size it first.
 61. [ ] **Name and logo before the launch** (Admin, 24 Nov): many people don't get the "circa" in CIRCArt. Either a new name or a logo that explains it. Decide in week of 30 Nov; then update app name, manifest, icons, texts EN + DE, email templates, privacy pages and the store plan.
 60. [ ] **Fix the e2e weekly-painting step** — `src/app/tests/e2e.mjs` (wave 1: streak popover → Studio → `#gallery-restorations .wk-card`) times out; it already failed before D10 on 22 Nov (checked by running the tests without the D10 changes). Everything else is green.
