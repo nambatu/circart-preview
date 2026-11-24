@@ -291,3 +291,4 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 - 2026-11-20 · manual session (Gemini) · pinned active game artwork inside `.go-sticky` (`game.js`, `shell.css`, `e2e.mjs`) so scrolling the timeline, bonus questions, or live waiting room keeps the painting fixed at top + preserved scroll across live polls (`_stepKey`) · ALL GREEN (20 server suites + e2e) · 390×844 light/dark screenshots verified · deployed yes
 - 2026-11-21 · manual session · review of the Gemini code, privacy text for friends · tests green · deployed yes · next: task 60
 - 2026-11-21 · manual session · FB #5 image retry, Anthropic wording · tests green · deployed yes
+- 2026-11-24 (17:55) · story-daily run · nothing approved for 25/26 Nov (Lautrec live for Tue 24); new draft "An angel calls" (the Annunciation, First Advent) for Sun 29 Nov, waiting for Admin
