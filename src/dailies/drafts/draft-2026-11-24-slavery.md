@@ -1,6 +1,6 @@
 # Draft 24 Nov 2026 (story-daily run): "Am I not a man? / Bin ich kein Mensch?" (`look_back: true`)
 
-Idea 16 (slavery in Africa and the Americas). Admin, 24 Nov: Wed 2 Dec, draft by Sat 28, **check the tone with Admin first**. So this draft is also the tone check: the full story is written so Admin can judge it, and nothing gets built until Admin says the tone is right. Museum guide + detective voice (`src/dailies/WRITING.md`).
+Idea 16 (slavery in Africa and the Americas). Admin, 24 Nov: Wed 2 Dec, draft by Sat 28, **check the tone with Admin first**. **Admin 24 Nov evening: approved** (tone fine, "a free painter" stays, sexual scenes are fine because it's art). Build in the Mon 30 run. Museum guide + detective voice (`src/dailies/WRITING.md`).
 
 | | |
 |---|---|
@@ -9,7 +9,7 @@ Idea 16 (slavery in Africa and the Americas). Admin, 24 Nov: Wed 2 Dec, draft by
 | **Suggested date** | **Wed 2 Dec** (UN International Day for the Abolition of Slavery), as Admin planned. |
 | **Questions after each card** | Nine artists, many styles → artist and style questions stay on. |
 
-## Tone (Admin, please check this first)
+## Tone (approved)
 - Quiet and factual. The guide points at what is in the picture and says what is known, nothing more. No invented feelings.
 - **No art puns at all** in this story, and no jokes in the intro or outro.
 - Enslaved people are named wherever a source names them (Juan de Pareja, Madeleine). The texts say "enslaved people", not "slaves", except in titles and quotes.
@@ -22,16 +22,16 @@ Idea 16 (slavery in Africa and the Americas). Admin, 24 Nov: Wed 2 Dec, draft by
 | 0 (start) | 1800 | Marie-Guillemine Benoist, Portrait of Madeleine (Portrait d'une femme noire) | Louvre | on Commons, pick at build | Louvre ("Salon de 1800"); Wikipedia "Portrait of Madeleine" |
 | 1 | 1862 | Eastman Johnson, A Ride for Liberty – The Fugitive Slaves | Brooklyn Museum | on Commons / Brooklyn open access | Brooklyn Museum ("ca. 1862", event seen 2 March 1862); Wikipedia; Smarthistory |
 | 2 | 1650 | Diego Velázquez, Juan de Pareja | Metropolitan Museum, New York | on Commons | Met ("1650"); Wikipedia; Atlas Obscura |
-| 3 | 2019 | Kara Walker, Fons Americanus | Tate Modern (Turbine Hall commission, 2019–20) | from the web (Tate or press photo) | Tate; Wikipedia |
+| 3 | 1994 | Kara Walker, Gone: An Historical Romance of a Civil War as It Occurred b'tween the Dusky Thighs of One Young Negress and Her Heart (cut paper on wall) | Museum of Modern Art, New York | from the web (MoMA) | MoMA ("1994"); Kara Walker studio site (1994) |
 | 4 | 1840 | J. M. W. Turner, Slavers Throwing Overboard the Dead and Dying (The Slave Ship) | Museum of Fine Arts, Boston | on Commons | MFA Boston; Wikipedia (Royal Academy 1840) |
 | 5 | 1661 | Juan de Pareja, The Calling of Saint Matthew | Prado, Madrid | on Commons | Met loan page ("1661", signed and dated); Wikipedia |
 | 6 | 1938 | Jacob Lawrence, one panel of "The Life of Toussaint L'Ouverture" (41 panels) | Amistad Research Center, New Orleans | from the web (pick panel at build) | Amistad Research Center (1938, 41 panels); Tulane News |
 | 7 | 1787 | Josiah Wedgwood (model by William Hackwood), anti-slavery medallion "Am I Not a Man and a Brother?" | V&A / Met (many copies) | on Commons | V&A; Met |
 | 8 | 1867 | Edmonia Lewis, Forever Free (marble) | Howard University Gallery of Art, Washington | on Commons / Smarthistory | Howard University ("1867"); Smarthistory; Met |
 
-Order: 1800 → 1862 → 1650 → 2019 → 1840 → 1661 → 1938 → 1787 → 1867 (never two rising steps in a row, no year twice). Johnson (1862) and Lewis (1867) are five years apart but far from each other in the game. The two Pareja cards are eleven years apart and never come one after the other.
+Order: 1800 → 1862 → 1650 → 1994 → 1840 → 1661 → 1938 → 1787 → 1867 (never two rising steps in a row, no year twice). Johnson (1862) and Lewis (1867) are five years apart but far from each other in the game. The two Pareja cards are eleven years apart and never come one after the other.
 
-Left out on purpose: the Benin Bronzes (only ranges of centuries, no year to place) and Biard's slave-trade scene (1840, the same year as Turner). Kara Walker's 1994 silhouette "Gone" was the first idea, but its full title and some scenes are sexual, so the 2019 fountain takes its place.
+Left out on purpose: the Benin Bronzes (only ranges of centuries, no year to place) and Biard's slave-trade scene (1840, the same year as Turner).
 
 ## Intro
 EN: For centuries millions of people were bought, sold and shipped across the Atlantic, and artists were watching. Some painted the people in chains, some painted the fight to end it, and two of today's sitters were enslaved themselves. Look closely and put their story in order.
@@ -50,9 +50,9 @@ DE: Schau auf das Pferd: Es galoppiert und trägt eine ganze Familie, einen Mann
 EN: Look at the face. No flattery, no pose, just a steady look straight at you above a wide white collar. This is Juan de Pareja, who works in Velázquez's studio and is enslaved by him. Velázquez paints him on a journey to Rome and shows the portrait there to the public. Within months he signs the papers that will make Pareja a free man.
 DE: Schau dir das Gesicht an. Keine Schmeichelei, keine Pose, nur ein fester Blick direkt auf dich, über einem breiten weißen Kragen. Das ist Juan de Pareja. Er arbeitet in Velázquez' Werkstatt und ist von ihm versklavt. Velázquez malt ihn auf einer Reise nach Rom und stellt das Bildnis dort öffentlich aus. Wenige Monate später unterschreibt er die Papiere, die Pareja zu einem freien Mann machen werden.
 
-3. Walker, Fons Americanus
-EN: A white fountain, taller than a house, with water pouring from the figures. Kara Walker builds it for the great hall of Tate Modern in London as an answer to the proud monuments of the British Empire, like the Victoria Memorial in front of Buckingham Palace. But where a queen would stand, her figures tell of the Atlantic: look down into the basin for the boat, the shark and the people in the water.
-DE: Ein weißer Brunnen, höher als ein Haus, aus dessen Figuren Wasser strömt. Kara Walker baut ihn für die große Halle der Tate Modern in London, als Antwort auf die stolzen Denkmäler des Britischen Empire, etwa das Victoria Memorial vor dem Buckingham Palace. Doch wo sonst eine Königin stünde, erzählen ihre Figuren vom Atlantik: Schau hinunter ins Becken, dort findest du das Boot, den Hai und die Menschen im Wasser.
+3. Walker, Gone
+EN: Black shapes cut from paper, stuck straight onto a white wall, as long as a room. Silhouettes are a sweet, old-fashioned parlour craft, and that is the trick. Look closer at the figures under the trees: Kara Walker fills the romantic scenery of the old American South with scenes of violence and sex between masters and the enslaved. She is only 24 when this wall makes her famous almost overnight. The long title mocks the romantic novels about the South.
+DE: Schwarze Formen aus Papier, direkt auf eine weiße Wand geklebt, so lang wie ein ganzer Raum. Scherenschnitte sind ein liebes, altmodisches Salonhandwerk, und genau das ist der Trick. Schau dir die Figuren unter den Bäumen genauer an: Kara Walker füllt die romantische Kulisse der alten Südstaaten mit Szenen von Gewalt und Sex zwischen Herren und Versklavten. Sie ist erst 24, als diese Wand sie fast über Nacht berühmt macht. Der lange Titel verspottet die romantischen Südstaaten-Romane.
 
 4. Turner, The Slave Ship
 EN: First you see the sunset, red and gold, and a storm rising. Then look at the water in the front corner: chains, a leg, fish and birds. Turner's full title tells you what happens: slavers throw the dead and dying overboard as a typhoon comes on. The picture probably recalls the Zong, a British slave ship whose crew threw enslaved Africans into the sea to claim the insurance money.
@@ -80,11 +80,9 @@ DE: In der richtigen Reihenfolge gelesen, wechseln die Bilder die Stimme. Erst m
 
 ## To check at build
 - The gold ring on Madeleine (Louvre text) and every other clue must be visible on the contact sheet.
-- Fons Americanus: check the figures in the photo (boat, shark, people) before keeping that sentence; the Victoria Memorial link is from Tate and Wikipedia.
+- Walker: check the clues against the MoMA photo; confirm "24" and "famous almost overnight" (first shown at the Drawing Center, New York, 1994) with two sources.
 - Lawrence: pick one panel with a free photo or a museum photo; the chapter talks about the series, so any panel works.
 - Wedgwood: many copies exist; pick one museum's photo and credit it.
 
 ## Open questions
-1. Is the tone right (see "Tone" above)? Nothing gets built before your yes.
-2. Kara Walker's fountain (2019) instead of her 1994 silhouettes: OK?
-3. The Pareja chapter says "a free painter", which hints that his own picture comes after the portrait. On a normal day that is a small giveaway: keep it (it is the heart of the story) or cut it?
+None: approved by Admin on 24 Nov.

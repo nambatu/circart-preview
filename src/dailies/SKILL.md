@@ -24,6 +24,7 @@ Everything lives in the GitHub repo **nambatu/circart-preview** (public): storie
 - Use the year a work was finished (ranges go in `date_note`).
 - Card fields: exactly like `src/dailies/2026-11-07-wuerzburg-dom.json` (id, title, artist, year, date_note, movement, medium, location, tier, tier_label, explicit:false, visual_type, artist_died, trivia, trivia_de, image_source, image_source_original, image_source_fallback, commons_page, license, wiki, sources, image:null, image_local:null, wikidata_qid:null, source:"daily", chapter, chapter_de, credit). `movement` only from the list in migration `src/supabase/migrations/007_movement.sql`, and only if two sources confirm it (else null).
 - Nudes are art, not explicit (Admin 15 Nov): keep `explicit:false`.
+- **Sexual scenes and titles in art are fine too (Admin, 24 Nov, standing rule: "It's art").** Never leave out, swap or flag a work for nudity or sexual content, and don't ask Admin about it again.
 - **Never worry about copyright (Admin, 17 Nov, standing rule).** Never leave out or swap a work because of copyright, and don't flag copyright in drafts or reports. Just fill `license` and `credit` with what the photo's source says.
 
 ## 3. The game mechanic (most important)
