@@ -1593,15 +1593,6 @@
   "page": "https://commons.wikimedia.org/wiki/File:L%27enseigne_de_Gersaint.jpg"
  },
  {
-  "key": "cvwsh6n9sm",
-  "urls": [
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Andy_Warhol_Campbell%27s_Soup_Cans_%28MoMA_-_New_York%29.jpg?width=1280",
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Andy_Warhol_Campbell%27s_Soup_Cans_%28MoMA_-_New_York%29.jpg",
-   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans_MOMA.jpg"
-  ],
-  "page": "https://commons.wikimedia.org/wiki/File:Andy_Warhol_Campbell%27s_Soup_Cans_%28MoMA_-_New_York%29.jpg"
- },
- {
   "key": "bf96qpnbqj",
   "urls": [
    "https://commons.wikimedia.org/wiki/Special:FilePath/Massysm_Quentin_%E2%80%94_The_Moneylender_and_his_Wife_%E2%80%94_1514.jpg?width=1280",
@@ -1654,5 +1645,14 @@
    "https://commons.wikimedia.org/wiki/Special:FilePath/Edouard_Manet%2C_A_Bar_at_the_Folies-Berg%C3%A8re.jpg?width=1280"
   ],
   "page": "https://commons.wikimedia.org/wiki/File:Edouard_Manet%2C_A_Bar_at_the_Folies-Berg%C3%A8re.jpg"
+ },
+ {
+  "key": "cvwsh6n9sm",
+  "urls": [
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans_MOMA.jpg",
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans_MOMA.jpg",
+   "https://upload.wikimedia.org/wikipedia/en/1/1f/Campbells_Soup_Cans_MOMA.jpg"
+  ],
+  "page": "https://en.wikipedia.org/wiki/File:Campbells_Soup_Cans_MOMA.jpg"
  }
 ]
