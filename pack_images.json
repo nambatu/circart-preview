@@ -1227,10 +1227,10 @@
   "key": "59xxuxm4qg",
   "urls": [
    "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Claude_Monet_-_Cath%C3%A9drale_de_Rouen._Harmonie_bleue_et_or.jpg/1280px-Claude_Monet_-_Cath%C3%A9drale_de_Rouen._Harmonie_bleue_et_or.jpg",
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Claude_Monet_-_Cath\u00e9drale_de_Rouen._Harmonie_bleue_et_or.jpg",
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Claude_Monet_-_Cath\u00e9drale_de_Rouen._Harmonie_bleue_et_or.jpg?width=1280"
+   "https://commons.wikimedia.org/wiki/Special:FilePath/Claude_Monet_-_Cathédrale_de_Rouen._Harmonie_bleue_et_or.jpg",
+   "https://commons.wikimedia.org/wiki/Special:FilePath/Claude_Monet_-_Cathédrale_de_Rouen._Harmonie_bleue_et_or.jpg?width=1280"
   ],
-  "page": "https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Cath\u00e9drale_de_Rouen._Harmonie_bleue_et_or.jpg"
+  "page": "https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Cathédrale_de_Rouen._Harmonie_bleue_et_or.jpg"
  },
  {
   "key": "jz7qdrkayf",
@@ -1281,10 +1281,10 @@
   "key": "veeduuyz53",
   "urls": [
    "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Albrecht_D%C3%BCrer_035.jpg/1280px-Albrecht_D%C3%BCrer_035.jpg",
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Albrecht_D\u00fcrer_035.jpg",
-   "https://commons.wikimedia.org/wiki/Special:FilePath/Albrecht_D\u00fcrer_035.jpg?width=1280"
+   "https://commons.wikimedia.org/wiki/Special:FilePath/Albrecht_Dürer_035.jpg",
+   "https://commons.wikimedia.org/wiki/Special:FilePath/Albrecht_Dürer_035.jpg?width=1280"
   ],
-  "page": "https://commons.wikimedia.org/wiki/File:Albrecht_D\u00fcrer_035.jpg"
+  "page": "https://commons.wikimedia.org/wiki/File:Albrecht_Dürer_035.jpg"
  },
  {
   "key": "e54qhj6vnt",
@@ -1649,9 +1649,12 @@
  {
   "key": "cvwsh6n9sm",
   "urls": [
-   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans_MOMA.jpg",
-   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans_MOMA.jpg",
-   "https://upload.wikimedia.org/wikipedia/en/1/1f/Campbells_Soup_Cans_MOMA.jpg"
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbell%27s_Soup_Cans_MOMA.jpg",
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbell%27s_Soup_Cans.jpg",
+   "https://en.wikipedia.org/wiki/Special:FilePath/Andy_Warhol_Campbell%27s_Soup_Cans.jpg",
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbell%27s_Soup_Cans_by_Andy_Warhol.jpg",
+   "https://en.wikipedia.org/wiki/Special:FilePath/Campbells_Soup_Cans.jpg",
+   "https://commons.wikimedia.org/wiki/Special:FilePath/Andy_Warhol_Campbell%27s_Soup_Cans_%28MoMA_-_New_York%29.jpg?width=1280"
   ],
   "page": "https://en.wikipedia.org/wiki/File:Campbells_Soup_Cans_MOMA.jpg"
  }
