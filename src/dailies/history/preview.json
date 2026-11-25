@@ -1393,5 +1393,67 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-24",
+        "cards": [
+            {
+                "id": "tn7t6tjpp2",
+                "year": 1891,
+                "title": "Moulin Rouge – La Goulue",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 0
+            },
+            {
+                "id": "6ey66ff36s",
+                "year": 1882,
+                "title": "Young Routy at Céleyran",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 1
+            },
+            {
+                "id": "fnhg2hfea8",
+                "year": 1901,
+                "title": "An Examination at the Faculty of Medicine, Paris",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 2
+            },
+            {
+                "id": "wcgue78dfb",
+                "year": 1887,
+                "title": "Portrait of Vincent van Gogh",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 3
+            },
+            {
+                "id": "spzze5g7qa",
+                "year": 1895,
+                "title": "The Clowness Cha-U-Kao",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 4
+            },
+            {
+                "id": "a9mhdt6u5y",
+                "year": 1888,
+                "title": "Equestrienne (At the Cirque Fernando)",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 5
+            },
+            {
+                "id": "ypracm9u4m",
+                "year": 1899,
+                "title": "At the Circus: The Spanish Walk",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 6
+            },
+            {
+                "id": "97vmgxcrtx",
+                "year": 1893,
+                "title": "Jane Avril (Jardin de Paris)",
+                "artist": "Henri de Toulouse-Lautrec",
+                "position": 7
+            }
+        ],
+        "story": "lautrec"
     }
 ]
