@@ -646,6 +646,7 @@
         if (!has(STRINGS, code)) return;
         lang = code;
         try { localStorage.setItem(LANG_KEY, code); } catch (e) { /* ignore */ }
+        loadTriviaDe();
         apply();
     }
 
@@ -661,8 +662,30 @@
     }
 
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const de = (obj, key) => (obj && lang === 'de' && obj[key + '_de']) || (obj && obj[key]) || '';
+    // German card texts of the base deck live in artline.json (trivia_de). Server answers often send
+    // only the English trivia, so we look the German text up by the English one.
+    let triviaDe = null;
+    function loadTriviaDe() {
+        if (triviaDe || lang !== 'de' || typeof fetch !== 'function') return;
+        triviaDe = new Map();
+        fetch('artline.json').then(r => (r.ok ? r.json() : [])).then(cards => {
+            (Array.isArray(cards) ? cards : []).forEach(c => {
+                if (c && typeof c.trivia === 'string' && typeof c.trivia_de === 'string') triviaDe.set(c.trivia.trim(), c.trivia_de);
+            });
+        }).catch(() => { triviaDe = null; });
+    }
+    const de = (obj, key) => {
+        if (!obj) return '';
+        if (lang === 'de' && obj[key + '_de']) return obj[key + '_de'];
+        const v = obj[key] || '';
+        if (lang === 'de' && key === 'trivia' && typeof v === 'string' && v) {
+            loadTriviaDe();
+            return (triviaDe && triviaDe.get(v.trim())) || v;
+        }
+        return v;
+    };
 
     window.CircI18n = { t, apply, setLanguage, languages, extend, esc, de, get lang() { return lang; } };
     (window.CIRC_PENDING_LANGS || []).forEach(a => extend.apply(null, a));
+    if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', loadTriviaDe);
 })();

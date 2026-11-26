@@ -2,13 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Tue 24 Nov, 11:00",
+  "label": "Thu 26 Nov, 11:00",
   "changes": [
-    "When you play online, the app now saves your device's time zone, so the usage dashboard can count roughly which countries players come from. Never the IP address or the city. The privacy page says so."
+    "All 230 cards of the main deck now have their story in German. If the app is set to German, every card text after a round is German too, in solo, the daily, the run and games with friends."
   ],
   "test": [
-    "Play the daily: nothing should look different.",
-    "Profile → Download my data: the profile part now has your time zone."
+    "Set the language to Deutsch, play a solo game and open a card's text after placing it.",
+    "Play the daily in German and check the text under the revealed painting."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
