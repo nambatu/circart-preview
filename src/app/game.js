@@ -477,7 +477,7 @@
         G._stepKey = stepKey;
         const view = {
             lobby: viewLobby, play: viewPlay, waiting: viewWaiting, reveal: viewReveal, done: viewDailyDone,
-            finished: () => (st.kind === 'solo' ? viewSoloDone() : st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t('game.cancelled')),
+            finished: () => (st.kind === 'solo' ? viewSoloDone() : st.kind === 'run' ? viewRunDone() : viewPodium()), dropped: () => note(t('game.dropped')), cancelled: () => note(t(st.kind === 'async' && st.players.length < 2 ? 'game.nobodyJoined' : 'game.cancelled')),
         }[st.phase] || (() => '');
         body.innerHTML = view();
         wire();
@@ -533,7 +533,10 @@
               : t('game.asyncRules', { turns: st.turns, cards: st.cards_per_turn }))}</p>
           ${artistOption()}
           ${st.is_host
-              ? `<button class="btn primary block" data-act="start" ${st.players.length < 2 ? 'disabled' : ''}>${esc(st.players.length < 2 ? t('game.waitPlayers') : t('game.start'))}</button>`
+              ? (st.kind === 'async'
+                  ? `<button class="btn primary block" data-act="start">${esc(t('game.startNow'))}</button>
+                     <p class="note" style="text-align:center">${esc(t('game.startNowNote'))}</p>`
+                  : `<button class="btn primary block" data-act="start" ${st.players.length < 2 ? 'disabled' : ''}>${esc(st.players.length < 2 ? t('game.waitPlayers') : t('game.start'))}</button>`)
               : `<p class="muted" style="text-align:center">${esc(t('game.waitHost'))}</p>`}
           <button class="btn link" data-act="leave">${esc(t('game.leave'))}</button>
         </div>`;
@@ -632,6 +635,7 @@
             <h2 class="serif" style="font-size:22px">${esc(t('game.yourTurn'))}</h2>
             <p class="muted" style="font-size:14px">${esc(timed() ? t('game.readyTextTimed', { n: st.cards_per_turn, s: st.answer_seconds || 20 }) : t('game.readyText', { n: st.cards_per_turn }))}</p>
             <button class="btn primary block" data-act="ready">${esc(t('game.startTurn', { n: st.current_turn }))}</button></section>
+          ${joinPanel()}
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
           ${G.asyncPrevResults ? lastTurnPanel(G.asyncPrevResults) : ''}
@@ -1082,6 +1086,16 @@
         </div>`;
     }
 
+    // async turn 1: friends can still join with the code
+    function joinPanel() {
+        const st = G.st;
+        if (st.kind !== 'async' || st.current_turn !== 1 || !st.code) return '';
+        return `<section class="panel" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+            <b>${esc(t('game.stillJoinTitle'))}</b>
+            <p class="muted" style="font-size:14px">${esc(t('game.stillJoin', { code: st.code }))}</p>
+            <button class="btn outline block" data-act="share">${esc(t('game.share'))}</button></section>`;
+    }
+
     function viewWaiting() {
         const st = G.st;
         if (st.kind === 'live') return viewLocked();
@@ -1092,7 +1106,8 @@
             <b>${esc(t('game.turnOf', { n: st.current_turn, total: st.turns }))}</b>
             <span class="note">${esc(t('game.closesIn', { time: fmtLeft(left(st.turn_deadline)) }))}</span></div>
           <section class="panel" style="padding:14px"><b>${esc(t('game.turnDone'))}</b>
-            <p class="muted" style="font-size:14px">${esc(t('game.turnDoneText'))}</p></section>
+            <p class="muted" style="font-size:14px">${esc(t(st.kind === 'async' && st.current_turn === 1 && st.players.filter(p => !p.dropped).length < 2 ? 'game.turnDoneAlone' : 'game.turnDoneText'))}</p></section>
+          ${joinPanel()}
           ${G.asyncPrevResults ? lastTurnPanel(G.asyncPrevResults) : ''}
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}

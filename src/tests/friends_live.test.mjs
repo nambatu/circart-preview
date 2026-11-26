@@ -634,19 +634,18 @@ ok((await err(() => call("cara", "respond_game_invite", benInvList[0].id, true))
 const accBen = await call("ben_acc", "respond_game_invite", benInvList[0].id, true);
 ok(accBen.accepted === true && accBen.game_id === inv2.game_id && accBen.auto_started === false,
    "first friend accepting leaves game in lobby (1 pending invite remains)");
-ok((await call("ana", "get_game", inv2.game_id)).status === "lobby",
-   "game status still lobby after 1 of 2 accepts");
+ok((await call("ana", "get_game", inv2.game_id)).status === "playing",
+   "036: async invite games run from the start; Ben joins turn 1 directly");
 
 const caraInvList = await call("cara", "my_game_invites");
 const accCara = await call("cara", "respond_game_invite", caraInvList[0].id, true);
-ok(accCara.accepted === true && accCara.game_id === inv2.game_id && accCara.auto_started === true,
-   "last friend accepting async invite triggers auto_started=true!");
+ok(accCara.accepted === true && accCara.game_id === inv2.game_id,
+   "last friend accepting the async invite joins the running game");
 const startedGame = await call("ana", "get_game", inv2.game_id);
 ok(startedGame.status === "playing" && startedGame.current_turn === 1 && startedGame.players.length === 3,
    "auto-started async game is playing turn 1 with all 3 players");
-ok((await q1(`select count(*)::int n from public.push_outbox where player_id=$1 and game_id=$2 and kind='turn' and turn=1`,
-             [users.ben_acc, inv2.game_id])).n === 1,
-   "auto-start also fires turn-1 push notification");
+ok((await q1(`select count(*)::int n from public.game_invites where game_id=$1 and status='accepted'`, [inv2.game_id])).n === 2,
+   "both invites marked accepted");
 
 // Live game invite does NOT auto-start when last friend accepts
 const invLive = await call("ana", "invite_friends_to_game", ["benny"], "live", 5, 1);
@@ -659,8 +658,8 @@ ok(accLive.accepted === true && accLive.auto_started === false,
 const invOne = await call("ana", "invite_friends_to_game", ["benny"], "async", 6, 3);
 const benOneInv = (await call("ben_acc", "my_game_invites")).find(i => i.game_id === invOne.game_id);
 const accOne = await call("ben_acc", "respond_game_invite", benOneInv.id, true);
-ok(accOne.accepted === true && accOne.auto_started === true,
-   "1-friend async invite triggers auto_started=true on accept");
+ok(accOne.accepted === true && (await call("ana", "get_game", invOne.game_id)).players.length === 2,
+   "1-friend async invite: accepting joins the game that is already running");
 
 // Removing accepted friend revokes friend_profile and expires pending invites
 await err(() => call("cara", "send_score_challenge", "ana", "daily_score", 7777));   // 035: only with a real score

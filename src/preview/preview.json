@@ -2,15 +2,13 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 26 Nov, 17:00",
+  "label": "Thu 26 Nov, 19:00",
   "changes": [
-    "iPads now also get the 'add CIRCArt to your home screen' hint for notifications (they pretend to be a Mac, so they were missed before).",
-    "If CIRCArt is opened inside Instagram, WhatsApp, TikTok and similar apps, the notification ask now explains that notifications only work after opening it in Chrome or Safari.",
-    "After your first finished daily, CIRCArt asks once if it may send you one daily reminder, and you pick the time (7, 9, 13, 18 or 20 o'clock). It only comes if you haven't played the daily yet. 'Not now' asks again in a week, 'Never ask me again' stops it."
+    "Games with friends over several days start right away. You tap 'Start now' and play turn 1 without waiting. Friends join with the code, the link or an invite while turn 1 is open, and they play the same cards. If nobody joins within a day, the game ends and you get a notification."
   ],
   "test": [
-    "Open the preview link from a WhatsApp or Instagram message, play the daily, and look at the reminder pop-up.",
-    "On an iPad in Safari: finish the daily and check the home screen hint."
+    "Start a game over several days alone, play turn 1, then let a friend join with the code.",
+    "Invite a friend from the friends list: the game starts for you at once, and your friend joins when accepting."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }

@@ -157,6 +157,7 @@ try {
   await shot(ana, '5b-async-ask-push');
   await ana.click('.modal [data-act="on"]'); await ana.waitForTimeout(400);
   ok(!(await ana.$('.modal:has([data-act="on"])')) && await ana.evaluate(() => window.__perm) === 'granted', "turned on: the sheet closes");
+  ok(await ana.isEnabled('[data-act="start"]') && (await text(ana)).includes('Start now'), "036: async lobby can start right away, before anyone joined");
   const code2 = (await ana.textContent('.go-code')).trim();
   await ben.goto('http://localhost:8772/'); await ben.waitForSelector('#home-games [data-game]'); await ben.waitForFunction(() => document.getElementById('home-daily').innerText.includes('New in')); await ben.waitForTimeout(300);
   await ben.fill('#home-code', code2); await ben.click('#home-join button[type=submit]');
