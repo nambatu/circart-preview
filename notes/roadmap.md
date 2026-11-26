@@ -60,6 +60,7 @@ Web app first (circart.langschwerts.de, installable), app stores in January (Goo
 - **January:** app stores (41), Google login (25), more packs (29), run tuning (18).
 
 ## Queue (top = next)
+63. [ ] 🔧 Claude 2026-11-26 **Async games start right away** (Admin, 26 Nov): no waiting room; the host plays turn 1 at once, others join (code, link, invite) while turn 1 is open; turn 1 closes when everyone joined has played and at least 2 are in, or after 24 h; nobody joined → the game ends and the host is told.
 62. [x] **Daily reminder notification** (done 26 Nov, see Done) (Admin, 26 Nov): one-time pop-up asking if CIRCArt may send ONE daily reminder for the daily challenge, with a time choice (7, 9, 13, 18 h); ask for notifications when someone starts an async game; remove the test notification from settings.
 D12. [ ] **Build the story daily for Sun 29 Nov (First Advent), "An angel calls / Ein Engel klopft an"** (Admin approved 24 Nov, with Gentileschi added) — 8 cards, draft `src/dailies/drafts/draft-2026-11-24-annunciation.md`. Story-daily task, Thu 26 or Fri 27 run; live before midnight Sat 28.
 D14. [ ] **Story daily for Mon 30 Nov, "Painting power / Macht im Bild"** (Admin approved 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-power.md`; build in the Sat 28 run.
