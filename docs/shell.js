@@ -1965,7 +1965,16 @@
     const REMIND_HOURS = [7, 9, 13, 18, 20];
     const REMIND_ASKED = 'circart-remind-asked';
     const hourLabel = h => String(h).padStart(2, '0') + ':00';
-    const isIphone = () => /iPhone|iPad/.test(navigator.userAgent);
+    // iPadOS reports itself as a Mac, so check for touch too
+    const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // browsers built into other apps (Instagram, WhatsApp, TikTok, …) can't show notifications
+    const inAppBrowser = () => /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Snapchat|musical_ly|TikTok|BytedanceWebview|Line\/|LinkedInApp|Pinterest|; wv\)/i.test(navigator.userAgent);
+    // why notifications can't be switched on here, as a text key (null = they can)
+    function pushHint(o) {
+        if (inAppBrowser()) return isIOS() ? 'push.inappIos' : 'push.inapp';
+        if (!o.pushSupported() && isIOS()) return 'push.iphone';
+        return null;
+    }
 
     async function syncPushLang() {
         const o = online();
@@ -2026,11 +2035,14 @@
         // 'never' = never ask again; a timestamp = "not now", ask again after a week
         const asked = store.get(REMIND_ASKED);
         if (asked === 'never' || (asked && Date.now() - Number(asked) < 7 * 864e5) || (asked && isNaN(Number(asked)))) return;
-        if (!o.pushSupported()) {
-            if (isIphone()) { store.set(REMIND_ASKED, 'never'); sheet(`<h2 class="serif" style="font-size:22px">${esc(t('remind.title'))}</h2>
-                <p class="muted" style="font-size:14px">${esc(t('remind.iphone'))}</p>`); }
+        const hint = pushHint(o);
+        if (hint) {
+            store.set(REMIND_ASKED, 'never');
+            sheet(`<h2 class="serif" style="font-size:22px">${esc(t('remind.title'))}</h2>
+                <p class="muted" style="font-size:14px">${esc(t(hint))}</p>`);
             return;
         }
+        if (!o.pushSupported()) return;
         if (o.pushPermission() === 'denied') return;
         try { const s = (await o.pushOn()) ? await o.pushSettings() : null; if (s && s.daily_hour != null) return; } catch (e) { /* ask anyway */ }
         store.set(REMIND_ASKED, String(Date.now()));
@@ -2065,14 +2077,14 @@
         if (!o || !o.pushSupported || !gameId) return;
         const key = 'circart-push-game-' + gameId;
         if (store.get(key)) return;
-        const iphone = !o.pushSupported() && isIphone();
-        if (!o.pushSupported() && !iphone) return;
-        if (o.pushPermission() === 'denied') return;
-        if (!iphone && await o.pushOn().catch(() => false)) return;
+        const hint = pushHint(o);
+        if (!o.pushSupported() && !hint) return;
+        if (!hint && o.pushPermission() === 'denied') return;
+        if (!hint && await o.pushOn().catch(() => false)) return;
         store.set(key, '1');
         const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('push.gameTitle'))}</h2>
-          <p class="muted" style="font-size:14px">${esc(iphone ? t('push.iphone') : t('push.gameText'))}</p>
-          ${iphone ? '' : `<button class="btn primary block" data-act="on">${esc(t('push.on'))}</button>`}`);
+          <p class="muted" style="font-size:14px">${esc(hint ? t(hint) : t('push.gameText'))}</p>
+          ${hint ? '' : `<button class="btn primary block" data-act="on">${esc(t('push.on'))}</button>`}`);
         const close = m.querySelector('[data-close]');
         if (close) close.textContent = t('push.later');
         const b = m.querySelector('[data-act="on"]');
