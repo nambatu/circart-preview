@@ -25,7 +25,7 @@ cp "$SRC"/app/*.json "$PV/app/" 2>/dev/null || true
 mkdir -p "$PV/weekly" && cp "$SRC"/weekly/*.json "$PV/weekly/" 2>/dev/null || true
 [ -d "$SRC/app/vendor" ] && mkdir -p "$PV/app/vendor" && cp -r "$SRC/app/vendor/." "$PV/app/vendor/"
 cp "$SRC"/web/online.js "$PV/backend/web/"
-cp "$SRC"/deck/*.py "$PV/backend/deck/"
+cp "$SRC"/deck/*.py "$SRC"/deck/trivia_de.json "$PV/backend/deck/"
 cp "$SRC"/supabase/migrations/*.sql "$PV/backend/supabase/migrations/"
 find "$SRC/preview" -maxdepth 1 -type f -exec cp {} "$PV/preview/" \;
 cp "$SRC"/packs/*.json "$PV/packs/" 2>/dev/null || true
