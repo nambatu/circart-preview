@@ -60,6 +60,7 @@ Web app first (circart.langschwerts.de, installable), app stores in January (Goo
 - **January:** app stores (41), Google login (25), more packs (29), run tuning (18).
 
 ## Queue (top = next)
+62. [ ] 🔧 Claude 2026-11-26 **Daily reminder notification** (Admin, 26 Nov): one-time pop-up asking if CIRCArt may send ONE daily reminder for the daily challenge, with a time choice (7, 9, 13, 18 h); ask for notifications when someone starts an async game; remove the test notification from settings.
 D12. [ ] **Build the story daily for Sun 29 Nov (First Advent), "An angel calls / Ein Engel klopft an"** (Admin approved 24 Nov, with Gentileschi added) — 8 cards, draft `src/dailies/drafts/draft-2026-11-24-annunciation.md`. Story-daily task, Thu 26 or Fri 27 run; live before midnight Sat 28.
 D14. [ ] **Story daily for Mon 30 Nov, "Painting power / Macht im Bild"** (Admin approved 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-power.md`; build in the Sat 28 run.
 D15. [ ] **Story daily for Wed 2 Dec: slavery in Africa and the Americas** (Admin, 24 Nov) — idea 16 in `src/dailies/ideas.md`; ask Admin about tone, draft by Sat 28.
@@ -161,7 +162,7 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
     - Split into sub-tasks when building: 33a friends + requests, 33b friends leaderboards, 33c challenges + push.
 44. [x] (20 Nov, migration 032 + `shell.js`: direct multi-friend async invites with Home inbox card, push outbox notification, and auto-start when all invitees answer) **Invitations for games over several days** (Admin, 11 Nov) — only after Friends (33). For an async game with friends, the host just invites: the invited friend(s) don't have to join a lobby, they get a push message ("Ana challenges you to CIRCArt") and can accept or decline in the app. The game starts once everyone invited has answered (or after a time limit, with whoever accepted). Server: invite / accept / decline RPCs with rate limits, only to friends, push via the existing outbox; tests that strangers can't invite you. Texts EN + DE.
 28. [x] (19 Nov) **Pack images for the real game:** the preview downloads pack images into `docs/art/` (pack-images workflow); the real game's build (`src/ship/stage.py` → `build_deploy.py`) only copies the pack JSONs, so images would load straight from Wikimedia. Port the download step (or copy `pack-art/` from this repo) before shipping packs.
-60. [ ] **Follow-ups from Claude's review of the Gemini code (21 Nov)**. All small; no security holes found:
+60. [ ] 🔧 Claude 2026-11-26 **Follow-ups from Claude's review of the Gemini code (21 Nov)**. All small; no security holes found:
     - `export_my_data()` doesn't include the player's own `game_reactions` and `game_calls` (deletion is fine: cascades). Add them (new migration).
     - A declined friend request can be sent again right away: add a short cooldown (e.g. 7 days) after a decline.
     - Invite and score-challenge pushes go to everyone who has notifications on; the privacy checklist wants one switch per kind (your turn / invitations / reminders), each off until turned on.
