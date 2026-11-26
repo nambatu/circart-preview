@@ -471,6 +471,9 @@ await call("dan", "send_friend_request", "ana");
 fr = await call("ana", "respond_friend_request", "dan_d", false);
 ok(fr.status === "declined", "declining friend request returns declined");
 ok((await call("dan", "my_friends")).outgoing.length === 0, "declined request removed cleanly");
+ok((await err(() => call("dan", "send_friend_request", "ana"))).includes("friend_cooldown"),
+   "035: asking again right after a decline is refused (7-day pause)");
+await q(`update public.friend_declines set declined_at = declined_at - interval '8 days'`);   // pause over
 
 // Block & blocked_by ownership
 fr = await call("ana", "remove_friend", "eve", true);
@@ -660,7 +663,7 @@ ok(accOne.accepted === true && accOne.auto_started === true,
    "1-friend async invite triggers auto_started=true on accept");
 
 // Removing accepted friend revokes friend_profile and expires pending invites
-await call("cara", "send_score_challenge", "ana", "daily_score", 7777);
+await err(() => call("cara", "send_score_challenge", "ana", "daily_score", 7777));   // 035: only with a real score
 await call("ana", "remove_friend", "cara", false);
 ok((await err(() => call("ana", "friend_profile", "cara"))).includes("not_friends"),
    "removed friend loses friend_profile access");
@@ -688,12 +691,16 @@ ok((await err(() => call("ana", "send_score_challenge", "stranger", "daily_score
    "send_score_challenge rejects stranger");
 ok((await err(() => call("ana", "send_score_challenge", "benny", "bad_mode", 100))).includes("bad_settings"),
    "send_score_challenge rejects invalid mode");
-const scRes = await call("ana", "send_score_challenge", "benny", "price_score", 15);
-ok(scRes.ok === true && !!scRes.id, "send_score_challenge succeeds");
+const anaPriceBest = (await call("ana", "price_summary")).best;
+const scRes = await call("ana", "send_score_challenge", "benny", "price_score", 99999);
+ok(scRes.ok === true && !!scRes.id && anaPriceBest != null, "send_score_challenge succeeds");
 const benScoreInvs = await call("ben_acc", "my_game_invites");
 const scInv = benScoreInvs.find(i => i.id === scRes.id);
-ok(scInv && scInv.challenge_kind === "price_score" && scInv.target_score === 15 && scInv.game_id === null,
+ok(scInv && scInv.challenge_kind === "price_score" && scInv.target_score === anaPriceBest && scInv.game_id === null,
    "score challenge appears in my_game_invites()");
+ok(scInv && scInv.target_score !== 99999, "035: the challenge carries the real best score, not the one the app sent");
+ok((await err(() => call("dan", "send_score_challenge", "ana", "price_score", 500))).length > 0,
+   "035: no challenge without a real score (or without friendship)");
 
 // push_batch produces non-null tag for game-less score challenge
 const pushSecret = (await q1(`select value from private.settings where key = 'push_cron_secret'`)).value;
@@ -729,8 +736,8 @@ ok(!exDan.friendships.some(f => f.friend_username === "eve"),
    "export_my_data does not leak blocks placed by another user onto target's export");
 
 // privacy_cleanup expires invites > 7 days old and preserves fresh invites
-const oldChal = await call("ana", "send_score_challenge", "benny", "run_score", 20);
-const freshChal = await call("ana", "send_score_challenge", "benny", "daily_score", 9000);
+const oldChal = await call("ana", "send_score_challenge", "benny", "price_score", 20);
+const freshChal = await call("ana", "send_score_challenge", "benny", "price_score", 9000);
 await q(`update public.game_invites set created_at = public._now() - interval '8 days' where id = $1`, [oldChal.id]);
 const cleanRes = await callService("privacy_cleanup");
 ok(cleanRes.invites_expired === 1

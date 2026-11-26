@@ -29,6 +29,9 @@ select cron.schedule('circart-push', '* * * * *',
 -- every 10 minutes: queue "closes in 3 h" reminders
 select cron.schedule('circart-push-reminders', '*/10 * * * *', 'select public.queue_turn_reminders()');
 
+-- every 15 minutes: the daily reminder at the hour each player picked (035)
+select cron.schedule('circart-daily-reminder', '*/15 * * * *', 'select public.queue_daily_reminders()');
+
 -- check:  select jobname, schedule, active from cron.job order by jobname;
 
 -- daily privacy clean-up (011)
