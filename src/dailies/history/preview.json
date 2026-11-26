@@ -1455,5 +1455,88 @@
             }
         ],
         "story": "lautrec"
+    },
+    {
+        "date": "2026-11-25",
+        "cards": [
+            {
+                "id": "mjecpw8ba7",
+                "year": 1894,
+                "title": "Gismonda",
+                "artist": "Alphonse Mucha",
+                "position": 0
+            },
+            {
+                "id": "zua8r2a3m6",
+                "year": 1559,
+                "title": "Netherlandish Proverbs",
+                "artist": "Pieter Bruegel the Elder",
+                "position": 1
+            },
+            {
+                "id": "yp9ugawx6b",
+                "year": 1867,
+                "title": "Women in the Garden",
+                "artist": "Claude Monet",
+                "position": 2
+            },
+            {
+                "id": "6fe8wrqcec",
+                "year": 1645,
+                "title": "The Newborn",
+                "artist": "Georges de La Tour",
+                "position": 3
+            },
+            {
+                "id": "9md59zrdzk",
+                "year": 1808,
+                "title": "The Cross in the Mountains",
+                "artist": "Caspar David Friedrich",
+                "position": 4
+            },
+            {
+                "id": "jzwcrje5wr",
+                "year": 1857,
+                "title": "Sudden Shower over Shin-Ohashi Bridge",
+                "artist": "Utagawa Hiroshige",
+                "position": 5
+            },
+            {
+                "id": "qvnaamgxnw",
+                "year": 1573,
+                "title": "The Feast in the House of Levi",
+                "artist": "Paolo Veronese",
+                "position": 6
+            },
+            {
+                "id": "njshsg2ruj",
+                "year": 1947,
+                "title": "Man Pointing",
+                "artist": "Alberto Giacometti",
+                "position": 7
+            },
+            {
+                "id": "s77kt97v6u",
+                "year": 1895,
+                "title": "The Card Players",
+                "artist": "Paul Cézanne",
+                "position": 8
+            },
+            {
+                "id": "9pwzh5hdpw",
+                "year": 1889,
+                "title": "The Starry Night",
+                "artist": "Vincent van Gogh",
+                "position": 9
+            },
+            {
+                "id": "zny9xafbkx",
+                "year": 1844,
+                "title": "Rain, Steam and Speed",
+                "artist": "J.M.W. Turner",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
