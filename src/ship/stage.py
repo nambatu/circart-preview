@@ -31,7 +31,7 @@ from urllib.parse import urlparse
 WWW_FROM_APP = ["index.html", "shell.js", "shell.css", "strings.js", "game.js", "sw-push.js",
                 "strings-de.js", "dealer.js", "collection.js", "styles.js", "onboarding.js", "onboarding.css", "packs.js",
                 "streak.js", "price-deck.json"]
-ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py", "deck_fixes.py", "extra_modes.py"]
+ROOT_FROM_DECK = ["build_deploy.py", "card_keys.py", "sync_deck.py", "deck_fixes.py", "trivia_de.json", "extra_modes.py"]
 
 
 PREVIEW_SITE = "https://nambatu.github.io/circart-preview"

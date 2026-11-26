@@ -1023,7 +1023,7 @@
             <div class="serif"><i>${esc(c.title)}</i></div>
             <div class="muted">${esc(c.artist)}${c.movement_group ? ' · ' + esc(c.movement_group) : ''}</div>
             ${meta ? `<div class="note" style="margin-top:4px">${esc(meta)}</div>` : ''}
-            ${c.trivia && !G.story ? `<p class="go-trivia">${esc(c.trivia)}</p>` : ''}
+            ${c.trivia && !G.story ? `<p class="go-trivia">${esc(de(c, 'trivia'))}</p>` : ''}
             ${G.story && G.answer ? creditFor(G.answer.position) : ''}</div></section>`;
     }
 

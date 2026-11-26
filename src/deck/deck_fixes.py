@@ -6,6 +6,9 @@ STYLE_NONE: cards whose style could not be confirmed by two sources (Wikidata P1
 Wikipedia, checked 10 Nov 2026, see movement-review.md). They get no style: the info page
 shows no style and no style question is offered."""
 
+import json
+from pathlib import Path
+
 STYLE_NONE = [
     "1728-jean-simeon-chardin-the-ray",
     "1768-joseph-wright-of-derby-an-experiment-on-a-bird-in-the-a",
@@ -40,6 +43,13 @@ TRIVIA_FIX = {
         "gets up and puts the fire out. Nobody shares that one."),
 }
 
+# German trivia for the base deck (task 21): card id -> text, in trivia_de.json next to this file.
+# The app shows it when the player picks German; it finds the German text by the English one,
+# because several server answers send the trivia without the card id.
+_DE_FILE = Path(__file__).with_name("trivia_de.json")
+TRIVIA_DE = json.loads(_DE_FILE.read_text(encoding="utf-8")) if _DE_FILE.exists() else {}
+
+
 def apply(cards, fix_text=lambda s: s):
     """Returns how many cards were changed. Also repairs broken characters in names (AbramoviÄ‡)."""
     n = 0
@@ -49,6 +59,10 @@ def apply(cards, fix_text=lambda s: s):
             n += 1
         if c.get("id") in TRIVIA_FIX:
             c["trivia"] = TRIVIA_FIX[c["id"]]
+        if isinstance(c.get("trivia"), str):
+            c["trivia"] = fix_text(c["trivia"])        # same text the server gets from sync_deck
+        if c.get("id") in TRIVIA_DE:
+            c["trivia_de"] = TRIVIA_DE[c["id"]]
         for f in ("artist", "title"):
             if isinstance(c.get(f), str):
                 c[f] = fix_text(c[f])
