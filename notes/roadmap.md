@@ -180,6 +180,11 @@ D6. [ ] **Story series: record prices at auction** (Admin, 11 Nov) — 2–3 sto
 15. [ ] **Ship to the real game** — only when Admin says "ship it": `src/ship/SHIP.md` (migrations 001–020 — NOT zz_preview_*, + `src/ship/prod_cron.sql` incl. privacy clean-up and the signed push call; Edge Function; fresh VAPID keys; packs.sql + pack images (task 28); legal pages filled in; `src/ship/stage.py`; PR on nambatu/circart).
 42. [ ] ⏸ **Social media strategy** (Admin, 10 Nov) — only once all the building work above is done. Then plan it together with Admin.
 
+## 💡 Idea dump (not planned; Admin, 26 Nov: "for now focus on the main game")
+Ideas Admin wants kept but not built. Don't start them unless Admin asks.
+- **Mystery artist** (like HLTV's mystery player): one hidden artist per day, 8 guesses with name search. Each guess compares country (green same, yellow neighbour), birth year (▲▼, yellow within 25 years), age at death (▲▼, yellow within 5), style (yellow = same style family from `styles.js`), main medium, and number of cards in the game. From guess 5 a painting by the artist appears blurred and gets sharper. Needs an artist sheet (born, died, country, main style) from Wikidata via the cards' QIDs. Reuses daily, streaks, share and the guesses chart. About 2 sessions.
+- **Art grid** (like HLTV's gridgame): 3×3 grid, row and column conditions (country, style, museum, century, "lived past 80"…), name an artist who fits both, each artist once, rare answers shown at the end. Needs a bigger artist list (~400) and a generator that checks every square has enough answers. About 3–4 sessions; more for art nerds.
+
 ## Done
 - [x] 2026-11-24 — **Rough player region (034).** The app sends the device's time zone once per account (`set_my_time_zone`, only names Postgres knows); kept on the profile, deleted with it, in the data export. Privacy pages EN + DE updated. Used by the private usage dashboard (players by country). Test `timezone.test.mjs`.
 - [x] 2026-11-21 — **FB #5: card picture stayed blank during a run** (but showed fullscreen). Image files and server were fine; a single failed image download was never retried (fullscreen simply asked again). Every picture in the app now retries twice after a failed load (`shell.js`, tested by failing the first download on purpose). Privacy pages: honest Anthropic wording (no DPA on a Pro plan).
