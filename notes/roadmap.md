@@ -320,3 +320,4 @@ Ideas Admin wants kept but not built. Don't start them unless Admin asks.
 - 2026-11-25 (17:52) · story-daily run · D13 "Shop till you drop" (Black Friday) live for Fri 27 Nov; no new draft (four approved stories queued until Wed 2 Dec)
 - 2026-11-26 · Claude · task 21 German card texts (230) · deployed · logo decided (task 61: keep), mystery artist + art grid in the idea dump · next: task 60
 - 2026-11-26 · Claude · tasks 62 + 60 (four items) · deployed (035 applied, cron on) · left in 60: inactivity email (needs SMTP), live realtime check on a phone
+- 2026-11-26 · Claude · notification hints: iPads (they report as Mac) and in-app browsers (Instagram, WhatsApp, TikTok …) now get an explanation instead of nothing · deployed
