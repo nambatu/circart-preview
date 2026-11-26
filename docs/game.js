@@ -482,6 +482,21 @@
         body.innerHTML = view();
         wire();
         body.scrollTop = resetScroll ? 0 : prevScroll;
+        askNotifications(st);
+    }
+
+    // notifications: after the first finished daily (once per device), and for every new game over several days
+    function askNotifications(st) {
+        const sh = window.CircShell;
+        if (!sh || G.notifAsked) return;
+        if (st.kind === 'daily' && st.phase === 'done' && sh.askDailyReminder) {
+            G.notifAsked = true;
+            const cur = G;
+            setTimeout(() => { if (G === cur) sh.askDailyReminder(); }, 900);
+        } else if (st.kind === 'async' && ['lobby', 'play', 'waiting'].includes(st.phase) && sh.askGamePush) {
+            G.notifAsked = true;
+            sh.askGamePush(G.id);
+        }
     }
 
     const note = msg => `<div class="page"><p class="muted">${esc(msg)}</p>
@@ -1078,7 +1093,6 @@
             <span class="note">${esc(t('game.closesIn', { time: fmtLeft(left(st.turn_deadline)) }))}</span></div>
           <section class="panel" style="padding:14px"><b>${esc(t('game.turnDone'))}</b>
             <p class="muted" style="font-size:14px">${esc(t('game.turnDoneText'))}</p></section>
-          ${pushPrompt()}
           ${G.asyncPrevResults ? lastTurnPanel(G.asyncPrevResults) : ''}
           <h2 class="label">${esc(t('game.standings'))}</h2>
           ${standings(99, true)}
@@ -1318,22 +1332,6 @@
           <p class="note" style="text-align:center">${esc(t('game.dailyTomorrow'))}</p>
           <button class="btn outline block" data-act="home">${esc(t('game.home'))}</button>
         </div>`;
-    }
-
-    // after your first async turn: offer notifications, once per device
-    const ASKED = 'circart-push-asked';
-    function pushPrompt() {
-        const o = O();
-        let asked = null;
-        try { asked = localStorage.getItem(ASKED); } catch (e) { /* ignore */ }
-        if (asked || !o.pushSupported || o.pushPermission() === 'granted' || o.pushPermission() === 'denied') return '';
-        const iphone = !o.pushSupported() && /iPhone|iPad/.test(navigator.userAgent);
-        if (!o.pushSupported() && !iphone) return '';
-        return `<section class="panel strong" style="padding:16px;display:flex;flex-direction:column;gap:10px">
-            <b class="serif" style="font-size:19px">${esc(t('push.title'))}</b>
-            <p class="muted" style="font-size:14px">${esc(iphone ? t('push.iphone') : t('push.text'))}</p>
-            <div class="two">${iphone ? '' : `<button class="btn primary" data-act="pushOn">${esc(t('push.on'))}</button>`}
-              <button class="btn quiet" data-act="pushLater">${esc(t('push.later'))}</button></div></section>`;
     }
 
     function viewPodium() {
@@ -1795,16 +1793,6 @@
             }
             if (a === 'rematch') { const r = await O().rematch(cur.id); if (G !== cur) return; return open(r.id); }
             if (a === 'openRematch') return open(cur.rematch.id);
-            if (a === 'pushLater' || a === 'pushOn') {
-                try { localStorage.setItem('circart-push-asked', '1'); } catch (e) { /* ignore */ }
-                if (a === 'pushOn') {
-                    await O().enablePush();
-                    if (G !== cur) return;
-                    window.CircShell.toast(t('push.done'));
-                }
-                if (G === cur) return draw();
-                return;
-            }
             if (a === 'leaveYes') { await O().leaveGame(cur.id); if (G !== cur) return; return close(); }
             if (a === 'share') {
                 const url = location.origin + location.pathname + '?join=' + cur.st.code;

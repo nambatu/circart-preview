@@ -1505,8 +1505,6 @@
               </span></div>
             ${o && o.pushSupported && o.pushSupported() ? `<button id="pf-push"><span>${esc(t('profile.notifications'))}</span>
               <span class="value" id="pf-push-v">…</span></button>` : ''}
-            ${o && o.previewTestPush && document.querySelector('script[src="preview.js"]') && o.pushSupported && o.pushSupported()
-              ? `<button id="pf-testpush"><span>${esc(t('profile.testPush'))}</span><span class="value" aria-hidden="true">🔔</span></button>` : ''}
             <div><span>${esc(t('profile.language'))}</span>
               <span class="seg" role="group" aria-label="${esc(t('profile.language'))}">
                 ${window.CircI18n.languages().map(l => `<button data-lang="${l.code}" aria-pressed="${l.code === window.CircI18n.lang}">${esc(l.name)}</button>`).join('')}
@@ -1577,6 +1575,7 @@
 
         document.querySelectorAll('#profile-body [data-lang]').forEach(b => b.addEventListener('click', () => {
             window.CircI18n.setLanguage(b.dataset.lang);
+            syncPushLang();
             renderReportHint();
             renderProfile();
         }));
@@ -1586,17 +1585,9 @@
             renderProfile();
         }));
         on('pf-feedback', openFeedback);
-        on('pf-testpush', guard(async () => {
-            if (!(await o.pushOn())) return toast(t('profile.testPushOff'));
-            toast(t((await o.previewTestPush()) ? 'profile.testPushSent' : 'profile.testPushOff'));
-        }));
         if ($('pf-push')) {
-            let pushIsOn = false;
-            o.pushOn().then(v => { pushIsOn = v; $('pf-push-v').textContent = t(v ? 'profile.notifOn' : 'profile.notifOff'); }).catch(() => {});
-            on('pf-push', guard(async () => {
-                if (pushIsOn) await o.disablePush(); else await o.enablePush();
-                renderProfile();
-            }));
+            o.pushOn().then(v => { if ($('pf-push-v')) $('pf-push-v').textContent = t(v ? 'profile.notifOn' : 'profile.notifOff'); }).catch(() => {});
+            on('pf-push', () => notifSheet(renderProfile));
         }
         on('pf-about', showAbout);
         on('pf-export', guard(async () => {
@@ -1969,7 +1960,130 @@
             serverSeen = ids ? new Set(ids) : new Set();
         }).catch(() => {});
     }
+
+    // ─── notifications: settings sheet, daily reminder ask, game ask ──────────
+    const REMIND_HOURS = [7, 9, 13, 18, 20];
+    const REMIND_ASKED = 'circart-remind-asked';
+    const hourLabel = h => String(h).padStart(2, '0') + ':00';
+    const isIphone = () => /iPhone|iPad/.test(navigator.userAgent);
+
+    async function syncPushLang() {
+        const o = online();
+        try {
+            if (!o || !o.pushSupported || !(await o.pushOn())) return;
+            const s = await o.pushSettings();
+            if (s && s.daily_hour != null) await o.setPushSettings(null, null, s.daily_hour, window.CircI18n.lang);
+        } catch (e) { /* best effort */ }
+    }
+
+    async function notifSheet(after) {
+        const o = online();
+        if (!o) return;
+        const on = await o.pushOn().catch(() => false);
+        let st = { turns: true, invites: true, daily_hour: null };
+        if (on) { try { st = Object.assign(st, await o.pushSettings()); } catch (e) { /* defaults */ } }
+        const seg = (name, items, cur) => `<span class="seg" role="group" data-set="${name}">${items.map(([v, l]) =>
+            `<button data-v="${v}" aria-pressed="${String(v) === String(cur)}">${esc(l)}</button>`).join('')}</span>`;
+        const onOff = [['1', t('profile.notifOn')], ['0', t('profile.notifOff')]];
+        const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('notif.title'))}</h2>
+          ${on ? `<div class="list" style="display:flex;flex-direction:column;gap:14px">
+              <div class="row" style="justify-content:space-between;gap:10px"><span>${esc(t('notif.turns'))}</span>${seg('turns', onOff, st.turns ? '1' : '0')}</div>
+              <div class="row" style="justify-content:space-between;gap:10px"><span>${esc(t('notif.invites'))}</span>${seg('invites', onOff, st.invites ? '1' : '0')}</div>
+              <div style="display:flex;flex-direction:column;gap:8px"><span>${esc(t('notif.daily'))}</span>
+                ${seg('daily', [['', t('notif.dailyOff')]].concat(REMIND_HOURS.map(h => [h, hourLabel(h)])), st.daily_hour == null ? '' : st.daily_hour)}</div>
+            </div>
+            <button class="btn link" data-act="alloff">${esc(t('notif.allOff'))}</button>`
+          : `<p class="muted" style="font-size:14px">${esc(t('notif.offText'))}</p>
+            <button class="btn primary block" data-act="turnon">${esc(t('notif.turnOn'))}</button>`}`);
+        const save = async () => {
+            await o.setPushSettings(st.turns, st.invites, st.daily_hour, window.CircI18n.lang);
+            toast(t('notif.saved'));
+        };
+        m.querySelectorAll('[data-set] button').forEach(b => b.addEventListener('click', async () => {
+            const set = b.closest('[data-set]');
+            set.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+            const k = set.dataset.set, v = b.dataset.v;
+            if (k === 'daily') st.daily_hour = v === '' ? null : Number(v);
+            else st[k] = v === '1';
+            try { await save(); } catch (e) { toast(errText(e)); }
+        }));
+        const act = m.querySelector('[data-act]');
+        if (act) act.addEventListener('click', async () => {
+            try {
+                if (act.dataset.act === 'turnon') await o.enablePush();
+                else await o.disablePush();
+                m.remove();
+                if (after) after();
+                if (act.dataset.act === 'turnon') notifSheet(after);
+            } catch (e) { toast(errText(e)); }
+        });
+    }
+
+    // once per device, right after the first finished daily
+    async function askDailyReminder() {
+        const o = online();
+        if (!o || !o.pushSupported) return;
+        // 'never' = never ask again; a timestamp = "not now", ask again after a week
+        const asked = store.get(REMIND_ASKED);
+        if (asked === 'never' || (asked && Date.now() - Number(asked) < 7 * 864e5) || (asked && isNaN(Number(asked)))) return;
+        if (!o.pushSupported()) {
+            if (isIphone()) { store.set(REMIND_ASKED, 'never'); sheet(`<h2 class="serif" style="font-size:22px">${esc(t('remind.title'))}</h2>
+                <p class="muted" style="font-size:14px">${esc(t('remind.iphone'))}</p>`); }
+            return;
+        }
+        if (o.pushPermission() === 'denied') return;
+        try { const s = (await o.pushOn()) ? await o.pushSettings() : null; if (s && s.daily_hour != null) return; } catch (e) { /* ask anyway */ }
+        store.set(REMIND_ASKED, String(Date.now()));
+        let hour = 18;
+        const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('remind.title'))}</h2>
+          <p class="muted" style="font-size:14px">${esc(t('remind.text'))}</p>
+          <span class="seg" role="group" aria-label="${esc(t('notif.daily'))}" style="align-self:center">${REMIND_HOURS.map(h =>
+              `<button data-h="${h}" aria-pressed="${h === hour}">${hourLabel(h)}</button>`).join('')}</span>
+          <button class="btn primary block" data-act="yes">${esc(t('remind.yes'))}</button>
+          <button class="btn quiet block" data-close>${esc(t('remind.no'))}</button>
+          <button class="btn link" data-act="never">${esc(t('remind.never'))}</button>`);
+        const close = m.querySelector('.modal-content > [data-close]:last-child');
+        if (close) close.remove();
+        m.querySelector('[data-act="never"]').addEventListener('click', () => { store.set(REMIND_ASKED, 'never'); m.remove(); });
+        m.querySelectorAll('[data-h]').forEach(b => b.addEventListener('click', () => {
+            hour = Number(b.dataset.h);
+            m.querySelectorAll('[data-h]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        }));
+        m.querySelector('[data-act="yes"]').addEventListener('click', async () => {
+            try {
+                await o.enablePush();
+                await o.setPushSettings(null, null, hour, window.CircI18n.lang);
+                m.remove();
+                toast(t('remind.done', { time: hourLabel(hour) }));
+            } catch (e) { toast(errText(e)); }
+        });
+    }
+
+    // a game with friends over several days: ask for notifications once per game
+    async function askGamePush(gameId) {
+        const o = online();
+        if (!o || !o.pushSupported || !gameId) return;
+        const key = 'circart-push-game-' + gameId;
+        if (store.get(key)) return;
+        const iphone = !o.pushSupported() && isIphone();
+        if (!o.pushSupported() && !iphone) return;
+        if (o.pushPermission() === 'denied') return;
+        if (!iphone && await o.pushOn().catch(() => false)) return;
+        store.set(key, '1');
+        const m = sheet(`<h2 class="serif" style="font-size:22px">${esc(t('push.gameTitle'))}</h2>
+          <p class="muted" style="font-size:14px">${esc(iphone ? t('push.iphone') : t('push.gameText'))}</p>
+          ${iphone ? '' : `<button class="btn primary block" data-act="on">${esc(t('push.on'))}</button>`}`);
+        const close = m.querySelector('[data-close]');
+        if (close) close.textContent = t('push.later');
+        const b = m.querySelector('[data-act="on"]');
+        if (b) b.addEventListener('click', async () => {
+            try { await o.enablePush(); m.remove(); toast(t('push.done')); }
+            catch (e) { toast(errText(e)); }
+        });
+    }
+
     window.CircShell = {
+        askDailyReminder, askGamePush,
         // Finished solo/price game → saved locally + queued for signed-in players.
         soloGameFinished(game) {
             pushLocalHistory(game);

@@ -67,6 +67,7 @@
         not_friends: 'You can only do that with accepted friends.',
         blocked: 'That request could not be sent.',
         friend_not_found: 'That friend request is no longer active.',
+        friend_cooldown: 'This person said no to your request a few days ago. You can ask again in a week.',
         too_many_requests: 'You sent a lot of requests just now. Please wait a bit before sending more.',
         too_many_reactions: 'Easy with the reactions. Give it a moment before sending another.',
         target_already_locked: 'That player already locked in their answer.',
@@ -614,7 +615,10 @@
         sendFriendRequest, respondFriendRequest, removeFriend, myFriends, friendProfile, friendsLeaderboard,
         inviteFriendsToGame, sendScoreChallenge, myGameInvites, respondGameInvite,
         previewResetDaily: () => rpc('preview_reset_daily'),   // preview builds only
-        previewTestPush: () => rpc('preview_test_push'),       // preview builds only
+        pushSettings: () => rpc('my_push_settings'),
+        // turns/invites: true/false, or null to keep; dailyHour: 0–23 or null (no reminder)
+        setPushSettings: (turns, invites, dailyHour, lang) => rpc('set_push_settings',
+            { p_turns: turns, p_invites: invites, p_daily_hour: dailyHour, p_lang: lang === 'de' ? 'de' : 'en' }),
         dailyStory,
         pushSupported, pushPermission, pushOn, enablePush, disablePush,
     };

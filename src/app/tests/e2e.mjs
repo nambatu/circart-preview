@@ -152,6 +152,11 @@ try {
   ok(await ana.isVisible('#home-friends'), "back on the home screen");
   await ana.click('#home-friends'); await ana.click('[data-kind="async"]');
   await waitText(ana, 'Join with code');
+  await ana.waitForSelector('.modal:has([data-act="on"])', { timeout: 5000 });
+  ok((await ana.textContent('.modal:has([data-act="on"])')).includes("Know when it's your turn"), "new game over several days: asks to allow notifications");
+  await shot(ana, '5b-async-ask-push');
+  await ana.click('.modal [data-act="on"]'); await ana.waitForTimeout(400);
+  ok(!(await ana.$('.modal:has([data-act="on"])')) && await ana.evaluate(() => window.__perm) === 'granted', "turned on: the sheet closes");
   const code2 = (await ana.textContent('.go-code')).trim();
   await ben.goto('http://localhost:8772/'); await ben.waitForSelector('#home-games [data-game]'); await ben.waitForFunction(() => document.getElementById('home-daily').innerText.includes('New in')); await ben.waitForTimeout(300);
   await ben.fill('#home-code', code2); await ben.click('#home-join button[type=submit]');
@@ -219,9 +224,6 @@ try {
   await waitText(ana, 'Turn done');
   ok((await text(ana)).includes('not yet'), "after 3 cards: turn done, Ben hasn't played");
   await shot(ana, '8-async-waiting');
-  ok((await text(ana)).includes("your turn?"), "after the first async turn: 'Get told when it's your turn?'");
-  await ana.click('[data-act="pushOn"]'); await ana.waitForTimeout(300);
-  ok(!(await text(ana)).includes("your turn?"), "turned on: the prompt is gone and won't come back");
   await ana.click('.go-close'); await ana.waitForTimeout(600);
   await ben.goto('http://localhost:8772/'); await ben.waitForTimeout(800);
   ok((await ben.textContent('#home-games')).includes('Your turn'), "Ben's home shows 'Your turn'");
@@ -290,6 +292,15 @@ try {
     await cleo.click('[data-act="next"]');
   }
   await waitText(cleo, 'Daily done');
+  await cleo.waitForSelector('.modal:has([data-h])', { timeout: 5000 });
+  ok((await cleo.textContent('.modal:has([data-h])')).includes('reminder for the daily')
+     && (await cleo.textContent('.modal:has([data-h])')).includes('Never ask me again')
+     && (await cleo.locator('.modal:has([data-h]) [data-close]').count()) === 1,
+     "first finished daily: asks about a daily reminder, with 'Not now' and 'Never ask me again'");
+  await cleo.click('.modal [data-h="9"]'); await shot(cleo, '12a-daily-reminder-ask');
+  await cleo.click('.modal [data-act="yes"]'); await cleo.waitForTimeout(600);
+  ok(!(await cleo.$('.modal:has([data-h])')) && (await cleo.evaluate(() => window.CircOnline.pushSettings())).daily_hour === 9,
+     "reminder saved for 09:00 and the sheet closes");
   ok((await text(cleo)).includes('end of our walk'), "results: the story's ending");
   {
     const recap = await cleo.evaluate(() => {

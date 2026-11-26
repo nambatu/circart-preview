@@ -2,13 +2,17 @@
   "site": "https://nambatu.github.io/circart-preview",
   "supabase_url": "https://rzptvdlejmdeaanhbbtd.supabase.co",
   "anon_key": "sb_publishable_ZlORPJZKDJHOVLP6xcqHnQ_ZD7Hfduu",
-  "label": "Thu 26 Nov, 11:00",
+  "label": "Thu 26 Nov, 15:00",
   "changes": [
-    "All 230 cards of the main deck now have their story in German. If the app is set to German, every card text after a round is German too, in solo, the daily, the run and games with friends."
+    "After your first finished daily, CIRCArt asks once if it may send you one daily reminder, and you pick the time (7, 9, 13, 18 or 20 o'clock). It only comes if you haven't played the daily yet. 'Not now' asks again in a week, 'Never ask me again' stops it.",
+    "When you start a game with friends that runs over several days, the app asks you to allow notifications.",
+    "Profile → Notifications is now a small panel: your turn, invites and challenges, and the daily reminder time can each be switched on or off. The test notification is gone.",
+    "Smaller fixes from the code review: a declined friend request can only be sent again after a week, score challenges always use your real best score, and 'Download my data' now includes reactions and calls."
   ],
   "test": [
-    "Set the language to Deutsch, play a solo game and open a card's text after placing it.",
-    "Play the daily in German and check the text under the revealed painting."
+    "Play the daily, pick a time in the pop-up and wait for the reminder tomorrow at that hour.",
+    "Profile → Notifications: switch things on and off.",
+    "Start a game with friends over several days and check that you're asked about notifications."
   ],
   "vapid_public": "BD8Pd5ZQsl8C0QvBD6uCAscd4oiv5yokIQ_1glIZa44eF7bzg6QQlZldEM19yP85RgeEtT-rucF79basv4y6k4c"
 }
