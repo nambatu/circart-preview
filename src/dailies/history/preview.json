@@ -1538,5 +1538,88 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-26",
+        "cards": [
+            {
+                "id": "zxbyc8cc3e",
+                "year": 1830,
+                "title": "Liberty Leading the People",
+                "artist": "Eugène Delacroix",
+                "position": 0
+            },
+            {
+                "id": "bb5hnjmbzp",
+                "year": 1861,
+                "title": "Early Spring in the Vienna Woods",
+                "artist": "Ferdinand Georg Waldmüller",
+                "position": 1
+            },
+            {
+                "id": "s2r83akqae",
+                "year": 1913,
+                "title": "Street, Berlin",
+                "artist": "Ernst Ludwig Kirchner",
+                "position": 2
+            },
+            {
+                "id": "wfdmxyk8gu",
+                "year": 1944,
+                "title": "Three Studies for Figures at the Base of a Crucifixion",
+                "artist": "Francis Bacon",
+                "position": 3
+            },
+            {
+                "id": "jkxtxvza64",
+                "year": 1638,
+                "title": "Et in Arcadia Ego",
+                "artist": "Nicolas Poussin",
+                "position": 4
+            },
+            {
+                "id": "srapcupy3s",
+                "year": 1339,
+                "title": "The Allegory of Good and Bad Government",
+                "artist": "Ambrogio Lorenzetti",
+                "position": 5
+            },
+            {
+                "id": "z5jdedk3rp",
+                "year": 1913,
+                "title": "Unique Forms of Continuity in Space",
+                "artist": "Umberto Boccioni",
+                "position": 6
+            },
+            {
+                "id": "ujkgtwf2v6",
+                "year": 1884,
+                "title": "Portrait of Madame X",
+                "artist": "John Singer Sargent",
+                "position": 7
+            },
+            {
+                "id": "9486uch8kk",
+                "year": 1500,
+                "title": "Self-Portrait at Twenty-Eight",
+                "artist": "Albrecht Dürer",
+                "position": 8
+            },
+            {
+                "id": "v9zj8dq4ps",
+                "year": 1904,
+                "title": "The Old Guitarist",
+                "artist": "Pablo Picasso",
+                "position": 9
+            },
+            {
+                "id": "awqtvmxeqr",
+                "year": 1888,
+                "title": "Café Terrace at Night",
+                "artist": "Vincent van Gogh",
+                "position": 10
+            }
+        ],
+        "story": null
     }
 ]
