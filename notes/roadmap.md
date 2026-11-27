@@ -62,7 +62,7 @@ Web app first (circart.langschwerts.de, installable), app stores in January (Goo
 ## Queue (top = next)
 63. [x] **Async games start right away** (done 26 Nov, see Done) (Admin, 26 Nov): no waiting room; the host plays turn 1 at once, others join (code, link, invite) while turn 1 is open; turn 1 closes when everyone joined has played and at least 2 are in, or after 24 h; nobody joined → the game ends and the host is told.
 62. [x] **Daily reminder notification** (done 26 Nov, see Done) (Admin, 26 Nov): one-time pop-up asking if CIRCArt may send ONE daily reminder for the daily challenge, with a time choice (7, 9, 13, 18 h); ask for notifications when someone starts an async game; remove the test notification from settings.
-D14. [ ] **Story daily for Mon 30 Nov, "Painting power / Macht im Bild"** (Admin approved 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-power.md`; build in the Sat 28 run.
+D14. [ ] 🔧 story-daily 27 Nov **Story daily for Mon 30 Nov, "Painting power / Macht im Bild"** (Admin approved 24 Nov) — draft `src/dailies/drafts/draft-2026-11-24-power.md`; build in the Sat 28 run.
 D15. [ ] **Story daily for Wed 2 Dec: slavery in Africa and the Americas** (Admin, 24 Nov) — idea 16 in `src/dailies/ideas.md`; ask Admin about tone, draft by Sat 28.
 D10b. [ ] **Later, if Admin wants it: cards dealt in small groups / cards sharing a spot on the timeline** (Admin, 22 Nov, idea from the story review) — a game change, size it first.
 61. [x] **Name and logo before the launch** (Admin, 24 Nov): decided 26 Nov to keep the name CIRCArt and the current logo. Two sketch rounds (`notes/logo-script-sketches*.png`) were looked at and none was taken.
