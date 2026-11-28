@@ -1621,5 +1621,67 @@
             }
         ],
         "story": null
+    },
+    {
+        "date": "2026-11-27",
+        "cards": [
+            {
+                "id": "fzwyphy4xv",
+                "year": 1720,
+                "title": "Gersaint's Shop Sign",
+                "artist": "Antoine Watteau",
+                "position": 0
+            },
+            {
+                "id": "cvwsh6n9sm",
+                "year": 1962,
+                "title": "Campbell's Soup Cans",
+                "artist": "Andy Warhol",
+                "position": 1
+            },
+            {
+                "id": "bf96qpnbqj",
+                "year": 1514,
+                "title": "The Moneylender and His Wife",
+                "artist": "Quentin Massys",
+                "position": 2
+            },
+            {
+                "id": "pwfbh9c9hz",
+                "year": 1999,
+                "title": "99 Cent",
+                "artist": "Andreas Gursky",
+                "position": 3
+            },
+            {
+                "id": "sce3d3pxan",
+                "year": 1856,
+                "title": "Suruga-chō (One Hundred Famous Views of Edo, no. 8)",
+                "artist": "Utagawa Hiroshige",
+                "position": 4
+            },
+            {
+                "id": "69nksm9tts",
+                "year": 1987,
+                "title": "Untitled (I shop therefore I am)",
+                "artist": "Barbara Kruger",
+                "position": 5
+            },
+            {
+                "id": "shax5nhfaw",
+                "year": 1551,
+                "title": "A Meat Stall with the Holy Family Giving Alms",
+                "artist": "Pieter Aertsen",
+                "position": 6
+            },
+            {
+                "id": "4ykbshjub4",
+                "year": 1882,
+                "title": "A Bar at the Folies-Bergère",
+                "artist": "Édouard Manet",
+                "position": 7
+            }
+        ],
+        "story": "black-friday"
     }
 ]
